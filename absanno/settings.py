@@ -25,7 +25,7 @@ SECRET_KEY = '1$!frj_pl!z3ama$af&a)&6(^#pn*@2a(z8kk8435qf&l2kd-y'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['absanno-abstract.app.secoder.net']
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
