@@ -18,8 +18,8 @@ RUN pip install -i https://pypi.tuna.tsinghua.edu.cn/simple --no-cache-dir -r re
 COPY . $HOME
 
 # For Django
-EXPOSE 8000
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+EXPOSE 80
+CMD ["python", "manage.py", "runserver", "0.0.0.0:80"]
 
 # For some other command
 # CMD ["python", "app.py"]
