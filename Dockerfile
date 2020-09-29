@@ -8,7 +8,7 @@ FROM python:3.7.0
 #         postgresql-client \
 #     && rm -rf /var/lib/apt/lists/*
 
-ENV HOME=/usr/src/app
+ENV HOME=/opt/app
 
 WORKDIR $HOME
 
@@ -19,7 +19,7 @@ COPY . $HOME
 
 # For Django
 EXPOSE 80
-CMD ["python", "manage.py", "runserver", "0.0.0.0:80"]
+CMD ["/bin/sh", "./run.sh"]
 
 # For some other command
 # CMD ["python", "app.py"]
