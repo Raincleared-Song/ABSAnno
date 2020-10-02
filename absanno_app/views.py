@@ -15,7 +15,7 @@ def hello_world(request):
 # email留作扩展功能时期实现
 # 出错返回可以参考下面的代码
 
-def userIn(request):
+def logIn(request):
 
     def gen_response(code: int, data: str): # 是否成功，成功为201，失败为400
         return JsonResponse({
@@ -24,9 +24,6 @@ def userIn(request):
         }, status=code)
 
     if request.method == 'POST':
-
-        # 安全性验证
-        # TODO
 
         try:
             message = request.body
@@ -38,6 +35,9 @@ def userIn(request):
         password = js['password'] if 'password' in js else ''
         method = js['method'] if 'method' in js else ''
         email = js['email'] if 'email' in js else ''
+
+        # 安全性验证
+        # TODO
 
         if name == '' or (password == '' and method != 'LogOut'):
             return gen_response(400, "RequestError")
@@ -55,8 +55,37 @@ def userIn(request):
                     'name': user.name
                 }
             )
-        elif method == "SignIn":
-            if '\t' in name or '\n' in name or ' ' in name or ',' in name or '.' in name: # 禁止名字中特定字符
+
+    return gen_response(400, "LogInError")
+
+def signIn(request):
+    def gen_response(code: int, data: str):  # 是否成功，成功为201，失败为400
+        return JsonResponse({
+            'code': code,
+            'data': data
+        }, status=code)
+
+    if request.method == 'POST':
+
+        try:
+            message = request.body
+            js = json.loads(message)
+        except json.decoder.JSONDecodeError:
+            return gen_response(400, "RequestError")
+
+        name = js['name'] if 'name' in js else ''
+        password = js['password'] if 'password' in js else ''
+        method = js['method'] if 'method' in js else ''
+        email = js['email'] if 'email' in js else ''
+
+        # 安全性验证
+        # TODO
+
+        if name == '' or (password == '' and method != 'LogOut'):
+            return gen_response(400, "RequestError")
+
+        if method == "SignIn":
+            if '\t' in name or '\n' in name or ' ' in name or ',' in name or '.' in name:  # 禁止名字中特定字符
                 return gen_response(400, "UserNameError")
             if len(password) < 6 or len(password) > 20:
                 return gen_response(400, "PasswordLengthError")
@@ -67,14 +96,43 @@ def userIn(request):
             except ValidationError:
                 return gen_response(400, "SignInError")
             return gen_response(201, {
-                    'id': user.id,
-                    'name': user.name
+                'id': user.id,
+                'name': user.name
                 }
             )
-        elif method == "LogOut":
+
+    return gen_response(400, "SignInError")
+
+def logOut(request):
+    def gen_response(code: int, data: str):  # 是否成功，成功为201，失败为400
+        return JsonResponse({
+            'code': code,
+            'data': data
+        }, status=code)
+
+    if request.method == 'POST':
+
+        try:
+            message = request.body
+            js = json.loads(message)
+        except json.decoder.JSONDecodeError:
+            return gen_response(400, "RequestError")
+
+        name = js['name'] if 'name' in js else ''
+        password = js['password'] if 'password' in js else ''
+        method = js['method'] if 'method' in js else ''
+        email = js['email'] if 'email' in js else ''
+
+        # 安全性验证
+        # TODO
+
+        if name == '' or (password == '' and method != 'LogOut'):
+            return gen_response(400, "RequestError")
+
+        if method == "LogOut":
             return gen_response(201, "LogOutFinish")
-        else:
-            return gen_response(400, "MethodIsError")
+
+    return gen_response(400, "LogOutError")
 
 # 每次前端问题广场需要申请一次获取问题列表GET，然后获得问题
 # 包括第一次进入问题广场
