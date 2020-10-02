@@ -19,10 +19,10 @@ build:
   image: nikolaik/python-nodejs:python3.7-nodejs12
   stage: test
 
-  # cache:
-  #   key: ${CI_COMMIT_REF_SLUG}
-  #   paths:
-  #     - frontend/node_modules/
+  cache:
+    key: ${CI_COMMIT_REF_SLUG}
+    paths:
+      - cache/
 
   before_script:
     - pip install -i https://pypi.tuna.tsinghua.edu.cn/simple -r requirements.txt
@@ -31,6 +31,11 @@ unit-test:
   extends: .test
   script:
     - ls
+#    - coverage run -m pytest --junit-xml=xunit-reports/xunit-result.xml
+#    - BACKEND_RET=$?
+#    - coverage xml -o coverage-reports/coverage.xml
+#    - coverage report
+#    - exit $BACKEND_RET
 
   after_script:
     - SUFFIX=$RANDOM
@@ -44,6 +49,9 @@ style-test:
 
   script:
     - ls
+#    - pylint --load-plugins=pylint_django absanno absanno_app
+#    - BACKEND_RET=$?
+#    - exit $BACKEND_RET
 
 deploy:
   stage: deploy

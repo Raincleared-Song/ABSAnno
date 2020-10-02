@@ -19,7 +19,5 @@ COPY . $HOME
 
 # For Django
 EXPOSE 80
+ENV PYTHONUNBUFFERED=true
 CMD ["/bin/sh", "./run.sh"]
-
-# For some other command
-# CMD ["python", "app.py"]

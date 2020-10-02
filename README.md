@@ -22,6 +22,7 @@ a web application for the release, management and completion of data annotation 
 
 建议大家每个人都用 `python manage.py createsuperuser` 命令创建一个账号，这样就可以在 `127.0.0.1:8000/admin` 地址下登录并查看数据库的内容
 
+
 ## 第一阶段
 
 - 前端
