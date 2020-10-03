@@ -29,7 +29,7 @@ def logIn(request):
             message = request.body
             js = json.loads(message)
         except json.decoder.JSONDecodeError:
-            return gen_response(400, "RequestError")
+            return gen_response(400, "Request Json Error")
 
         name = js['name'] if 'name' in js else ''
         password = js['password'] if 'password' in js else ''
@@ -40,23 +40,23 @@ def logIn(request):
         # TODO
 
         if name == '' or password == '':
-            return gen_response(400, "RequestError")
+            return gen_response(400, "Request Body Error")
 
         if method == "LogIn":
             user = Users.objects.filter(name=name).first()
             if not user:
-                return gen_response(400, "ThisUserIsNotHere")
+                return gen_response(400, "This User Is Not Here")
             if password != user.password:
-                return gen_response(400, "PasswordIsError")
+                return gen_response(400, "Password Is Error")
             if user.is_banned == 1:
-                return gen_response(400, "UserIsBanned")
+                return gen_response(400, "User Is Banned")
             return gen_response(201, {
                     'id': user.id,
                     'name': user.name
                 }
             )
 
-    return gen_response(400, "LogInError")
+    return gen_response(400, "Log In Error")
 
 def signIn(request):
     def gen_response(code: int, data: str):  # 是否成功，成功为201，失败为400
@@ -71,7 +71,7 @@ def signIn(request):
             message = request.body
             js = json.loads(message)
         except json.decoder.JSONDecodeError:
-            return gen_response(400, "RequestError")
+            return gen_response(400, "Request Json Error")
 
         name = js['name'] if 'name' in js else ''
         password = js['password'] if 'password' in js else ''
@@ -82,30 +82,30 @@ def signIn(request):
         # TODO
 
         if not name or not password:
-            return gen_response(400, "RequestError")
+            return gen_response(400, "Request Bosy Error")
 
         if method == "SignIn":
             if '\t' in name or '\n' in name or ' ' in name or ',' in name or '.' in name:  # 禁止名字中特定字符
-                return gen_response(400, "UserNameError")
+                return gen_response(400, "User Name Error")
             if len(password) < 6 or len(password) > 20:
-                return gen_response(400, "PasswordLengthError")
+                return gen_response(400, "Password Length Error")
             gen_user = Users.objects.filter(name=name).first()
             if gen_user:
-                return gen_response(400, "UserNameHasExisted")
+                return gen_response(400, "User Name Has Existed")
             #user = Users(name=name, password=password, email=email)
             user = Users(name=name, password=password)
             try:
                 user.full_clean()
                 user.save()
             except ValidationError:
-                return gen_response(400, "SignInError")
+                return gen_response(400, "Sign In Form Error")
             return gen_response(201, {
                 'id': user.id,
                 'name': user.name
                 }
             )
 
-    return gen_response(400, "SignInError")
+    return gen_response(400, "Sign In Error")
 
 def logOut(request):
     def gen_response(code: int, data: str):  # 是否成功，成功为201，失败为400
@@ -120,7 +120,7 @@ def logOut(request):
             message = request.body
             js = json.loads(message)
         except json.decoder.JSONDecodeError:
-            return gen_response(400, "RequestError")
+            return gen_response(400, "Request Json Error")
 
         name = js['name'] if 'name' in js else ''
         password = js['password'] if 'password' in js else ''
@@ -131,9 +131,9 @@ def logOut(request):
         # TODO
 
         if method == "LogOut":
-            return gen_response(201, "LogOutFinish")
+            return gen_response(201, "Log Out Finish")
 
-    return gen_response(400, "LogOutError")
+    return gen_response(400, "Log Out Error")
 
 # 每次前端问题广场需要申请一次获取问题列表GET，然后获得问题
 # 包括第一次进入问题广场
@@ -159,12 +159,12 @@ def userShow(request):
         num_ = request.GET.get('num')
 
         if not id_.isdigit() or not num_.isdigit():
-            return gen_response(400, "RequestError")
+            return gen_response(400, "ID or Num Is Not Digit")
         id, num = int(id_), int(num_)
         if id<0 or id>=len(Users.objects.all()):
-            return gen_response(400, "RequestError")
+            return gen_response(400, "ID Error")
         if num<0 or num>=len(Mission.objects.filter(to_ans=1)):
-            return gen_response(400, "RequestError")
+            return gen_response(400, "Num Error")
 
         # 参考id获取用户画像，进而实现分发算法，目前使用id来进行排序
         # TODO
@@ -214,18 +214,18 @@ def missionShow(request):
         step_ = request.GET.get('step')
 
         if not id_.isdigit() or num_.isdigit() or not step_.isdigit():
-            return gen_response(400, "RequestError")
+            return gen_response(400, "Not Digit Error")
         id = int(id_); num = int(num_); step = int(step_)
         if id<0 or id>=len(Mission.objects.all()):
-            return gen_response(400, "RequestError")
+            return gen_response(400, "ID Error")
         if num<0 or num>=len(Mission.objects.get(id).father_mission.all()):
-            return gen_response(400, "RequestError")
+            return gen_response(400, "Num Error")
         if step != -1 and step != 1:
-            return gen_response(400, "RequestError")
+            return gen_response(400, "Step Error")
 
         getNum = num+step
         if getNum<0 or getNum>=len(Mission.objects.get(id).father_mission.all()):
-            return gen_response(400, "RequestError")
+            return gen_response(400, "Runtime Error")
 
         ret = Mission.objects.get(id).father_mission.all().order_by(id)[getNum]
 
@@ -238,7 +238,7 @@ def missionShow(request):
         # 题目为选择题型式之后实现
         # TODO
 
-        return gen_response(400, "RequestError")
+        return gen_response(400, "Change Question Error")
 
     elif request.method == 'POST':
 
@@ -249,25 +249,25 @@ def missionShow(request):
             message = request.body
             js = json.loads(message)
         except json.decoder.JSONDecodeError:
-            return gen_response(400, "RequestError")
+            return gen_response(400, "Request Json Error")
 
         user_id_ = js['user_id'] if 'user_id' in js else '-1'
         mission_id_ = js['mission_id'] if 'mission_id' in js else '-1'
         ans_list = js['ans'] if 'ans' in js else []
 
         if not user_id_.isdigit() or not mission_id_.isdigit() or not isinstance(ans_list, list):
-            return gen_response(400, "RequestError")
+            return gen_response(400, "Not Digit Or Not List Error")
         
         user_id = int(user_id_); mission_id = int(mission_id_)
         if user_id<0 or user_id>=len(Users.objects.all()):
-            return gen_response(400, "RequestError")
+            return gen_response(400, "User ID Error")
         if mission_id<0 or mission_id>=len(Mission.objects.all()):
-            return gen_response(400, "RequestError")
+            return gen_response(400, "Mission ID Error")
 
         user = Users.objects.get(user_id)
         mission = Mission.objects.get(mission_id)
         if len(ans_list) != len(mission.father_mission.all()):
-            return gen_response(400, "RequestError")
+            return gen_response(400, "Ans List Error")
         
         # 开始结算
         # 判断题
@@ -303,7 +303,7 @@ def missionShow(request):
 
         # 之后需要优化weight等内容
 
-        return gen_response(201, "AnswerPushed")
+        return gen_response(201, "Answer Pushed")
 
 # upload关于上传任务
 
@@ -321,7 +321,7 @@ def upload(request):
             message = request.body
             js = json.loads(message)
         except json.decoder.JSONDecodeError:
-            return gen_response(400, "UploadError")
+            return gen_response(400, "Request Json Error")
 
         name = js['name'] if 'name' in js else ''
         question_form = js['question_form'] if 'question_form' in js else ''
@@ -329,7 +329,7 @@ def upload(request):
         user_id_ = js['user_id'] if 'user_id' in js else ''
         total_ = js['total'] if 'total' in js else ''
         if not question_num_.isdigit() or name == '' or question_form == '' or not user_id_.isdigit() or not total_.isdigit():
-            return gen_response(400, "UploadError")
+            return gen_response(400, "Upload Contains Error")
         question_num = int(question_num_)
         user_id = user_id_
         total = total_
@@ -339,13 +339,13 @@ def upload(request):
             mission.full_clean()
             mission.save()
         except ValidationError:
-            return gen_response(400, "UploadError")
+            return gen_response(400, "Upload Form Error")
 
         question_list = js['question_list'] if 'question_list' in js else []
         if not isinstance(question_list, list):
-            return gen_response(400, "UploadError")
+            return gen_response(400, "Question_list Is Not A List")
         if len(question_list) != question_num:
-            return gen_response(400, "UploadError")
+            return gen_response(400, "Question_list Length Error")
 
         # 判断题限定ver.
 
@@ -354,7 +354,7 @@ def upload(request):
                 contains = i['contains'] if contains in i else ''
                 ans = i['ans'] if ans in i else ''
                 if contains=='':
-                    return gen_response(400, "UploadError")
+                    return gen_response(400, "Question Contains is Null")
                 try:
                     question = Question(word=contains, mission=mission)
                     if ans == 'T' or ans == 'F' or ans == '':
@@ -362,10 +362,10 @@ def upload(request):
                         if ans != '':
                             question.has_pre_ans = 1
                     else:
-                        return gen_response(400, "UploadError")
+                        return gen_response(400, "Ans Set Error")
                     question.full_clean()
                     question.save()
                 except ValidationError:
-                    return gen_response(400, "UploadError")
-            return gen_response(201, "JudgementUploadSuccess")
+                    return gen_response(400, "Quetion Form Error")
+            return gen_response(201, "Judgement Upload Success")
 
