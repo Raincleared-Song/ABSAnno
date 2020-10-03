@@ -344,6 +344,8 @@ def upload(request):
         question_list = js['question_list'] if 'question_list' in js else []
         if not isinstance(question_list, list):
             return gen_response(400, "UploadError")
+        if len(question_list) != question_num:
+            return gen_response(400, "UploadError")
 
         # 判断题限定ver.
 
