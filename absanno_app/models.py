@@ -1,5 +1,6 @@
 from django.db import models
 
+# Create your models here.
 
 class Users(models.Model):
     # 用户的id使用默认的主键
@@ -31,7 +32,6 @@ class Users(models.Model):
     # 接下来为相关的函数
     # TODO
 
-
 class Mission(models.Model):
     #任务的id使用默认的主键
 
@@ -51,7 +51,6 @@ class Mission(models.Model):
 
     # 接下来为需要完成的相关的函数
     # TODO
-
 
 class Question(models.Model): # 判断题和选择题均使用Question存储
     mission = models.ForeignKey(Mission, on_delete=models.CASCADE, related_name="father_mission") # 关联题目来自的任务
@@ -79,14 +78,12 @@ class Question(models.Model): # 判断题和选择题均使用Question存储
     # 文字描述长度限制为30字，图片描述中""表示没有图片
     # 选项数最少2项，最多8项
 
-
 class Chosen_ans(models.Model):
     chosen_question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name="father_question") # 关联选项来自的题目
     word = models.CharField(default="", max_length=30) # 选项的文字描述，最长为30个字符
     image = models.ImageField(default="") # 如果选项用图片表示时存储图片，“”表示无图片
     pre_ans = models.IntegerField(default=0) # 表示该选项是否为预设的正确答案，0表示不是，1表示是
     chosen_num = models.IntegerField(default=0) # 目前被选择的次数，涉及结果的判断
-
 
 class History(models.Model):
     user = models.ForeignKey(Users, on_delete=models.CASCADE, related_name="history")
