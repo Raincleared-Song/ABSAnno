@@ -89,6 +89,9 @@ def signIn(request):
                 return gen_response(400, "UserNameError")
             if len(password) < 6 or len(password) > 20:
                 return gen_response(400, "PasswordLengthError")
+            gen_user = Users.objects.filter(name=name).first()
+            if gen_user:
+                return gen_response(400, "UserNameHasExisted")
             user = Users(name=name, password=password, email=email)
             try:
                 user.full_clean()
