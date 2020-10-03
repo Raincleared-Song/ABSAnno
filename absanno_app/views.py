@@ -314,3 +314,56 @@ def upload(request):
             'code': code,
             'data': data
         }, status=code)
+
+    if request.method == 'POST':
+
+        try:
+            message = request.body
+            js = json.loads(message)
+        except json.decoder.JSONDecodeError:
+            return gen_response(400, "UploadError")
+
+        name = js['name'] if 'name' in js else ''
+        question_form = js['question_form'] if 'question_form' in js else ''
+        question_num_ = js['question_num'] if 'question_num' in js else ''
+        user_id_ = js['user_id'] if 'user_id' in js else ''
+        total_ = js['total'] if 'total' in js else ''
+        if not question_num_.isdigit() or name == '' or question_form == '' or not user_id_.isdigit() or not total_.isdigit():
+            return gen_response(400, "UploadError")
+        question_num = int(question_num_)
+        user_id = user_id_
+        total = total_
+
+        try:
+            mission = Mission(name=name, question_form=question_form, question_num=question_num, total=total, user=Users.objects.get(user_id))
+            mission.full_clean()
+            mission.save()
+        except ValidationError:
+            return gen_response(400, "UploadError")
+
+        question_list = js['question_list'] if 'question_list' in js else []
+        if not isinstance(question_list, list):
+            return gen_response(400, "UploadError")
+
+        # 判断题限定ver.
+
+        if mission.question_form == "judgement":
+            for i in question_list:
+                contains = i['contains'] if contains in i else ''
+                ans = i['ans'] if ans in i else ''
+                if contains=='':
+                    return gen_response(400, "UploadError")
+                try:
+                    question = Question(word=contains, mission=mission)
+                    if ans == 'T' or ans == 'F' or ans == '':
+                        question.pre_ans = ans
+                        if ans != '':
+                            question.has_pre_ans = 1
+                    else:
+                        return gen_response(400, "UploadError")
+                    question.full_clean()
+                    question.save()
+                except ValidationError:
+                    return gen_response(400, "UploadError")
+            return gen_response(201, "JudgementUploadSuccess")
+

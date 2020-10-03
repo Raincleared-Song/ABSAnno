@@ -38,7 +38,7 @@ class Mission(models.Model):
     name = models.CharField(max_length=30) # 发布的任务的名字，不是唯一，因此在显示时可能要显示小的编号
     user = models.ForeignKey(Users, on_delete=models.CASCADE, related_name="promulgator") # 关联任务的发布用户
     total = models.IntegerField() # 任务需要完成的次数
-    now_num = models.IntegerField() # 目前已经完成的次数
+    now_num = models.IntegerField(default=0) # 目前已经完成的次数
     question_num = models.IntegerField(default=0) # 任务中题目的数量，题目最多为20题
     question_form = models.CharField(default="judgement", max_length=20) # 任务中题目的类型
     to_ans = models.IntegerField(default=1) # 当前任务是否需要继续被标注，1表示需要，0表示不需要
@@ -55,7 +55,7 @@ class Mission(models.Model):
 class Question(models.Model): # 判断题和选择题均使用Question存储
     mission = models.ForeignKey(Mission, on_delete=models.CASCADE, related_name="father_mission") # 关联题目来自的任务
     word = models.CharField(default="", max_length=200) # 文字描述，最多200字
-    image = models.ImageField(default="") # 相关图片，""表示无图片
+    # image = models.ImageField(default="") # 相关图片，""表示无图片
     # 需要对没有文字描述和图片描述的空题目进行判断
     type = models.CharField(default="judgement", max_length=20) # 题型，默认为判断
 
@@ -81,7 +81,7 @@ class Question(models.Model): # 判断题和选择题均使用Question存储
 class Chosen_ans(models.Model):
     chosen_question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name="father_question") # 关联选项来自的题目
     word = models.CharField(default="", max_length=30) # 选项的文字描述，最长为30个字符
-    image = models.ImageField(default="") # 如果选项用图片表示时存储图片，“”表示无图片
+    # image = models.ImageField(default="") # 如果选项用图片表示时存储图片，“”表示无图片
     pre_ans = models.IntegerField(default=0) # 表示该选项是否为预设的正确答案，0表示不是，1表示是
     chosen_num = models.IntegerField(default=0) # 目前被选择的次数，涉及结果的判断
 
