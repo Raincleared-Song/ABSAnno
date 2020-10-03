@@ -81,7 +81,7 @@ def signIn(request):
         # 安全性验证
         # TODO
 
-        if name == '' or password:
+        if not name or not password:
             return gen_response(400, "RequestError")
 
         if method == "SignIn":
@@ -160,7 +160,7 @@ def userShow(request):
 
         if not id_.isdigit() or not num_.isdigit():
             return gen_response(400, "RequestError")
-        id = int(id_); num = int(num_)
+        id, num = int(id_), int(num_)
         if id<0 or id>=len(Users.objects.all()):
             return gen_response(400, "RequestError")
         if num<0 or num>=len(Mission.objects.filter(to_ans=1)):
@@ -273,7 +273,7 @@ def missionShow(request):
         # 判断题
         if mission.question_form == "judgement":
             user.score += len(mission.father_mission.all())
-            user.fin_num += 1;
+            user.fin_num += 1
             flag = True
             for i in range(0, len(ans_list)):
                 if mission.father_mission.all().order_by(id)[i].pre_ans != "" and mission.father_mission.all().order_by(id)[i].pre_ans != ans_list[i]:
