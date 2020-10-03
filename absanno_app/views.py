@@ -34,12 +34,12 @@ def logIn(request):
         name = js['name'] if 'name' in js else ''
         password = js['password'] if 'password' in js else ''
         method = js['method'] if 'method' in js else ''
-        email = js['email'] if 'email' in js else ''
+        #email = js['email'] if 'email' in js else ''
 
         # 安全性验证
         # TODO
 
-        if name == '' or (password == '' and method != 'LogOut'):
+        if name == '' or password == '':
             return gen_response(400, "RequestError")
 
         if method == "LogIn":
@@ -81,7 +81,7 @@ def signIn(request):
         # 安全性验证
         # TODO
 
-        if name == '' or (password == '' and method != 'LogOut'):
+        if name == '' or password:
             return gen_response(400, "RequestError")
 
         if method == "SignIn":
@@ -92,7 +92,8 @@ def signIn(request):
             gen_user = Users.objects.filter(name=name).first()
             if gen_user:
                 return gen_response(400, "UserNameHasExisted")
-            user = Users(name=name, password=password, email=email)
+            #user = Users(name=name, password=password, email=email)
+            user = Users(name=name, password=password)
             try:
                 user.full_clean()
                 user.save()
@@ -128,9 +129,6 @@ def logOut(request):
 
         # 安全性验证
         # TODO
-
-        if name == '' or (password == '' and method != 'LogOut'):
-            return gen_response(400, "RequestError")
 
         if method == "LogOut":
             return gen_response(201, "LogOutFinish")

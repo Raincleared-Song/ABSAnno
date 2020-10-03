@@ -12,10 +12,10 @@ class Users(models.Model):
     score = models.IntegerField(default=0) # 用户积分，参与答题即可获得积分(金币)，作为答题奖励
     weight = models.IntegerField(default=100) # 用户权重，有关用户答题质量的评定
     # 用户答题被判断乱答题时会扣除weight， weight被扣到0时用户可能被自动封禁
-    photo = models.ImageField(default="") # 用户头像，存储图片所在地址，""表示默认头像
+    #photo = models.ImageField(default="") # 用户头像，存储图片所在地址，""表示默认头像
     fin_num = models.IntegerField(default=0) # 已完成任务数量
     is_banned = models.IntegerField(default=0) # 用户是否被封禁，如为0表示正常运行，如为1表示已被封禁，无法正常登录，需要向管理员申请解封
-    email = models.CharField(max_length=50) # 用户邮箱，目前可能用不到，之后可以增加与用户邮箱的关联
+    #email = models.CharField(max_length=50) # 用户邮箱，目前可能用不到，之后可以增加与用户邮箱的关联
     # 可以用于注册时对于用户的验证以及用户找回密码
 
     #接下来为用户画像设计，每个tag表示相关权重，数值为0-100
