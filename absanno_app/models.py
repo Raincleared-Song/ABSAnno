@@ -54,7 +54,7 @@ class Mission(models.Model):
 
 class Question(models.Model): # 判断题和选择题均使用Question存储
     mission = models.ForeignKey(Mission, on_delete=models.CASCADE, related_name="father_mission") # 关联题目来自的任务
-    word = models.CharField(default="", max_length=200) # 文字描述，最多200字
+    word = models.CharField(default="", max_length=200, blank=True) # 文字描述，最多200字
     # image = models.ImageField(default="") # 相关图片，""表示无图片
     # 需要对没有文字描述和图片描述的空题目进行判断
     type = models.CharField(default="judgement", max_length=20) # 题型，默认为判断
@@ -65,7 +65,7 @@ class Question(models.Model): # 判断题和选择题均使用Question存储
     T_num = models.IntegerField(default=0) # 正选被选择的次数
     # F_word = models.CharField(default="否") # 对于反选的文字描述
     F_num = models.IntegerField(default=0) # 反选被选择的次数
-    pre_ans = models.CharField(default="", max_length=1) # 预设答案，分别有""，"T"，"F"三种存储结果，分别表示无预设答案，预设答案正选，预设答案反选
+    pre_ans = models.CharField(default="", max_length=1, blank=True) # 预设答案，分别有""，"T"，"F"三种存储结果，分别表示无预设答案，预设答案正选，预设答案反选
 
     # 选择题内容
 
@@ -80,7 +80,7 @@ class Question(models.Model): # 判断题和选择题均使用Question存储
 
 class Chosen_ans(models.Model):
     chosen_question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name="father_question") # 关联选项来自的题目
-    word = models.CharField(default="", max_length=30) # 选项的文字描述，最长为30个字符
+    word = models.CharField(default="", max_length=30, blank=True) # 选项的文字描述，最长为30个字符
     # image = models.ImageField(default="") # 如果选项用图片表示时存储图片，“”表示无图片
     pre_ans = models.IntegerField(default=0) # 表示该选项是否为预设的正确答案，0表示不是，1表示是
     chosen_num = models.IntegerField(default=0) # 目前被选择的次数，涉及结果的判断

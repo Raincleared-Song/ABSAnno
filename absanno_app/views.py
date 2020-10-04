@@ -4,6 +4,7 @@ import json
 from .models import Users, Mission, Question, Chosen_ans, History
 from django.core.exceptions import ValidationError
 
+
 def hello_world(request):
     return HttpResponse("Hello Absanno!")
 
@@ -15,13 +16,15 @@ def hello_world(request):
 # email留作扩展功能时期实现
 # 出错返回可以参考下面的代码
 
-def logIn(request):
 
-    def gen_response(code: int, data: str): # 是否成功，成功为201，失败为400
-        return JsonResponse({
-            'code': code,
-            'data': data
-        }, status=code)
+def gen_response(code: int, data: object):  # 是否成功，成功为201，失败为400
+    return JsonResponse({
+        'code': code,
+        'data': str(data)
+    }, status=code)
+
+
+def logIn(request):
 
     if request.method == 'POST':
 
@@ -58,12 +61,8 @@ def logIn(request):
 
     return gen_response(400, "Log In Error")
 
+
 def signIn(request):
-    def gen_response(code: int, data: str):  # 是否成功，成功为201，失败为400
-        return JsonResponse({
-            'code': code,
-            'data': data
-        }, status=code)
 
     if request.method == 'POST':
 
@@ -107,12 +106,8 @@ def signIn(request):
 
     return gen_response(400, "Sign In Error")
 
+
 def logOut(request):
-    def gen_response(code: int, data: str):  # 是否成功，成功为201，失败为400
-        return JsonResponse({
-            'code': code,
-            'data': data
-        }, status=code)
 
     if request.method == 'POST':
 
@@ -142,13 +137,8 @@ def logOut(request):
 # id，num，id表示当前用户id，num表示目前显示给用户的任务的数字，默认为0，之后可以使用后端getNum传给前端的num
 # 每次传输的任务数量为 本次返回的getNum-本次传入的num
 
-def userShow(request):
 
-    def gen_response(code: int, data: str): # 返回展示结果，400表示返回失败，否则表示本次获取的任务数量
-        return JsonResponse({
-            'code': code,
-            'data': data
-        }, status=code)
+def userShow(request):
 
     if request.method == 'GET':
 
@@ -197,12 +187,6 @@ def userShow(request):
 # 其中user_id为当前答题用户，用于统计其用户信息，如score，mission_id为当前任务的id，表示目前用户回答的任务的id，ans为用户的答案，目前仅支持判断题
 
 def missionShow(request):
-    
-    def gen_response(code: int, data: str): # code为400时表示出错，如果返回201表示答案提交无误(POST)，否则返回的是getNum，表示当前题号(GET)
-        return JsonResponse({
-            'code': code,
-            'data': data
-        }, status=code)
 
     if request.method == 'GET':
 
@@ -232,7 +216,6 @@ def missionShow(request):
         if Mission.objects.get(id).question_form == "judgement": # 题目型式为判断题的情况
             return gen_response(getNum, {
                 'word': ret.word,
-                'image': ret.image
             })
 
         # 题目为选择题型式之后实现
@@ -309,12 +292,6 @@ def missionShow(request):
 
 def upload(request):
 
-    def gen_response(code: int, data: str): # code为400表示上传失败，为201表示上传成功
-        return JsonResponse({
-            'code': code,
-            'data': data
-        }, status=code)
-
     if request.method == 'POST':
 
         try:
@@ -331,11 +308,12 @@ def upload(request):
         if not question_num_.isdigit() or name == '' or question_form == '' or not user_id_.isdigit() or not total_.isdigit():
             return gen_response(400, "Upload Contains Error")
         question_num = int(question_num_)
-        user_id = user_id_
-        total = total_
+        user_id = int(user_id_)
+        total = int(total_)
 
         try:
-            mission = Mission(name=name, question_form=question_form, question_num=question_num, total=total, user=Users.objects.get(user_id))
+            mission = Mission(name=name, question_form=question_form, question_num=question_num, total=total,
+                              user=Users.objects.filter(pk=user_id).first())
             mission.full_clean()
             mission.save()
         except ValidationError:
@@ -351,9 +329,9 @@ def upload(request):
 
         if mission.question_form == "judgement":
             for i in question_list:
-                contains = i['contains'] if contains in i else ''
-                ans = i['ans'] if ans in i else ''
-                if contains=='':
+                contains = i['contains'] if 'contains' in i else ''
+                ans = i['ans'] if 'ans' in i else ''
+                if contains == '':
                     return gen_response(400, "Question Contains is Null")
                 try:
                     question = Question(word=contains, mission=mission)
@@ -368,4 +346,3 @@ def upload(request):
                 except ValidationError:
                     return gen_response(400, "Quetion Form Error")
             return gen_response(201, "Judgement Upload Success")
-

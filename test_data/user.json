@@ -1,0 +1,47 @@
+[
+  {"model": "absanno_app.users",
+  "pk": 1,
+  "fields": {
+    "name": "songchenyang",
+    "password": "woshisongchenyang",
+    "score": 0, "weight": 100, "fin_num": 0, "is_banned": 0,
+    "tag_science": 0, "tag_art": 0, "tag_sports": 0, "tag_literature": 0,
+    "tag_food": 0, "tag_music": 0, "tag_game": 0, "tag_daily": 0, "tag_others": 0}
+  },
+  {"model": "absanno_app.users",
+  "pk": 2,
+  "fields": {
+    "name": "wangjunwei",
+    "password": "woshiwangjunwei",
+    "score": 0, "weight": 100, "fin_num": 0, "is_banned": 0,
+    "tag_science": 0, "tag_art": 0, "tag_sports": 0, "tag_literature": 0,
+    "tag_food": 0, "tag_music": 0, "tag_game": 0, "tag_daily": 0, "tag_others": 0}
+  },
+  {"model": "absanno_app.users",
+  "pk": 3,
+  "fields": {
+    "name": "zhangyizhuo",
+    "password": "woshizhangyizhuo",
+    "score": 0, "weight": 100, "fin_num": 0, "is_banned": 0,
+    "tag_science": 0, "tag_art": 0, "tag_sports": 0, "tag_literature": 0,
+    "tag_food": 0, "tag_music": 0, "tag_game": 0, "tag_daily": 0, "tag_others": 0}
+  },
+  {"model": "absanno_app.users",
+  "pk": 4,
+  "fields": {
+    "name": "xieyuqing",
+    "password": "woshixieyuqing",
+    "score": 0, "weight": 100, "fin_num": 0, "is_banned": 0,
+    "tag_science": 0, "tag_art": 0, "tag_sports": 0, "tag_literature": 0,
+    "tag_food": 0, "tag_music": 0, "tag_game": 0, "tag_daily": 0, "tag_others": 0}
+  },
+  {"model": "absanno_app.users",
+  "pk": 5,
+  "fields": {
+    "name": "luojingjia",
+    "password": "woshiluojingjia",
+    "score": 0, "weight": 100, "fin_num": 0, "is_banned": 0,
+    "tag_science": 0, "tag_art": 0, "tag_sports": 0, "tag_literature": 0,
+    "tag_food": 0, "tag_music": 0, "tag_game": 0, "tag_daily": 0, "tag_others": 0}
+  }
+]
