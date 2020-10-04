@@ -204,7 +204,7 @@ def missionShow(request):
             return gen_response(400, "ID Error")
         if num<0 or num>=len(Mission.objects.get(id).father_mission.all()):
             return gen_response(400, "Num Error")
-        if step != -1 and step != 1:
+        if step != -1 and step != 1 and step != 0:
             return gen_response(400, "Step Error")
 
         getNum = num+step
