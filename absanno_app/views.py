@@ -3,6 +3,7 @@ from django.http import JsonResponse, HttpResponse
 import json
 from .models import Users, Mission, Question, Chosen_ans, History
 from django.core.exceptions import ValidationError
+from django.db.models import Q
 
 
 def hello_world(request):
@@ -160,10 +161,11 @@ def userShow(request):
         # TODO
 
         mission_list = Mission.objects.all()
-        showNum = 20  # 设计一次更新获得的任务数
+        showNum = 12  # 设计一次更新获得的任务数
         getNum = min(num + showNum, len(mission_list))  # 本次更新获得的任务数
 
-        return gen_response(201, {'ret': getNum} +
+        return gen_response(201, {'ret': getNum,
+                            "question_list":
                             [
                                 {
                                     'id': ret.id,
@@ -172,8 +174,8 @@ def userShow(request):
                                     'questionNum': ret.question_num,
                                     'questionForm': ret.question_form
                                 }
-                                for ret in Mission.objects.filter(to_ans=1).order_by('id')[num: getNum]
-                            ]
+                                for ret in Mission.objects.filter(Q(to_ans=1) & ~Q(user_id=id)).order_by('id')[num: getNum]
+                            ]}
                             )
 
 
