@@ -8,6 +8,7 @@ from django.core.exceptions import ValidationError
 def hello_world(request):
     return HttpResponse("Hello Absanno!")
 
+
 # 有关用户的登录与注册
 # request.body为json
 # 其中内容为：
@@ -25,7 +26,6 @@ def gen_response(code: int, data: object):  # 是否成功，成功为201，失�
 
 
 def logIn(request):
-
     if request.method == 'POST':
 
         try:
@@ -37,7 +37,7 @@ def logIn(request):
         name = js['name'] if 'name' in js else ''
         password = js['password'] if 'password' in js else ''
         method = js['method'] if 'method' in js else ''
-        #email = js['email'] if 'email' in js else ''
+        # email = js['email'] if 'email' in js else ''
 
         # 安全性验证
         # TODO
@@ -54,16 +54,15 @@ def logIn(request):
             if user.is_banned == 1:
                 return gen_response(400, "User Is Banned")
             return gen_response(201, {
-                    'id': user.id,
-                    'name': user.name
-                }
-            )
+                'id': user.id,
+                'name': user.name
+            }
+                                )
 
     return gen_response(400, "Log In Error")
 
 
 def signIn(request):
-
     if request.method == 'POST':
 
         try:
@@ -91,7 +90,7 @@ def signIn(request):
             gen_user = Users.objects.filter(name=name).first()
             if gen_user:
                 return gen_response(400, "User Name Has Existed")
-            #user = Users(name=name, password=password, email=email)
+            # user = Users(name=name, password=password, email=email)
             user = Users(name=name, password=password)
             try:
                 user.full_clean()
@@ -101,14 +100,13 @@ def signIn(request):
             return gen_response(201, {
                 'id': user.id,
                 'name': user.name
-                }
-            )
+            }
+                                )
 
     return gen_response(400, "Sign In Error")
 
 
 def logOut(request):
-
     if request.method == 'POST':
 
         try:
@@ -130,6 +128,7 @@ def logOut(request):
 
     return gen_response(400, "Log Out Error")
 
+
 # 每次前端问题广场需要申请一次获取问题列表GET，然后获得问题
 # 包括第一次进入问题广场
 # request.body为json
@@ -139,7 +138,6 @@ def logOut(request):
 
 
 def userShow(request):
-
     if request.method == 'GET':
 
         # 安全性验证
@@ -148,20 +146,22 @@ def userShow(request):
         id_ = request.GET.get('id')
         num_ = request.GET.get('num')
 
-        if not id_.isdigit() or not num_.isdigit():
-            return gen_response(400, "ID or Num Is Not Digit")
+        if not id_.isdigit():
+            return gen_response(400, "ID Is Not Digit")
+        if not num_.isdigit():
+            return gen_response(400, "Num Is Not Digit")
         id, num = int(id_), int(num_)
-        if id<0 or id>=len(Users.objects.all()):
+        if id < 0 or id >= len(Users.objects.all()):
             return gen_response(400, "ID Error")
-        if num<0 or num>=len(Mission.objects.filter(to_ans=1)):
+        if num < 0 or num >= len(Mission.objects.filter(to_ans=1)):
             return gen_response(400, "Num Error")
 
         # 参考id获取用户画像，进而实现分发算法，目前使用id来进行排序
         # TODO
 
         mission_list = Mission.objects.all()
-        showNum = 20 # 设计一次更新获得的任务数
-        getNum = min(num+showNum, len(mission_list)) # 本次更新获得的任务数
+        showNum = 20  # 设计一次更新获得的任务数
+        getNum = min(num + showNum, len(mission_list))  # 本次更新获得的任务数
 
         return gen_response(getNum, [
             {
@@ -171,8 +171,9 @@ def userShow(request):
                 'questionNum': ret.question_num,
                 'questionForm': ret.question_form
             }
-            for ret in Mission.objects.filter(to_ans=1).order_by('id')[num, getNum]
+            for ret in Mission.objects.filter(to_ans=1).order_by('id')[num : getNum]
         ])
+
 
 # 打开任务后存在GET和POST两种方式
 
@@ -187,7 +188,6 @@ def userShow(request):
 # 其中user_id为当前答题用户，用于统计其用户信息，如score，mission_id为当前任务的id，表示目前用户回答的任务的id，ans为用户的答案，目前仅支持判断题
 
 def missionShow(request):
-
     if request.method == 'GET':
 
         # 安全性验证
@@ -199,21 +199,23 @@ def missionShow(request):
 
         if not id_.isdigit() or num_.isdigit() or not step_.isdigit():
             return gen_response(400, "Not Digit Error")
-        id = int(id_); num = int(num_); step = int(step_)
-        if id<0 or id>=len(Mission.objects.all()):
+        id = int(id_);
+        num = int(num_);
+        step = int(step_)
+        if id < 0 or id >= len(Mission.objects.all()):
             return gen_response(400, "ID Error")
-        if num<0 or num>=len(Mission.objects.get(id).father_mission.all()):
+        if num < 0 or num >= len(Mission.objects.get(id).father_mission.all()):
             return gen_response(400, "Num Error")
         if step != -1 and step != 1 and step != 0:
             return gen_response(400, "Step Error")
 
-        getNum = num+step
-        if getNum<0 or getNum>=len(Mission.objects.get(id).father_mission.all()):
+        getNum = num + step
+        if getNum < 0 or getNum >= len(Mission.objects.get(id).father_mission.all()):
             return gen_response(400, "Runtime Error")
 
         ret = Mission.objects.get(id).father_mission.all().order_by(id)[getNum]
 
-        if Mission.objects.get(id).question_form == "judgement": # 题目型式为判断题的情况
+        if Mission.objects.get(id).question_form == "judgement":  # 题目型式为判断题的情况
             return gen_response(getNum, {
                 'word': ret.word,
             })
@@ -240,18 +242,19 @@ def missionShow(request):
 
         if not user_id_.isdigit() or not mission_id_.isdigit() or not isinstance(ans_list, list):
             return gen_response(400, "Not Digit Or Not List Error")
-        
-        user_id = int(user_id_); mission_id = int(mission_id_)
-        if user_id<0 or user_id>=len(Users.objects.all()):
+
+        user_id = int(user_id_);
+        mission_id = int(mission_id_)
+        if user_id < 0 or user_id >= len(Users.objects.all()):
             return gen_response(400, "User ID Error")
-        if mission_id<0 or mission_id>=len(Mission.objects.all()):
+        if mission_id < 0 or mission_id >= len(Mission.objects.all()):
             return gen_response(400, "Mission ID Error")
 
         user = Users.objects.get(user_id)
         mission = Mission.objects.get(mission_id)
         if len(ans_list) != len(mission.father_mission.all()):
             return gen_response(400, "Ans List Error")
-        
+
         # 开始结算
         # 判断题
         if mission.question_form == "judgement":
@@ -259,7 +262,8 @@ def missionShow(request):
             user.fin_num += 1
             flag = True
             for i in range(0, len(ans_list)):
-                if mission.father_mission.all().order_by(id)[i].pre_ans != "" and mission.father_mission.all().order_by(id)[i].pre_ans != ans_list[i]:
+                if mission.father_mission.all().order_by(id)[i].pre_ans != "" and \
+                        mission.father_mission.all().order_by(id)[i].pre_ans != ans_list[i]:
                     user.score -= 5
                     flag = False
             if flag:
@@ -275,7 +279,7 @@ def missionShow(request):
             else:
                 user.weight -= 10
                 user.score -= len(ans_list)
-            if user.weight<=0:
+            if user.weight <= 0:
                 user.is_banned = 1
 
             history = History(user=user, mission=mission)
@@ -288,10 +292,10 @@ def missionShow(request):
 
         return gen_response(201, "Answer Pushed")
 
+
 # upload关于上传任务
 
 def upload(request):
-
     if request.method == 'POST':
 
         try:
