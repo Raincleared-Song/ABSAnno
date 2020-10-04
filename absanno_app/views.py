@@ -351,8 +351,8 @@ def upload(request):
 
         if mission.question_form == "judgement":
             for i in question_list:
-                contains = i['contains'] if contains in i else ''
-                ans = i['ans'] if ans in i else ''
+                contains = i['contains'] if 'contains' in i else ''
+                ans = i['ans'] if 'ans' in i else ''
                 if contains=='':
                     return gen_response(400, "Question Contains is Null")
                 try:
