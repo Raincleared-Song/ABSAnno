@@ -163,16 +163,18 @@ def userShow(request):
         showNum = 20  # 设计一次更新获得的任务数
         getNum = min(num + showNum, len(mission_list))  # 本次更新获得的任务数
 
-        return gen_response(getNum, [
-            {
-                'id': ret.id,
-                'name': ret.name,
-                'user': ret.user.name,
-                'questionNum': ret.question_num,
-                'questionForm': ret.question_form
-            }
-            for ret in Mission.objects.filter(to_ans=1).order_by('id')[num : getNum]
-        ])
+        return gen_response(201, {'ret': getNum} +
+                            [
+                                {
+                                    'id': ret.id,
+                                    'name': ret.name,
+                                    'user': ret.user.name,
+                                    'questionNum': ret.question_num,
+                                    'questionForm': ret.question_form
+                                }
+                                for ret in Mission.objects.filter(to_ans=1).order_by('id')[num: getNum]
+                            ]
+                            )
 
 
 # 打开任务后存在GET和POST两种方式
@@ -216,7 +218,8 @@ def missionShow(request):
         ret = Mission.objects.get(id).father_mission.all().order_by(id)[getNum]
 
         if Mission.objects.get(id).question_form == "judgement":  # 题目型式为判断题的情况
-            return gen_response(getNum, {
+            return gen_response(201, {
+                'ret': getNum,
                 'word': ret.word,
             })
 
