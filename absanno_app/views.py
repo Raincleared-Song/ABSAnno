@@ -201,7 +201,7 @@ def missionShow(request):
         num_ = request.GET.get('num')
         step_ = request.GET.get('step')
 
-        if not id_.isdigit() or num_.isdigit() or not step_.isdigit():
+        if not id_.isdigit() or not num_.isdigit() or not step_.isdigit():
             return gen_response(400, "Not Digit Error")
         id = int(id_);
         num = int(num_);
