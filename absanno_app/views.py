@@ -206,20 +206,20 @@ def missionShow(request):
         id = int(id_);
         num = int(num_);
         step = int(step_)
-        if id < 0 or id >= len(Mission.objects.all()):
+        if id < 1 or id >= len(Mission.objects.all()):
             return gen_response(400, "ID Error")
-        if num < 0 or num >= len(Mission.objects.get(id).father_mission.all()):
+        if num < 0 or num >= len(Mission.objects.get(id=id).father_mission.all()):
             return gen_response(400, "Num Error")
         if step != -1 and step != 1 and step != 0:
             return gen_response(400, "Step Error")
 
         getNum = num + step
-        if getNum < 0 or getNum >= len(Mission.objects.get(id).father_mission.all()):
+        if getNum < 0 or getNum >= len(Mission.objects.get(id=id).father_mission.all()):
             return gen_response(400, "Runtime Error")
 
-        ret = Mission.objects.get(id).father_mission.all().order_by(id)[getNum]
+        ret = Mission.objects.get(id=id).father_mission.all().order_by('id')[getNum]
 
-        if Mission.objects.get(id).question_form == "judgement":  # 题目型式为判断题的情况
+        if Mission.objects.get(id=id).question_form == "judgement":  # 题目型式为判断题的情况
             return gen_response(201, {
                 'ret': getNum,
                 'word': ret.word,
@@ -255,8 +255,8 @@ def missionShow(request):
         if mission_id < 0 or mission_id >= len(Mission.objects.all()):
             return gen_response(400, "Mission ID Error")
 
-        user = Users.objects.get(user_id)
-        mission = Mission.objects.get(mission_id)
+        user = Users.objects.get(id=user_id)
+        mission = Mission.objects.get(id=mission_id)
         if len(ans_list) != len(mission.father_mission.all()):
             return gen_response(400, "Ans List Error")
 
@@ -267,17 +267,17 @@ def missionShow(request):
             user.fin_num += 1
             flag = True
             for i in range(0, len(ans_list)):
-                if mission.father_mission.all().order_by(id)[i].pre_ans != "" and \
-                        mission.father_mission.all().order_by(id)[i].pre_ans != ans_list[i]:
+                if mission.father_mission.all().order_by('id')[i].pre_ans != "" and \
+                        mission.father_mission.all().order_by('id')[i].pre_ans != ans_list[i]:
                     user.score -= 5
                     flag = False
             if flag:
                 user.weight += 1
                 for i in range(0, len(ans_list)):
                     if ans_list[i] == 'T':
-                        mission.father_mission.all().order_by(id)[i].T_num += 1
+                        mission.father_mission.all().order_by('id')[i].T_num += 1
                     elif ans_list[i] == 'F':
-                        mission.father_mission.all().order_by(id)[i].F_num += 1
+                        mission.father_mission.all().order_by('id')[i].F_num += 1
                 mission.now_num += 1
                 if mission.now_num >= mission.total:
                     mission.to_ans = 0
