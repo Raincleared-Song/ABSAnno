@@ -380,8 +380,10 @@ def userShow(request):
         if method == 'user':
             gen_response(201, {
                 'id': ret.id,
+                'name': ret.name,
                 'score': ret.score,
-                'weight': ret.weight
+                'weight': ret.weight,
+                'num': ret.fin_num
             })
         elif method == 'mission':
             gen_response(201, {
@@ -392,6 +394,7 @@ def userShow(request):
                             'id': mission_ret.id,
                             'name': mission_ret.name,
                             'total': mission_ret.total,
+                            'num': mission_ret.now_num,
                             'question_num': mission_ret.question_num,
                             'question_form': mission_ret.question_form
                         }
