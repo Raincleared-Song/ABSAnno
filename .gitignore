@@ -1,4 +1,5 @@
 /.idea
+/data
 
 db.sqlite3
 dst.json
