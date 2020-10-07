@@ -165,17 +165,19 @@ def userShow(request):
         getNum = min(num + showNum, len(mission_list))  # 本次更新获得的任务数
 
         return gen_response(201, {'ret': getNum,
-                            "question_list":
-                            [
-                                {
-                                    'id': ret.id,
-                                    'name': ret.name,
-                                    'user': ret.user.name,
-                                    'questionNum': ret.question_num,
-                                    'questionForm': ret.question_form
-                                }
-                                for ret in Mission.objects.filter(Q(to_ans=1) & ~Q(user_id=id)).order_by('id')[num: getNum]
-                            ]}
+                                  "question_list":
+                                      [
+                                          {
+                                              'id': ret.id,
+                                              'name': ret.name,
+                                              'user': ret.user.name,
+                                              'questionNum': ret.question_num,
+                                              'questionForm': ret.question_form
+                                          }
+                                          for ret in
+                                          Mission.objects.filter(Q(to_ans=1) & ~Q(user_id=id)).order_by('id')[
+                                          num: getNum]
+                                      ]}
                             )
 
 
@@ -274,10 +276,15 @@ def missionShow(request):
             if flag:
                 user.weight += 1
                 for i in range(0, len(ans_list)):
+                    now_question = mission.father_mission.all().order_by('id')[i]
                     if ans_list[i] == 'T':
-                        mission.father_mission.all().order_by('id')[i].T_num += 1
+                        now_question.T_num += 1
                     elif ans_list[i] == 'F':
-                        mission.father_mission.all().order_by('id')[i].F_num += 1
+                        now_question.F_num += 1
+                    if now_question.F_num > now_question.T_num:
+                        now_question.matched_ans = 0
+                    else:
+                        now_question.matched_ans = 1
                 mission.now_num += 1
                 if mission.now_num >= mission.total:
                     mission.to_ans = 0
@@ -355,3 +362,101 @@ def upload(request):
                 except ValidationError:
                     return gen_response(400, "Quetion Form Error")
             return gen_response(201, "Judgement Upload Success")
+
+
+def userShow(request):
+    if request.method == 'GET':
+
+        id_ = request.GET.get('id') if 'id' in request.GET else ''
+        if not id_.isdigit():
+            return gen_response(400, "ID Is Not Digit")
+        id = int(id_)
+        if id < 1 or id >= len(Users.objects.all()):
+            return gen_response(400, "ID Is Illegal")
+        method = request.GET.get('method') if 'method' in request.GET else ''
+
+        ret = Users.objects.get(id=id)
+
+        if method == 'user':
+            gen_response(201, {
+                'id': ret.id,
+                'score': ret.score,
+                'weight': ret.weight
+            })
+        elif method == 'mission':
+            gen_response(201, {
+                'total_num': len(ret.promulgator.all()),
+                'mission_list':
+                    [
+                        {
+                            'id': mission_ret.id,
+                            'name': mission_ret.name,
+                            'total': mission_ret.total,
+                            'question_num': mission_ret.question_num,
+                            'question_form': mission_ret.question_form
+                        }
+                        for mission_ret in ret.promulgator.all().order_by('id')
+                    ]
+            })
+        elif method == 'history':
+            gen_response(201, {
+                'total_num': len(ret.history.all()),
+                'mission_list':
+                    [
+                        {
+                            'id': mission_ret.mission.id,
+                            'name': mission_ret.mission.name,
+                            'user': mission_ret.mission.user.name,
+                            'question_num': mission_ret.mission.question_num,
+                            'question_form': mission_ret.mission.question_form,
+                            'ret_time': mission_ret.pub_time
+                        }
+                        for mission_ret in ret.history.all().order_by('pub_time')
+                    ]
+            })
+        else:
+            return gen_response(400, "Method Is Illegal")
+
+
+
+def showMyMission(request):
+    if request.method == 'GET':
+
+        user_id_ = request.GET.get('user_id') if 'user_id' in request.GET else ''
+        mission_id_ = request.GET.get('mission_id') if 'mission_id' in request.GET else ''
+
+        if not user_id_.isdigit():
+            return gen_response(400, "User_ID is not digit")
+        if not mission_id_.isdigit():
+            return gen_response(400, "Mission_ID is not digit")
+        user_id, mission_id = int(user_id_), int(mission_id_)
+
+        if user_id < 1 or user_id >= len(Users.objects.all()):
+            return gen_response(400, "User_ID is Illegal")
+        if mission_id < 1 or mission_id >= len(Mission.objects.all()):
+            return gen_response(400, "Mission_ID is Illegal")
+        if user_id != Mission.objects.get(id=mission_id).user.id:
+            return gen_response(400, "The ID Is Wrong")
+        mission = Mission.objects.get(id=mission_id)
+
+        # 判断题模式
+
+        if mission.question_form == "judgement":
+            return gen_response(201, {
+                'mission_name': mission.name,
+                'question_form': mission.question_form,
+                'question_num': mission.question_num,
+                'total': mission.total,
+                'now_num': mission.now_num,
+                'question_list':
+                    [
+                        {
+                            'word': ret.word,
+                            'T_num': ret.T_num,
+                            'F_num': ret.F_num,
+                            'pre_ans': ret.pre_ans,
+                            'ans': ret.matched_ans
+                        }
+                        for ret in mission.father_mission.all()
+                    ]
+            })

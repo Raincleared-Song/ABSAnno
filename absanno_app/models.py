@@ -1,4 +1,6 @@
 from django.db import models
+import datetime
+import django.utils.timezone as timezone
 
 # Create your models here.
 
@@ -65,6 +67,7 @@ class Question(models.Model): # 判断题和选择题均使用Question存储
     T_num = models.IntegerField(default=0) # 正选被选择的次数
     # F_word = models.CharField(default="否") # 对于反选的文字描述
     F_num = models.IntegerField(default=0) # 反选被选择的次数
+    matched_ans = models.IntegerField(default=1) # 被标注的答案
     pre_ans = models.CharField(default="", max_length=1, blank=True) # 预设答案，分别有""，"T"，"F"三种存储结果，分别表示无预设答案，预设答案正选，预设答案反选
 
     # 选择题内容
@@ -88,3 +91,4 @@ class Chosen_ans(models.Model):
 class History(models.Model):
     user = models.ForeignKey(Users, on_delete=models.CASCADE, related_name="history")
     mission = models.ForeignKey(Mission, on_delete=models.CASCADE, related_name="ans_history")
+    pub_time = models.DateTimeField(default=timezone.now)
