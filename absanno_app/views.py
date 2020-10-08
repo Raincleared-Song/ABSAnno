@@ -364,7 +364,7 @@ def upload(request):
             return gen_response(201, "Judgement Upload Success")
 
 
-def userShow(request):
+def aboutMe(request):
     if request.method == 'GET':
 
         id_ = request.GET.get('id') if 'id' in request.GET else ''

@@ -10,7 +10,7 @@ urlpatterns = [
     path('square', views.userShow, name='square_show'),
     path('mission', views.missionShow, name='mission_show'),
     path('upload', views.upload, name='upload_mission'),
-    path('user', views.userShow, name='user_show'),
+    path('user', views.aboutMe, name='user_main'),
     path('mymission', views.showMyMission, name='my_mission')
 
 ]
