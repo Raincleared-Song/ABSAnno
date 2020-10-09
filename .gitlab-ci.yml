@@ -31,11 +31,12 @@ unit-test:
   extends: .test
   script:
     - ls
-#    - coverage run -m pytest --junit-xml=xunit-reports/xunit-result.xml
-#    - BACKEND_RET=$?
-#    - coverage xml -o coverage-reports/coverage.xml
-#    - coverage report
-#    - exit $BACKEND_RET
+    - coverage run --source '.' manage.py test
+    - BACKEND_RET=$?
+    - coverage xml -o coverage-reports/coverage.xml
+    - coverage report
+    - coverage html -d coverage-reports
+    - exit $BACKEND_RET
 
   after_script:
     - SUFFIX=$RANDOM
@@ -49,9 +50,10 @@ style-test:
 
   script:
     - ls
-#    - pylint --load-plugins=pylint_django absanno absanno_app
-#    - BACKEND_RET=$?
-#    - exit $BACKEND_RET
+    - pylint --load-plugins=pylint_django absanno absanno_app
+    - pylint --load-plugins=pylint_django absanno absanno_app > coverage-reports/pylint.txt
+    - BACKEND_RET=$?
+    - exit $BACKEND_RET
 
 deploy:
   stage: deploy

@@ -1,7 +1,6 @@
-from django.shortcuts import render
 from django.http import JsonResponse, HttpResponse
 import json
-from .models import Users, Mission, Question, Chosen_ans, History
+from .models import Users, Mission, Question, History
 from django.core.exceptions import ValidationError
 from django.db.models import Q
 
@@ -26,7 +25,7 @@ def gen_response(code: int, data: object):  # 是否成功，成功为201，失�
     }, status=code)
 
 
-def logIn(request):
+def log_in(request):
     if request.method == 'POST':
 
         try:
@@ -63,7 +62,7 @@ def logIn(request):
     return gen_response(400, "Log In Error")
 
 
-def signIn(request):
+def sign_in(request):
     if request.method == 'POST':
 
         try:
@@ -81,7 +80,7 @@ def signIn(request):
         # TODO
 
         if not name or not password:
-            return gen_response(400, "Request Bosy Error")
+            return gen_response(400, "Request Body Error")
 
         if method == "SignIn":
             if '\t' in name or '\n' in name or ' ' in name or ',' in name or '.' in name:  # 禁止名字中特定字符
@@ -107,7 +106,7 @@ def signIn(request):
     return gen_response(400, "Sign In Error")
 
 
-def logOut(request):
+def log_out(request):
     if request.method == 'POST':
 
         try:
@@ -138,7 +137,7 @@ def logOut(request):
 # 每次传输的任务数量为 本次返回的getNum-本次传入的num
 
 
-def userShow(request):
+def user_show(request):
     if request.method == 'GET':
 
         # 安全性验证
@@ -152,7 +151,7 @@ def userShow(request):
         if not num_.isdigit():
             return gen_response(400, "Num Is Not Digit")
         id, num = int(id_), int(num_)
-        if id < 0 or id >= len(Users.objects.all()):
+        if id <= 0 or id > len(Users.objects.all()):
             return gen_response(400, "ID Error")
         if num < 0 or num >= len(Mission.objects.filter(to_ans=1)):
             return gen_response(400, "Num Error")
@@ -174,11 +173,11 @@ def userShow(request):
                                               'questionNum': ret.question_num,
                                               'questionForm': ret.question_form
                                           }
-                                          for ret in
-                                          Mission.objects.filter(Q(to_ans=1) & ~Q(user_id=id)).order_by('id')[
-                                          num: getNum]
+                                          for ret in Mission.objects.filter(
+                                          Q(to_ans=1) & ~Q(user_id=id)).order_by('id')[num: getNum]
                                       ]}
                             )
+    return gen_response(400, "User Show Error")
 
 
 # 打开任务后存在GET和POST两种方式
@@ -193,7 +192,7 @@ def userShow(request):
 # user_id, mission_id, [{ans}]
 # 其中user_id为当前答题用户，用于统计其用户信息，如score，mission_id为当前任务的id，表示目前用户回答的任务的id，ans为用户的答案，目前仅支持判断题
 
-def missionShow(request):
+def mission_show(request):
     if request.method == 'GET':
 
         # 安全性验证
@@ -208,7 +207,7 @@ def missionShow(request):
         id = int(id_)
         num = int(num_)
         step = int(step_)
-        if id < 1 or id >= len(Mission.objects.all()):
+        if id <= 0 or id > len(Mission.objects.all()):
             return gen_response(400, "ID Error")
         if num < 0 or num >= len(Mission.objects.get(id=id).father_mission.all()):
             return gen_response(400, "Num Error")
@@ -250,11 +249,11 @@ def missionShow(request):
         if not user_id_.isdigit() or not mission_id_.isdigit() or not isinstance(ans_list, list):
             return gen_response(400, "Not Digit Or Not List Error")
 
-        user_id = int(user_id_);
+        user_id = int(user_id_)
         mission_id = int(mission_id_)
-        if user_id < 0 or user_id >= len(Users.objects.all()):
+        if user_id <= 0 or user_id > len(Users.objects.all()):
             return gen_response(400, "User ID Error")
-        if mission_id < 0 or mission_id >= len(Mission.objects.all()):
+        if mission_id <= 0 or mission_id > len(Mission.objects.all()):
             return gen_response(400, "Mission ID Error")
 
         user = Users.objects.get(id=user_id)
@@ -303,6 +302,7 @@ def missionShow(request):
         # 之后需要优化weight等内容
 
         return gen_response(201, "Answer Pushed")
+    return gen_response(400, 'Mission Show Error')
 
 
 # upload关于上传任务
@@ -360,25 +360,27 @@ def upload(request):
                     question.full_clean()
                     question.save()
                 except ValidationError:
-                    return gen_response(400, "Quetion Form Error")
+                    return gen_response(400, "Question Form Error")
             return gen_response(201, "Judgement Upload Success")
 
+    return gen_response(400, "Upload Error")
 
-def aboutMe(request):
+
+def about_me(request):
     if request.method == 'GET':
 
         id_ = request.GET.get('id') if 'id' in request.GET else ''
         if not id_.isdigit():
             return gen_response(400, "ID Is Not Digit")
         id = int(id_)
-        if id < 1 or id >= len(Users.objects.all()):
+        if id <= 0 or id > len(Users.objects.all()):
             return gen_response(400, "ID Is Illegal")
         method = request.GET.get('method') if 'method' in request.GET else ''
 
         ret = Users.objects.get(id=id)
 
         if method == 'user':
-            gen_response(201, {
+            return gen_response(201, {
                 'id': ret.id,
                 'name': ret.name,
                 'score': ret.score,
@@ -386,7 +388,7 @@ def aboutMe(request):
                 'num': ret.fin_num
             })
         elif method == 'mission':
-            gen_response(201, {
+            return gen_response(201, {
                 'total_num': len(ret.promulgator.all()),
                 'mission_list':
                     [
@@ -402,7 +404,7 @@ def aboutMe(request):
                     ]
             })
         elif method == 'history':
-            gen_response(201, {
+            return gen_response(201, {
                 'total_num': len(ret.history.all()),
                 'mission_list':
                     [
@@ -419,10 +421,10 @@ def aboutMe(request):
             })
         else:
             return gen_response(400, "Method Is Illegal")
+    return gen_response(400, "About Me Error")
 
 
-
-def showMyMission(request):
+def show_my_mission(request):
     if request.method == 'GET':
 
         user_id_ = request.GET.get('user_id') if 'user_id' in request.GET else ''
@@ -434,9 +436,9 @@ def showMyMission(request):
             return gen_response(400, "Mission_ID is not digit")
         user_id, mission_id = int(user_id_), int(mission_id_)
 
-        if user_id < 1 or user_id >= len(Users.objects.all()):
+        if user_id <= 0 or user_id > len(Users.objects.all()):
             return gen_response(400, "User_ID is Illegal")
-        if mission_id < 1 or mission_id >= len(Mission.objects.all()):
+        if mission_id <= 0 or mission_id > len(Mission.objects.all()):
             return gen_response(400, "Mission_ID is Illegal")
         if user_id != Mission.objects.get(id=mission_id).user.id:
             return gen_response(400, "The ID Is Wrong")
@@ -463,3 +465,4 @@ def showMyMission(request):
                         for ret in mission.father_mission.all()
                     ]
             })
+    return gen_response(400, "My Mission Error")
