@@ -236,15 +236,17 @@ class UnitTest(TestCase):
         param = "?id=1&num=0"
         res = self.client.get('/absanno/square' + param)
         self.assertEqual(res.status_code, 201)
-        self.assertEqual(res.json()['data'], str({'ret': 2, 'question_list':
-            [{'id': 2, 'name': 'task_test2', 'user': 'test_wang', 'questionNum': 3, 'questionForm': 'judgement'}]}))
+        self.assertEqual(res.json()['data'], str({'ret': 2, 'total': 1, 'question_list':
+            [{'id': 2, 'name': 'task_test2', 'user': 'test_wang',
+              'questionNum': 3, 'questionForm': 'judgement'}]}))
 
     def test_square_pos2(self):
         param = "?id=2&num=0"
         res = self.client.get('/absanno/square' + param)
         self.assertEqual(res.status_code, 201)
-        self.assertEqual(res.json()['data'], str({'ret': 2, 'question_list':
-            [{'id': 1, 'name': 'task_test', 'user': 'test', 'questionNum': 2, 'questionForm': 'judgement'}]}))
+        self.assertEqual(res.json()['data'], str({'ret': 2, 'total': 1, 'question_list':
+            [{'id': 1, 'name': 'task_test',
+              'user': 'test', 'questionNum': 2, 'questionForm': 'judgement'}]}))
 
     def test_square_neg_id_illegal(self):
         param = "?id=a&num=0"
@@ -280,7 +282,7 @@ class UnitTest(TestCase):
         param = "?id=1&num=0&step=1"
         res = self.client.get('/absanno/mission' + param)
         self.assertEqual(res.status_code, 201)
-        self.assertEqual(res.json()['data'], str({'ret': 1, 'word': 'title2'}))
+        self.assertEqual(res.json()['data'], str({'total': 2, 'ret': 1, 'word': 'title2'}))
 
     def test_mission_neg_param_illegal1(self):
         param = "?id=a&num=0&step=1"
