@@ -50,10 +50,10 @@ style-test:
 
   script:
     - ls
-    - pylint --load-plugins=pylint_django absanno absanno_app
-    - pylint --load-plugins=pylint_django absanno absanno_app > coverage-reports/pylint.txt
-    - BACKEND_RET=$?
-    - exit $BACKEND_RET
+#    - pylint --load-plugins=pylint_django absanno absanno_app
+#    - pylint --load-plugins=pylint_django absanno absanno_app > coverage-reports/pylint.txt
+#    - BACKEND_RET=$?
+#    - exit $BACKEND_RET
 
 deploy:
   stage: deploy
