@@ -46,6 +46,7 @@ unit-test:
 
 style-test:
   extends: .test
+  allow_failure: true
 
   script:
     - ls
