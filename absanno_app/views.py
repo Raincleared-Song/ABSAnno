@@ -164,6 +164,7 @@ def user_show(request):
         getNum = min(num + showNum, len(mission_list))  # 本次更新获得的任务数
 
         return gen_response(201, {'ret': getNum,
+                                  'total': len(Mission.objects.filter(Q(to_ans=1) & ~Q(user_id=id))),
                                   "question_list":
                                       [
                                           {
@@ -222,6 +223,7 @@ def mission_show(request):
 
         if Mission.objects.get(id=id).question_form == "judgement":  # 题目型式为判断题的情况
             return gen_response(201, {
+                'total': len(Mission.objects.get(id=id).father_mission.all()),
                 'ret': getNum,
                 'word': ret.word,
             })
