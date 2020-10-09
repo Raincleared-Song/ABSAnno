@@ -205,8 +205,8 @@ def missionShow(request):
 
         if not id_.isdigit() or not num_.isdigit() or not step_.isdigit():
             return gen_response(400, "Not Digit Error")
-        id = int(id_);
-        num = int(num_);
+        id = int(id_)
+        num = int(num_)
         step = int(step_)
         if id < 1 or id >= len(Mission.objects.all()):
             return gen_response(400, "ID Error")
