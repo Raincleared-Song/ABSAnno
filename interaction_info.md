@@ -51,6 +51,7 @@ zyztowjw：在用户界面我需要得到该用户的身份状态（管理员、
 
 ```json
         return gen_response(201, {'ret': getNum,
+                            'total': len(Mission.objects.filter(Q(to_ans=1) & ~Q(user_id=id))), # 当前任务总数
                             "question_list":
                             [
                                 {
@@ -92,6 +93,7 @@ zyztowjw：在用户界面我需要得到该用户的身份状态（管理员、
 ```json
         if Mission.objects.get(id).question_form == "judgement": # 题目型式为判断题的情况
             return gen_response(201, {
+                'total': len(Mission.objects.get(id=id).father_mission.all()), # 目前任务中题目总数
                 'ret': getNum,
                 'word': ret.word,
             })
