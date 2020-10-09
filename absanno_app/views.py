@@ -151,7 +151,7 @@ def user_show(request):
         if not num_.isdigit():
             return gen_response(400, "Num Is Not Digit")
         id, num = int(id_), int(num_)
-        if id <= 0 or id > len(Users.objects.all()):
+        if id < 0 or id > len(Users.objects.all()):
             return gen_response(400, "ID Error")
         if num < 0 or num >= len(Mission.objects.filter(to_ans=1)):
             return gen_response(400, "Num Error")
@@ -159,7 +159,7 @@ def user_show(request):
         # 参考id获取用户画像，进而实现分发算法，目前使用id来进行排序
         # TODO
 
-        mission_list = Mission.objects.all()
+        mission_list = Mission.objects.filter(Q(to_ans=1) & ~Q(user_id=id))
         showNum = 12  # 设计一次更新获得的任务数
         getNum = min(num + showNum, len(mission_list))  # 本次更新获得的任务数
 

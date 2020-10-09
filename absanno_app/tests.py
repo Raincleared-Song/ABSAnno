@@ -236,7 +236,7 @@ class UnitTest(TestCase):
         param = "?id=1&num=0"
         res = self.client.get('/absanno/square' + param)
         self.assertEqual(res.status_code, 201)
-        self.assertEqual(res.json()['data'], str({'ret': 2, 'total': 1, 'question_list':
+        self.assertEqual(res.json()['data'], str({'ret': 1, 'total': 1, 'question_list':
             [{'id': 2, 'name': 'task_test2', 'user': 'test_wang',
               'questionNum': 3, 'questionForm': 'judgement'}]}))
 
@@ -244,7 +244,7 @@ class UnitTest(TestCase):
         param = "?id=2&num=0"
         res = self.client.get('/absanno/square' + param)
         self.assertEqual(res.status_code, 201)
-        self.assertEqual(res.json()['data'], str({'ret': 2, 'total': 1, 'question_list':
+        self.assertEqual(res.json()['data'], str({'ret': 1, 'total': 1, 'question_list':
             [{'id': 1, 'name': 'task_test',
               'user': 'test', 'questionNum': 2, 'questionForm': 'judgement'}]}))
 
