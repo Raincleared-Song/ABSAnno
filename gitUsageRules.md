@@ -6,6 +6,40 @@ by zyz
 
 ### 所有的PUSH都是到远端的同名仓库！这样是最简洁的！
 
+## 当前环境整理
+
+方法1：在最近没有未commit的内容，未做大范围修改。直接删除本地所有内容，重新clone。
+
+```
+$ git clone git@gitlab.secoder.net:abstract/ABSanno-frontend.git // 对于前段而言
+```
+
+方法2：最近有未commit内容，并且`git branch -a`中出现了除了自己创建的分支以外的分支（或者其他各种乱七八糟的提示）。
+
+对于每一个这样的branch_name：
+
+```
+$ git checkout [branch_name]
+$ git branch --unset-upstream
+$ git push // 这里必然会提示你--set-upstream，这时照做，输入类似git push --set-upstream origin [branch_name]
+
+$ git checkout dev
+$ git branch --unset-upstream
+$ git push // 同样会出现--set-upstream，照做，输入'git push --set-upstream origin dev'
+$ git pull
+
+$ git checkout [branch_name]
+$ git merge dev --no-ff // 把dev的新内容merge进这个分支
+$ git push
+
+$ git checkout dev // 把当前分支merge进dev分支，之后删除这个特性分支
+$ git merge [branch_name]
+$ git branch -b [branch_name]
+$ git push origin --delete [branch_name]
+```
+
+
+
 ## DEV分支设置
 
 ```
@@ -34,6 +68,8 @@ $ git --set-upstream origin dev-xxx
 
 ## 工作流程（检验通过）
 
+**简单来说：在特性分支上工作，merge到dev分支时无--no-ff参数（因为特性分支生命周期停止）；当dev分支需要被merge到master上时（或者其他的merge），必须要有--no-ff参数。**
+
 完成上述建立分支并且和远程仓库连接。
 
 首先确认：
@@ -48,6 +84,7 @@ dev
 dev-xxx）
 // 可能没有dev-xxx分支，因为之前的特性分支可能已经结束了生命周期
 ```
+
 ### 每一次工作之前，必须走以下流程！
 
 ```
@@ -94,5 +131,4 @@ $ git checkout master
 $ git merge dev --no-ff
 $ git push
 ```
-
 
