@@ -2,12 +2,14 @@
 
 zyztowjw：在用户界面我需要得到该用户的身份状态（管理员、发布者or普通用户）
 
+# ！！！！任何向后端的请求都要带上TOKEN！！！！！
+
 # 更新：
 
 ### 广场页面分类搜索
 
 传送参数：
-```json
+```
 'id': id
 'token': token 
 'num': num
@@ -15,7 +17,7 @@ zyztowjw：在用户界面我需要得到该用户的身份状态（管理员、
 'theme': [string]（字符串列表，表示题目标签，比如食物/交通/etc，目前阶段应该不用，可以当作空列表）
 ```
 返回参数：同之前，一次12个。
-```json
+```
 'ret': int
 'total': int
 'question_list':[
@@ -27,14 +29,14 @@ zyztowjw：在用户界面我需要得到该用户的身份状态（管理员、
 ### 广场页面搜索
 
 传送参数：
-```json
+```
 'id': id
 'token': token
 'num': num
 'keyword':string
 ```
 返回参数：同之前，多于12个则一次返回12个。
-```json
+```
 'ret': int
 'total': int
 'question_list':[
@@ -44,13 +46,24 @@ zyztowjw：在用户界面我需要得到该用户的身份状态（管理员、
 
 ### 广场页面删除
 传送参数：
-```json
+```
 'user_id': int(user_id)
 'token': string(user_token)
 'question_id': int(要删除的题目id)
 ```
 返回参数：暂时感觉不需要额外的返回。
 ** 这之后前端将直接调用一次广场题目页面刷新 **
+
+### 登录 & 注册：
+返回参数：
+```
+'id': number
+'name': string
+'token': string
+```
+token一小时有效我觉得就行，每次登录/注册时产生一个新的值，任何向后端的访问都带上这个字段，后端检查无误后进行操作。
+另：token可以放在cookie里传过来。
+（来自xyq）
 
 # 有关用户的登录与注册
 
