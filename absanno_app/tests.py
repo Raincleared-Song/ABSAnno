@@ -152,6 +152,14 @@ class UnitTest(TestCase):
         self.assertEqual(res.status_code, 201)
         self.assertEqual(res.json()['data'], 'Log Out Finish With Token')
 
+    def test_logout_upload_pos(self):
+        self.mock_login()
+        self.client.post('/absanno/logout')  # logout
+        body = self.upload_pos_case
+        res = self.client.post('/absanno/upload', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'No Token Found in Cookie')
+
     def test_logout_neg_no_token(self):
         res = self.client.post('/absanno/logout')
         self.assertEqual(res.status_code, 201)
