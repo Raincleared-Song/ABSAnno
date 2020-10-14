@@ -60,9 +60,12 @@ zyztowjw：在用户界面我需要得到该用户的身份状态（管理员、
 'id': number
 'name': string
 'token': string
+'identity': number (0为普通用户，1为发布者，2为管理员)
 ```
 token一小时有效我觉得就行，每次登录/注册时产生一个新的值，任何向后端的访问都带上这个字段，后端检查无误后进行操作。
+
 另：token可以放在cookie里传过来。
+
 （来自xyq）
 
 # 有关用户的登录与注册
