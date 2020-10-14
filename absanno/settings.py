@@ -70,6 +70,10 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'absanno.wsgi.application'
 
+# session configuration
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # encoded session
+SESSION_COOKIE_NAME = "token"  # session cookie name
+SESSION_COOKIE_AGE = 3600  # expire for an hour
 
 # Database
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases

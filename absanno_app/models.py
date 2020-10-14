@@ -15,6 +15,7 @@ class Users(models.Model):
     # photo = models.ImageField(default="")  # 用户头像，存储图片所在地址，""表示默认头像
     fin_num = models.IntegerField(default=0)  # 已完成任务数量
     is_banned = models.IntegerField(default=0)  # 用户是否被封禁，如为0表示正常运行，如为1表示已被封禁，无法正常登录，需要向管理员申请解封
+    power = models.IntegerField(default=0)  # 用户权限，0 为普通用户，1 为发布者，2 为管理员
     # email = models.CharField(max_length=50)  # 用户邮箱，目前可能用不到，之后可以增加与用户邮箱的关联
     # 可以用于注册时对于用户的验证以及用户找回密码
 
