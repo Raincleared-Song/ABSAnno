@@ -9,13 +9,18 @@ def hello_world(request):
     return HttpResponse("Hello Absanno!")
 
 
-# 有关用户的登录与注册
-# request.body为json
-# 其中内容为：
-# name, password, method, email
-# name为必须，password在method为LogIn和SignIn时为必须，为LogOut时非必须
-# email留作扩展功能时期实现
-# 出错返回可以参考下面的代码
+def test(request):
+    response = HttpResponse("This view is reserved for test!")
+    response.set_cookie("token", "test")
+    return response
+
+
+def check_token(request):
+    if not request.COOKIES.get('token'):
+        return 400, "No Token Found in Cookie"
+    if 'is_login' not in request.session:
+        return 400, "Invalid Token or Have Not Login"
+    return 201, 'Valid'
 
 
 def gen_response(code: int, data: object):  # 是否成功，成功为201，失败为400
@@ -25,39 +30,48 @@ def gen_response(code: int, data: object):  # 是否成功，成功为201，失�
     }, status=code)
 
 
+# 有关用户的登录与注册
+# request.body为json
+# 其中内容为：
+# name, password
+# email留作扩展功能时期实现
+# 出错返回可以参考下面的代码
+
+
 def log_in(request):
     if request.method == 'POST':
 
         try:
-            message = request.body
-            js = json.loads(message)
+            js = json.loads(request.body)
         except json.decoder.JSONDecodeError:
             return gen_response(400, "Request Json Error")
 
         name = js['name'] if 'name' in js else ''
         password = js['password'] if 'password' in js else ''
-        method = js['method'] if 'method' in js else ''
         # email = js['email'] if 'email' in js else ''
 
         # 安全性验证
         # TODO
 
-        if name == '' or password == '':
+        if not name or not password:
             return gen_response(400, "Request Body Error")
 
-        if method == "LogIn":
-            user = Users.objects.filter(name=name).first()
-            if not user:
-                return gen_response(400, "This User Is Not Here")
-            if password != user.password:
-                return gen_response(400, "Password Is Error")
-            if user.is_banned == 1:
-                return gen_response(400, "User Is Banned")
-            return gen_response(201, {
-                'id': user.id,
-                'name': user.name
-            }
-                                )
+        user = Users.objects.filter(name=name).first()
+        if not user:
+            return gen_response(400, "This User Is Not Here")
+        if password != user.password:
+            return gen_response(400, "Password Is Error")
+        if user.is_banned == 1:
+            return gen_response(400, "User Is Banned")
+
+        request.session['user_id'] = user.id
+        request.session['is_login'] = True
+        request.session.save()
+
+        return gen_response(201, {
+            'name': user.name,
+            'power': user.power
+        })
 
     return gen_response(400, "Log In Error")
 
@@ -73,8 +87,7 @@ def sign_in(request):
 
         name = js['name'] if 'name' in js else ''
         password = js['password'] if 'password' in js else ''
-        method = js['method'] if 'method' in js else ''
-        email = js['email'] if 'email' in js else ''
+        # email = js['email'] if 'email' in js else ''
 
         # 安全性验证
         # TODO
@@ -82,26 +95,30 @@ def sign_in(request):
         if not name or not password:
             return gen_response(400, "Request Body Error")
 
-        if method == "SignIn":
-            if '\t' in name or '\n' in name or ' ' in name or ',' in name or '.' in name:  # 禁止名字中特定字符
-                return gen_response(400, "User Name Error")
-            if len(password) < 6 or len(password) > 20:
-                return gen_response(400, "Password Length Error")
-            gen_user = Users.objects.filter(name=name).first()
-            if gen_user:
-                return gen_response(400, "User Name Has Existed")
-            # user = Users(name=name, password=password, email=email)
-            user = Users(name=name, password=password)
-            try:
-                user.full_clean()
-                user.save()
-            except ValidationError:
-                return gen_response(400, "Sign In Form Error")
-            return gen_response(201, {
-                'id': user.id,
-                'name': user.name
-            }
-                                )
+        if '\t' in name or '\n' in name or ' ' in name or ',' in name or '.' in name:  # 禁止名字中特定字符
+            return gen_response(400, "User Name Error")
+        if len(password) < 6 or len(password) > 20:
+            return gen_response(400, "Password Length Error")
+        gen_user = Users.objects.filter(name=name).first()
+        if gen_user:
+            return gen_response(400, "User Name Has Existed")
+        # user = Users(name=name, password=password, email=email)
+        user = Users(name=name, password=password)
+
+        try:
+            user.full_clean()
+            user.save()
+        except ValidationError:
+            return gen_response(400, "Sign In Form Error")
+
+        request.session['user_id'] = user.id
+        request.session['is_login'] = True
+        request.session.save()
+
+        return gen_response(201, {
+            'name': user.name,
+            'power': user.power
+        })
 
     return gen_response(400, "Sign In Error")
 
@@ -109,22 +126,17 @@ def sign_in(request):
 def log_out(request):
     if request.method == 'POST':
 
-        try:
-            message = request.body
-            js = json.loads(message)
-        except json.decoder.JSONDecodeError:
-            return gen_response(400, "Request Json Error")
-
-        name = js['name'] if 'name' in js else ''
-        password = js['password'] if 'password' in js else ''
-        method = js['method'] if 'method' in js else ''
-        email = js['email'] if 'email' in js else ''
-
         # 安全性验证
         # TODO
 
-        if method == "LogOut":
-            return gen_response(201, "Log Out Finish")
+        code, data = check_token(request)
+        if code == 400:
+            return gen_response(201, "Log Out Finish Without Token")
+
+        if request.session['is_login']:
+            request.session['is_login'] = False
+        request.session.flush()  # remove the token
+        return gen_response(201, "Log Out Finish With Token")
 
     return gen_response(400, "Log Out Error")
 
@@ -133,7 +145,7 @@ def log_out(request):
 # 包括第一次进入问题广场
 # request.body为json
 # 其中内容为
-# id，num，id表示当前用户id，num表示目前显示给用户的任务的数字，默认为0，之后可以使用后端getNum传给前端的num
+# num，num表示目前显示给用户的任务的数字，默认为0，之后可以使用后端getNum传给前端的num
 # 每次传输的任务数量为 本次返回的getNum-本次传入的num
 
 
@@ -143,28 +155,28 @@ def user_show(request):
         # 安全性验证
         # TODO
 
-        id_ = request.GET.get('id')
+        user_id = request.session['user_id'] if check_token(request)[0] == 201 else 0
+
         num_ = request.GET.get('num')
 
-        if not id_.isdigit():
-            return gen_response(400, "ID Is Not Digit")
+        if not num_:
+            num_ = "0"
+
         if not num_.isdigit():
             return gen_response(400, "Num Is Not Digit")
-        id, num = int(id_), int(num_)
-        if id < 0 or id > len(Users.objects.all()):
-            return gen_response(400, "ID Error")
+        num = int(num_)
         if num < 0 or num >= len(Mission.objects.filter(to_ans=1)):
             return gen_response(400, "Num Error")
 
         # 参考id获取用户画像，进而实现分发算法，目前使用id来进行排序
         # TODO
 
-        mission_list = Mission.objects.filter(Q(to_ans=1) & ~Q(user_id=id))
-        showNum = 12  # 设计一次更新获得的任务数
-        getNum = min(num + showNum, len(mission_list))  # 本次更新获得的任务数
+        mission_list = Mission.objects.filter(Q(to_ans=1) & ~Q(user_id=user_id))
+        show_num = 12  # 设计一次更新获得的任务数
+        get_num = min(num + show_num, len(mission_list))  # 本次更新获得的任务数
 
-        return gen_response(201, {'ret': getNum,
-                                  'total': len(Mission.objects.filter(Q(to_ans=1) & ~Q(user_id=id))),
+        return gen_response(201, {'ret': get_num,
+                                  'total': len(Mission.objects.filter(Q(to_ans=1) & ~Q(user_id=user_id))),
                                   "question_list":
                                       [
                                           {
@@ -175,7 +187,7 @@ def user_show(request):
                                               'questionForm': ret.question_form
                                           }
                                           for ret in Mission.objects.filter(
-                                          Q(to_ans=1) & ~Q(user_id=id)).order_by('id')[num: getNum]
+                                              Q(to_ans=1) & ~Q(user_id=user_id)).order_by('id')[num: get_num]
                                       ]}
                             )
     return gen_response(400, "User Show Error")
@@ -190,8 +202,8 @@ def user_show(request):
 
 # POST为用户提交本次传递题目
 # 其request.body为一个json文件，组成为：
-# user_id, mission_id, [{ans}]
-# 其中user_id为当前答题用户，用于统计其用户信息，如score，mission_id为当前任务的id，表示目前用户回答的任务的id，ans为用户的答案，目前仅支持判断题
+# mission_id, [{ans}]
+# mission_id为当前任务的id，表示目前用户回答的任务的id，ans为用户的答案，目前仅支持判断题
 
 def mission_show(request):
     if request.method == 'GET':
@@ -199,32 +211,36 @@ def mission_show(request):
         # 安全性验证
         # TODO
 
+        code, data = check_token(request)
+        if code == 400:
+            return gen_response(code, data)
+
         id_ = request.GET.get('id')
         num_ = request.GET.get('num')
         step_ = request.GET.get('step')
 
         if not id_.isdigit() or not num_.isdigit() or not step_.isdigit():
             return gen_response(400, "Not Digit Error")
-        id = int(id_)
+        mission_id = int(id_)
         num = int(num_)
         step = int(step_)
-        if id <= 0 or id > len(Mission.objects.all()):
+        if mission_id <= 0 or mission_id > len(Mission.objects.all()):
             return gen_response(400, "ID Error")
-        if num < 0 or num >= len(Mission.objects.get(id=id).father_mission.all()):
+        if num < 0 or num >= len(Mission.objects.get(id=mission_id).father_mission.all()):
             return gen_response(400, "Num Error")
         if step != -1 and step != 1 and step != 0:
             return gen_response(400, "Step Error")
 
-        getNum = num + step
-        if getNum < 0 or getNum >= len(Mission.objects.get(id=id).father_mission.all()):
+        get_num = num + step
+        if get_num < 0 or get_num >= len(Mission.objects.get(id=mission_id).father_mission.all()):
             return gen_response(400, "Runtime Error")
 
-        ret = Mission.objects.get(id=id).father_mission.all().order_by('id')[getNum]
+        ret = Mission.objects.get(id=mission_id).father_mission.all().order_by('id')[get_num]
 
-        if Mission.objects.get(id=id).question_form == "judgement":  # 题目型式为判断题的情况
+        if Mission.objects.get(id=mission_id).question_form == "judgement":  # 题目型式为判断题的情况
             return gen_response(201, {
-                'total': len(Mission.objects.get(id=id).father_mission.all()),
-                'ret': getNum,
+                'total': len(Mission.objects.get(id=mission_id).father_mission.all()),
+                'ret': get_num,
                 'word': ret.word,
             })
 
@@ -238,23 +254,24 @@ def mission_show(request):
         # 安全性验证
         # TODO
 
+        code, data = check_token(request)
+        if code == 400:
+            return gen_response(code, data)
+
         try:
             message = request.body
             js = json.loads(message)
         except json.decoder.JSONDecodeError:
             return gen_response(400, "Request Json Error")
 
-        user_id_ = js['user_id'] if 'user_id' in js else '-1'
+        user_id = request.session['user_id']
         mission_id_ = js['mission_id'] if 'mission_id' in js else '-1'
         ans_list = js['ans'] if 'ans' in js else []
 
-        if not user_id_.isdigit() or not mission_id_.isdigit() or not isinstance(ans_list, list):
+        if not mission_id_.isdigit() or not isinstance(ans_list, list):
             return gen_response(400, "Not Digit Or Not List Error")
 
-        user_id = int(user_id_)
         mission_id = int(mission_id_)
-        if user_id <= 0 or user_id > len(Users.objects.all()):
-            return gen_response(400, "User ID Error")
         if mission_id <= 0 or mission_id > len(Mission.objects.all()):
             return gen_response(400, "Mission ID Error")
 
@@ -312,21 +329,23 @@ def mission_show(request):
 def upload(request):
     if request.method == 'POST':
 
+        code, data = check_token(request)
+        if code == 400:
+            return gen_response(code, data)
+
         try:
-            message = request.body
-            js = json.loads(message)
+            js = json.loads(request.body)
         except json.decoder.JSONDecodeError:
             return gen_response(400, "Request Json Error")
 
+        user_id = request.session['user_id']
         name = js['name'] if 'name' in js else ''
         question_form = js['question_form'] if 'question_form' in js else ''
         question_num_ = js['question_num'] if 'question_num' in js else ''
-        user_id_ = js['user_id'] if 'user_id' in js else ''
         total_ = js['total'] if 'total' in js else ''
-        if not question_num_.isdigit() or name == '' or question_form == '' or not user_id_.isdigit() or not total_.isdigit():
+        if not question_num_.isdigit() or name == '' or question_form == '' or not total_.isdigit():
             return gen_response(400, "Upload Contains Error")
         question_num = int(question_num_)
-        user_id = int(user_id_)
         total = int(total_)
 
         try:
@@ -371,19 +390,17 @@ def upload(request):
 def about_me(request):
     if request.method == 'GET':
 
-        id_ = request.GET.get('id') if 'id' in request.GET else ''
-        if not id_.isdigit():
-            return gen_response(400, "ID Is Not Digit")
-        id = int(id_)
-        if id <= 0 or id > len(Users.objects.all()):
-            return gen_response(400, "ID Is Illegal")
+        code, data = check_token(request)
+        if code == 400:
+            return gen_response(code, data)
+        user_id = request.session['user_id']
+
         method = request.GET.get('method') if 'method' in request.GET else ''
 
-        ret = Users.objects.get(id=id)
+        ret = Users.objects.get(id=user_id)
 
         if method == 'user':
             return gen_response(201, {
-                'id': ret.id,
                 'name': ret.name,
                 'score': ret.score,
                 'weight': ret.weight,
@@ -429,17 +446,17 @@ def about_me(request):
 def show_my_mission(request):
     if request.method == 'GET':
 
-        user_id_ = request.GET.get('user_id') if 'user_id' in request.GET else ''
-        mission_id_ = request.GET.get('mission_id') if 'mission_id' in request.GET else ''
+        code, data = check_token(request)
+        if code == 400:
+            return gen_response(code, data)
+        user_id = request.session['user_id']
 
-        if not user_id_.isdigit():
-            return gen_response(400, "User_ID is not digit")
+        mission_id_ = request.GET.get('mission_id') if 'mission_id' in request.GET else '1'
+
         if not mission_id_.isdigit():
             return gen_response(400, "Mission_ID is not digit")
-        user_id, mission_id = int(user_id_), int(mission_id_)
+        mission_id = int(mission_id_)
 
-        if user_id <= 0 or user_id > len(Users.objects.all()):
-            return gen_response(400, "User_ID is Illegal")
         if mission_id <= 0 or mission_id > len(Mission.objects.all()):
             return gen_response(400, "Mission_ID is Illegal")
         if user_id != Mission.objects.get(id=mission_id).user.id:
