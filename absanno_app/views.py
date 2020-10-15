@@ -3,10 +3,15 @@ import json
 from .models import Users, Mission, Question, History
 from django.core.exceptions import ValidationError
 from django.db.models import Q
+from django.middleware.csrf import get_token
 
 
 def hello_world(request):
     return HttpResponse("Hello Absanno!")
+
+
+def get_csrf(request):
+    return HttpResponse(get_token(request))
 
 
 def find_user_by_token(request):

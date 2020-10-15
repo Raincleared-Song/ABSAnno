@@ -61,6 +61,12 @@ class UnitTest(TestCase):
         self.client.post('/absanno/login', data={'name': 'test4', 'password': 'test_pw4'},
                          content_type='application/json')
 
+    def test_csrf(self):
+        res = self.client.get('/absanno/csrf')
+        token = res.content
+        self.assertEqual(res.status_code, 200)
+        self.assertIsNot(len(token), 0)
+
     def mock_banned_login(self):
         self.mock_login()
         self.song.is_banned = 1
