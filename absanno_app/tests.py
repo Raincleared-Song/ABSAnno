@@ -1,22 +1,30 @@
 from django.test import TestCase
 from .models import Users, Mission, Question
+from django.http import HttpResponse
+
+
+def cookie_test_view(request):
+    response = HttpResponse("This view is reserved for test!")
+    response.set_cookie("token", "test")
+    return response
 
 
 class UnitTest(TestCase):
     """class for backend unit test"""
 
     def setUp(self):
-        song = Users.objects.create(name='test', password='test_pw')
-        wang = Users.objects.create(name='test_wang', password='test_pw_wang')
+        self.song = Users.objects.create(name='test', password='test_pw', power=1)
+        self.wang = Users.objects.create(name='test_wang', password='test_pw_wang', power=1)
         Users.objects.create(name='test3', password='test_pw3', is_banned=1)
-        self.user_num = 3
+        Users.objects.create(name='test4', password='test_pw4')  # user with no power
+        self.user_num = 4
 
         mission = Mission.objects.create(name='task_test', question_form='judgement',
-                                         question_num=2, user=song, total=5)
+                                         question_num=2, user=self.song, total=5)
         Question.objects.create(mission=mission, word='title1', pre_ans='T')
         Question.objects.create(mission=mission, word='title2', pre_ans='F')
         Mission.objects.create(name='task_test2', question_form='judgement',
-                               question_num=3, user=wang, total=5)
+                               question_num=3, user=self.wang, total=5)
         self.mission_num = 2
 
         self.upload_pos_case = {"name": "task", "question_form": "judgement", "question_num": "2", "total": "5",
@@ -49,6 +57,15 @@ class UnitTest(TestCase):
     def mock_invalid_token(self):
         self.client.post('/absanno/test')
 
+    def mock_no_power_login(self):
+        self.client.post('/absanno/login', data={'name': 'test4', 'password': 'test_pw4'},
+                         content_type='application/json')
+
+    def mock_banned_login(self):
+        self.mock_login()
+        self.song.is_banned = 1
+        self.song.save()
+
     def test_hello_world(self):
         res = self.client.get('/absanno')
         self.assertEqual(res.status_code, 301)
@@ -57,7 +74,7 @@ class UnitTest(TestCase):
         body = {"name": "test", "password": "test_pw"}
         res = self.client.post('/absanno/login', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 201)
-        self.assertEqual(res.json()['data'], str({'name': 'test', 'power': 0}))
+        self.assertEqual(res.json()['data'], str({'name': 'test', 'power': 1}))
 
     def test_login_neg_json_err(self):
         body = '{"name": "test", password: "test_pw"}'
@@ -202,6 +219,20 @@ class UnitTest(TestCase):
         res = self.client.post('/absanno/upload', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 400)
         self.assertEqual(res.json()['data'], 'Invalid Token or Have Not Login')
+
+    def test_upload_neg_banned(self):
+        self.mock_banned_login()
+        body = self.upload_pos_case
+        res = self.client.post('/absanno/upload', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'User is Banned')
+
+    def test_upload_neg_no_power(self):
+        self.mock_no_power_login()
+        body = self.upload_pos_case
+        res = self.client.post('/absanno/upload', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'Lack of Permission')
 
     def test_upload_neg_json_err(self):
         self.mock_login()
@@ -359,6 +390,13 @@ class UnitTest(TestCase):
         self.assertEqual(res.status_code, 400)
         self.assertEqual(res.json()['data'], 'Invalid Token or Have Not Login')
 
+    def test_mission_neg_banned(self):
+        self.mock_banned_login()
+        param = "?id=1&num=0&step=1"
+        res = self.client.get('/absanno/mission' + param)
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'User is Banned')
+
     def test_mission_neg_param_illegal1(self):
         self.mock_login()
         param = "?id=a&num=0&step=1"
@@ -428,6 +466,13 @@ class UnitTest(TestCase):
         self.assertEqual(res.status_code, 400)
         self.assertEqual(res.json()['data'], 'Invalid Token or Have Not Login')
 
+    def test_mission_p_neg_banned(self):
+        self.mock_banned_login()
+        body = {'mission_id': '1', 'ans': ['T', 'F']}
+        res = self.client.post('/absanno/mission', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'User is Banned')
+
     def test_mission_p_neg_json_err(self):
         self.mock_login()
         body = "{'mission_id': '1', ans: ['T', 'F']}"
@@ -486,6 +531,20 @@ class UnitTest(TestCase):
         self.assertEqual(res.status_code, 201)
         self.assertEqual(res.json()['data'], str({'total_num': 0, 'mission_list': []}))
 
+    def test_about_neg_banned(self):
+        self.mock_banned_login()
+        param = "?method=user"
+        res = self.client.get('/absanno/user' + param)
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'User is Banned')
+
+    def test_about_neg_no_power(self):
+        self.mock_no_power_login()
+        param = "?method=mission"
+        res = self.client.get('/absanno/user' + param)
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'Lack of Permission')
+
     def test_about_neg_no_token(self):
         param = "?method=user"
         res = self.client.get('/absanno/user' + param)
@@ -532,6 +591,20 @@ class UnitTest(TestCase):
         res = self.client.get('/absanno/mymission' + param)
         self.assertEqual(res.status_code, 400)
         self.assertEqual(res.json()['data'], 'Invalid Token or Have Not Login')
+
+    def test_mission_my_neg_banned(self):
+        self.mock_banned_login()
+        param = "?mission_id=1"
+        res = self.client.get('/absanno/mymission' + param)
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'User is Banned')
+
+    def test_mission_my_neg_no_power(self):
+        self.mock_no_power_login()
+        param = "?mission_id=1"
+        res = self.client.get('/absanno/mymission' + param)
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'Lack of Permission')
 
     def test_mission_my_neg_mid_illegal(self):
         self.mock_login()
