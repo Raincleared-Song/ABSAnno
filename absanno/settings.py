@@ -25,7 +25,9 @@ SECRET_KEY = '1$!frj_pl!z3ama$af&a)&6(^#pn*@2a(z8kk8435qf&l2kd-y'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False  # only for online test
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'absanno-frontend-abstract.app.secoder.net']
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'absanno-frontend-abstract.app.secoder.net',
+                 'absanno-frontend.abstract.secoder.local', 'absanno-abstract.app.secoder.net',
+                 'absanno.abstract.secoder.local']
 
 
 # Application definition
