@@ -162,6 +162,7 @@ token一小时有效我觉得就行，每次登录/注册时产生一个新的�
                 'total': len(Mission.objects.get(id=id).father_mission.all()), # 目前任务中题目总数
                 'ret': getNum,
                 'word': ret.word,
+                ('options': []) # 选择题的选项
             })
 ```
 
@@ -173,7 +174,9 @@ token一小时有效我觉得就行，每次登录/注册时产生一个新的�
 
 \# user_id, mission_id, [{ans}]
 
-\# 其中user_id为当前答题用户，用于统计其用户信息，如score，mission_id为当前任务的id，表示目前用户回答的任务的id，ans为用户的答案，目前仅支持判断题
+\# 其中user_id为当前答题用户，用于统计其用户信息，如score，mission_id为当前任务的id，表示目前用户回答的任务的id
+
+\# ans为用户的答案，目前仅支持判断题
 
 ```json
 'user_id': user_id
@@ -181,7 +184,12 @@ token一小时有效我觉得就行，每次登录/注册时产生一个新的�
 'ans': ans
 ```
 
-
+ljj：对于选择题，关于ans格式的一种提议
+```json
+'ans': [
+    ['op1', 'op2', ...]
+]
+```
 
 # 上传题目格式
 
@@ -192,10 +200,11 @@ token一小时有效我觉得就行，每次登录/注册时产生一个新的�
 'user_id': 上传题目的用户id
 'total': 任务需要被标注的次数
 [
-{
-'contains': 判断题的题干
-('ans': 预先设计的答案) 可以没有
-}
+    {
+        'contains': 题干
+        ('ans': 预先设计的答案) 可以没有
+        ('options': [] 选择题的选项)
+    }
 ]
 ```
 
