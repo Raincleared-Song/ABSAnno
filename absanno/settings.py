@@ -23,9 +23,11 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = '1$!frj_pl!z3ama$af&a)&6(^#pn*@2a(z8kk8435qf&l2kd-y'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False  # only for online test
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'absanno-frontend-abstract.app.secoder.net',
+                 'absanno-frontend.abstract.secoder.local', 'absanno-abstract.app.secoder.net',
+                 'absanno.abstract.secoder.local']
 
 
 # Application definition
@@ -47,6 +49,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',  # only for online test
 ]
 
 ROOT_URLCONF = 'absanno.urls'
