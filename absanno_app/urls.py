@@ -12,6 +12,8 @@ urlpatterns = [
     path('mission', views.mission_show, name='mission_show'),
     path('upload', views.upload, name='upload_mission'),
     path('user', views.about_me, name='user_main'),
-    path('mymission', views.show_my_mission, name='my_mission')
+    path('mymission', views.show_my_mission, name='my_mission'),
+    path('alluser', views.power_user_show_user, name='show_users'),
+    path('usepower', views.power_use, name='power_use')
 
 ]

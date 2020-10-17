@@ -44,6 +44,7 @@ class Mission(models.Model):
     question_num = models.IntegerField(default=0)  # 任务中题目的数量，题目最多为20题
     question_form = models.CharField(default="judgement", max_length=20)  # 任务中题目的类型
     to_ans = models.IntegerField(default=1)  # 当前任务是否需要继续被标注，1表示需要，0表示不需要
+    is_banned = models.IntegerField(default=0)  # 是否被封禁，0表示没有被封禁，1表示被封禁
 
     # 接下来表示的是当前的任务的tag，可以针对用户画像进行发放
     # 总共有3个tag，用0-9表示，0表示无tag，1-9分别对应上方的tag
