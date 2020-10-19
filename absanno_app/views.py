@@ -3,25 +3,16 @@ import json
 from .models import Users, Mission, Question, History
 from django.core.exceptions import ValidationError
 from django.db.models import Q
-from django.middleware.csrf import get_token
 
 
 def hello_world(request):
     return HttpResponse("Hello Absanno!")
 
 
-def get_csrf(request):
-    return HttpResponse(get_token(request))
-
-
-def find_user_by_token(request):
-    return Users.objects.get(id=request.session['user_id'])
-
-
-def check_is_banned(request):
-    """return True iff user not exist or user is banned"""
-    user = find_user_by_token(request)
-    return user is None or user.is_banned == 1
+def test(request):
+    response = HttpResponse("This view is reserved for test!")
+    response.set_cookie("token", "test")
+    return response
 
 
 def check_token(request):
