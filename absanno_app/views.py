@@ -3,11 +3,6 @@ import json
 from .models import Users, Mission, Question, History
 from django.core.exceptions import ValidationError
 from django.db.models import Q
-from django.http import JsonResponse, HttpResponse
-import json
-from .models import Users, Mission, Question, History
-from django.core.exceptions import ValidationError
-from django.db.models import Q
 from django.middleware.csrf import get_token
 
 
@@ -42,6 +37,7 @@ def gen_response(code: int, data: object):  # 是否成功，成功为201，失�
         'code': code,
         'data': str(data)
     }, status=code)
+
 
 # 有关用户的登录与注册
 # request.body为json
@@ -184,12 +180,12 @@ def user_show(request):
         # 参考id获取用户画像，进而实现分发算法，目前使用id来进行排序
         # TODO
 
-        mission_list = Mission.objects.filter(Q(to_ans=1) & ~Q(is_banned=1))
+        mission_list = Mission.objects.filter(Q(to_ans=1) & Q(is_banned=0))
         show_num = 12  # 设计一次更新获得的任务数
         get_num = min(num + show_num, len(mission_list))  # 本次更新获得的任务数
 
         return gen_response(201, {'ret': get_num,
-                                  'total': len(Mission.objects.filter(Q(to_ans=1) & ~Q(is_banned=1))),
+                                  'total': len(Mission.objects.filter(Q(to_ans=1) & Q(is_banned=0))),
                                   "question_list":
                                       [
                                           {
@@ -200,7 +196,7 @@ def user_show(request):
                                               'questionForm': ret.question_form
                                           }
                                           for ret in Mission.objects.filter(
-                                          Q(to_ans=1) & ~Q(is_banned=1)).order_by('id')[num: get_num]
+                                              Q(to_ans=1) & Q(is_banned=0)).order_by('id')[num: get_num]
                                       ]}
                             )
     return gen_response(400, "User Show Error")
@@ -227,6 +223,9 @@ def mission_show(request):
         code, data = check_token(request)
         if code == 400:
             return gen_response(code, data)
+
+        if check_is_banned(request):
+            return gen_response(400, 'User is Banned')
 
         id_ = request.GET.get('id')
         num_ = request.GET.get('num')
@@ -271,13 +270,15 @@ def mission_show(request):
         if code == 400:
             return gen_response(code, data)
 
+        if check_is_banned(request):
+            return gen_response(400, 'User is Banned')
+
         try:
             message = request.body
             js = json.loads(message)
         except json.decoder.JSONDecodeError:
             return gen_response(400, "Request Json Error")
 
-        user_id = request.session['user_id']
         mission_id_ = js['mission_id'] if 'mission_id' in js else '-1'
         ans_list = js['ans'] if 'ans' in js else []
 
@@ -288,7 +289,7 @@ def mission_show(request):
         if mission_id <= 0 or mission_id > len(Mission.objects.all()):
             return gen_response(400, "Mission ID Error")
 
-        user = Users.objects.get(id=user_id)
+        user = find_user_by_token(request)
         mission = Mission.objects.get(id=mission_id)
         if len(ans_list) != len(mission.father_mission.all()):
             return gen_response(400, "Ans List Error")
@@ -346,12 +347,17 @@ def upload(request):
         if code == 400:
             return gen_response(code, data)
 
+        user = find_user_by_token(request)
+        if user.is_banned:
+            return gen_response(400, 'User is Banned')
+        if user.power < 1:
+            return gen_response(400, "Lack of Permission")
+
         try:
             js = json.loads(request.body)
         except json.decoder.JSONDecodeError:
             return gen_response(400, "Request Json Error")
 
-        user_id = request.session['user_id']
         name = js['name'] if 'name' in js else ''
         question_form = js['question_form'] if 'question_form' in js else ''
         question_num_ = js['question_num'] if 'question_num' in js else ''
@@ -360,12 +366,10 @@ def upload(request):
             return gen_response(400, "Upload Contains Error")
         question_num = int(question_num_)
         total = int(total_)
-        if Users.objects.get(id=user_id).power == 0:
-            return gen_response(400, "You Cannot Upload")
 
         try:
             mission = Mission(name=name, question_form=question_form, question_num=question_num, total=total,
-                              user=Users.objects.filter(pk=user_id).first())
+                              user=user)
             mission.full_clean()
             mission.save()
         except ValidationError:
@@ -408,23 +412,23 @@ def about_me(request):
         code, data = check_token(request)
         if code == 400:
             return gen_response(code, data)
-        user_id = request.session['user_id']
 
         method = request.GET.get('method') if 'method' in request.GET else ''
 
-        ret = Users.objects.get(id=user_id)
+        ret = find_user_by_token(request)
+        if ret.is_banned:
+            return gen_response(400, 'User is Banned')
 
         if method == 'user':
             return gen_response(201, {
                 'name': ret.name,
                 'score': ret.score,
                 'weight': ret.weight,
-                'num': ret.fin_num,
-                'power': ret.power
+                'num': ret.fin_num
             })
         elif method == 'mission':
-            if ret.power == 0:
-                return gen_response(400, "You Dont Have Power")
+            if ret.power < 1:
+                return gen_response(400, "Lack of Permission")
             return gen_response(201, {
                 'total_num': len(ret.promulgator.all()),
                 'mission_list':
@@ -469,6 +473,12 @@ def show_my_mission(request):
             return gen_response(code, data)
         user_id = request.session['user_id']
 
+        user = Users.objects.get(id=user_id)
+        if user.is_banned:
+            return gen_response(400, 'User is Banned')
+        if user.power < 1:
+            return gen_response(400, 'Lack of Permission')
+
         mission_id_ = request.GET.get('mission_id') if 'mission_id' in request.GET else '1'
 
         if not mission_id_.isdigit():
@@ -490,6 +500,7 @@ def show_my_mission(request):
                 'question_num': mission.question_num,
                 'total': mission.total,
                 'now_num': mission.now_num,
+                'is_banned': mission.is_banned,
                 'question_list':
                     [
                         {
