@@ -180,12 +180,15 @@ def user_show(request):
         # 参考id获取用户画像，进而实现分发算法，目前使用id来进行排序
         # TODO
 
-        mission_list = Mission.objects.filter(Q(to_ans=1) & Q(is_banned=0))
+        if Users.objects.get(id=user_id):
+            mission_list = Mission.objects.filter(Q(to_ans=1) & Q(is_banned=0))
+        else:
+            mission_list = Mission.objects.all()
         show_num = 12  # 设计一次更新获得的任务数
         get_num = min(num + show_num, len(mission_list))  # 本次更新获得的任务数
 
         return gen_response(201, {'ret': get_num,
-                                  'total': len(Mission.objects.filter(Q(to_ans=1) & Q(is_banned=0))),
+                                  'total': len(mission_list),
                                   "question_list":
                                       [
                                           {
@@ -195,8 +198,7 @@ def user_show(request):
                                               'questionNum': ret.question_num,
                                               'questionForm': ret.question_form
                                           }
-                                          for ret in Mission.objects.filter(
-                                              Q(to_ans=1) & Q(is_banned=0)).order_by('id')[num: get_num]
+                                          for ret in mission_list.order_by('id')[num: get_num]
                                       ]}
                             )
     return gen_response(400, "User Show Error")
@@ -242,6 +244,8 @@ def mission_show(request):
             return gen_response(400, "Num Error")
         if step != -1 and step != 1 and step != 0:
             return gen_response(400, "Step Error")
+        if Mission.objects.get(id=mission_id).is_banned == 1:
+            return gen_response(400, "This Mission Is Banned")
 
         get_num = num + step
         if get_num < 0 or get_num >= len(Mission.objects.get(id=mission_id).father_mission.all()):
