@@ -3,16 +3,30 @@ import json
 from .models import Users, Mission, Question, History
 from django.core.exceptions import ValidationError
 from django.db.models import Q
+from django.http import JsonResponse, HttpResponse
+import json
+from .models import Users, Mission, Question, History
+from django.core.exceptions import ValidationError
+from django.db.models import Q
+from django.middleware.csrf import get_token
 
 
 def hello_world(request):
     return HttpResponse("Hello Absanno!")
 
 
-def test(request):
-    response = HttpResponse("This view is reserved for test!")
-    response.set_cookie("token", "test")
-    return response
+def get_csrf(request):
+    return HttpResponse(get_token(request))
+
+
+def find_user_by_token(request):
+    return Users.objects.get(id=request.session['user_id'])
+
+
+def check_is_banned(request):
+    """return True iff user not exist or user is banned"""
+    user = find_user_by_token(request)
+    return user is None or user.is_banned == 1
 
 
 def check_token(request):
@@ -28,7 +42,6 @@ def gen_response(code: int, data: object):  # 是否成功，成功为201，失�
         'code': code,
         'data': str(data)
     }, status=code)
-
 
 # 有关用户的登录与注册
 # request.body为json
