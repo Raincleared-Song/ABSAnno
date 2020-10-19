@@ -604,19 +604,27 @@ def power_user_show_user(request):
         if code == 400:
             return gen_response(code, data)
 
-        user_id = request.GET['user_id']
+        user_id = request.session['user_id']
         if Users.objects.get(id=user_id).power != 2:
             return gen_response(400, "Dont Have Power")
 
-        num = len(Users.objects.filter(Q(power=0) | Q(power=1)))
+        now_num_ = request.GET['now_num'] if 'now_num' in request.GET else '0'
+        if not now_num_.isdigit():
+            return gen_response(400, "Now_Num Error")
+        now_num = int(now_num_)
 
-        return gen_response(201, {'num': num,
+        num = min(len(Users.objects.filter(Q(power=0) | Q(power=1))), now_num+20)
+
+        return gen_response(201, {'num': num-now_num,
                                   'user_list': [{
                                       'id': ret.id,
                                       'name': ret.name,
                                       'power': ret.power,
-                                      'is_banned': ret.is_banned
-                                  } for ret in Users.objects.filter(Q(power=0) | Q(power=1))
+                                      'is_banned': ret.is_banned,
+                                      'score': ret.score,
+                                      'weight': ret.weight,
+                                      'fin_num': ret.fin_num,
+                                  } for ret in Users.objects.filter(Q(power=0) | Q(power=1))[now_num, num]
                                   ]})
 
     return gen_response(400, "Show All Users Failed")
