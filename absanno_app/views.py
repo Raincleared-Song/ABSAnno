@@ -196,7 +196,9 @@ def user_show(request):
                                               'name': ret.name,
                                               'user': ret.user.name,
                                               'questionNum': ret.question_num,
-                                              'questionForm': ret.question_form
+                                              'questionForm': ret.question_form,
+                                              'is_banned': ret.is_banned,
+                                              'full': ret.to_ans
                                           }
                                           for ret in mission_list.order_by('id')[num: get_num]
                                       ]}
