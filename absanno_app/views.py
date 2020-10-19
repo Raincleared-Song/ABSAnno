@@ -610,13 +610,16 @@ def power_user_show_user(request):
 
         now_num_ = request.GET.get('now_num') if 'now_num' in request.GET else '0'
         if not now_num_.isdigit():
-            return gen_response(400, "Now_Num Error")
+            return gen_response(400, "Now_Num Is Not Digit")
         now_num = int(now_num_)
+        total = len(Users.objects.filter(Q(power=0) | Q(power=1)))
+        if now_num < 0 or now_num >= total:
+            return gen_response(400, "Now_Num Error")
 
         num = min(len(Users.objects.filter(Q(power=0) | Q(power=1))), now_num+20)
 
         return gen_response(201, {'num': num-now_num,
-                                  'total': len(Users.objects.filter(Q(power=0) | Q(power=1))),
+                                  'total': total,
                                   'user_list': [{
                                       'id': ret.id,
                                       'name': ret.name,
