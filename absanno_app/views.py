@@ -180,7 +180,7 @@ def user_show(request):
         # 参考id获取用户画像，进而实现分发算法，目前使用id来进行排序
         # TODO
 
-        if Users.objects.get(id=user_id):
+        if Users.objects.filter(id=user_id).first():
             mission_list = Mission.objects.filter(Q(to_ans=1) & Q(is_banned=0))
         else:
             mission_list = Mission.objects.all()

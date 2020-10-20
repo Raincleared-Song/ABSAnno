@@ -33,17 +33,14 @@ class UnitTest(TestCase):
         self.upload_pos_case2 = {"name": "task", "question_form": "judgement", "question_num": "2", "total": "5",
                                 "question_list": [{"contains": "title3", "ans": "T"},
                                                   {"contains": "title4", "ans": "F"}]}
-        self.square_pos_case_all = str({'ret': 2, 'total': 2, 'question_list':
-            [{'id': 1, 'name': 'task_test',
-              'user': 'test', 'questionNum': 2, 'questionForm': 'judgement'},
-             {'id': 2, 'name': 'task_test2', 'user': 'test_wang',
-              'questionNum': 3, 'questionForm': 'judgement'}]})
-        self.square_pos_case1 = str({'ret': 1, 'total': 1, 'question_list':
-            [{'id': 2, 'name': 'task_test2', 'user': 'test_wang',
-              'questionNum': 3, 'questionForm': 'judgement'}]})
+        self.square_pos_case1 = str({'ret': 2, 'total': 2, 'question_list':
+            [{'id': 1, 'name': 'task_test', 'user': 'test', 'questionNum': 2, 'questionForm': 'judgement',
+              'is_banned': 0, 'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': '', 'cash': ''},
+             {'id': 2, 'name': 'task_test2', 'user': 'test_wang', 'questionNum': 3, 'questionForm': 'judgement',
+              'is_banned': 0, 'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': '', 'cash': ''}]})
         self.mission_my_pos_case = str(
             {'mission_name': 'task_test', 'question_form': 'judgement', 'question_num': 2, 'total': 5, 'now_num': 0,
-             'question_list': [{'word': 'title1', 'T_num': 0, 'F_num': 0, 'pre_ans': 'T', 'ans': 1},
+             'is_banned': 0, 'question_list': [{'word': 'title1', 'T_num': 0, 'F_num': 0, 'pre_ans': 'T', 'ans': 1},
                                {'word': 'title2', 'T_num': 0, 'F_num': 0, 'pre_ans': 'F', 'ans': 1}]})
 
     def mock_login(self):
@@ -332,9 +329,7 @@ class UnitTest(TestCase):
         param = "?num=0"
         res = self.client.get('/absanno/square' + param)
         self.assertEqual(res.status_code, 201)
-        self.assertEqual(res.json()['data'], str({'ret': 1, 'total': 1, 'question_list':
-            [{'id': 1, 'name': 'task_test',
-              'user': 'test', 'questionNum': 2, 'questionForm': 'judgement'}]}))
+        self.assertEqual(res.json()['data'], self.square_pos_case1)
 
     def test_square_pos3(self):
         self.mock_login()
@@ -346,14 +341,14 @@ class UnitTest(TestCase):
         param = "?num=0"
         res = self.client.get('/absanno/square' + param)
         self.assertEqual(res.status_code, 201)
-        self.assertEqual(res.json()['data'], self.square_pos_case_all)
+        self.assertEqual(res.json()['data'], self.square_pos_case1)
 
     def test_square_pos_invalid_token(self):
         self.mock_invalid_token()
         param = "?num=0"
         res = self.client.get('/absanno/square' + param)
         self.assertEqual(res.status_code, 201)
-        self.assertEqual(res.json()['data'], self.square_pos_case_all)
+        self.assertEqual(res.json()['data'], self.square_pos_case1)
 
     def test_square_neg_num_illegal(self):
         self.mock_login()
@@ -583,6 +578,7 @@ class UnitTest(TestCase):
         param = "?mission_id=1"
         res = self.client.get('/absanno/mymission' + param)
         self.assertEqual(res.status_code, 201)
+        print(res.json()['data'])
         self.assertEqual(res.json()['data'], self.mission_my_pos_case)
 
     def test_mission_my_neg_no_token(self):
