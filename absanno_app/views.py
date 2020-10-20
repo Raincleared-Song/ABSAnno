@@ -4,6 +4,7 @@ from .models import Users, Mission, Question, History
 from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.middleware.csrf import get_token
+from zipfile import ZipFile, BadZipFile
 
 
 def hello_world(request):
@@ -363,10 +364,44 @@ def upload(request):
         if user.power < 1:
             return gen_response(400, "Lack of Permission")
 
-        try:
-            js = json.loads(request.body)
-        except json.decoder.JSONDecodeError:
-            return gen_response(400, "Request Json Error")
+        file = request.FILES.get('zip')
+        question_list = []
+        if file is not None:
+            # upload a zip file
+            try:
+                file = ZipFile(file, mode='r')
+                basic = file.open('basic.json', mode='r')
+                js = json.load(basic)
+                basic.close()
+            except BadZipFile:
+                return gen_response(400, 'Zip File Error (Not Zip File)')
+            except KeyError:
+                return gen_response(400, 'Zip File Error (basic.json Not Found)')
+            except json.JSONDecodeError:
+                return gen_response(400, 'Zip File Error (basic.json Json Error)')
+            if 'question_path' not in js:
+                return gen_response(400, 'Zip File Error (Question Path Not Found)')
+            path = js['question_path']
+            try:
+                q_list = file.open(path, mode='r')
+            except KeyError:
+                return gen_response(400, 'Zip File Error (Question Path Invalid)')
+            for line in q_list.readlines():
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    question_list.append(json.loads(line))
+                except json.JSONDecodeError:
+                    return gen_response(400, 'Zip File Error (questions.json Json Error)')
+            q_list.close()
+            file.close()
+        # normal POST
+        else:
+            try:
+                js = json.loads(request.body)
+            except json.decoder.JSONDecodeError:
+                return gen_response(400, "Request Json Error")
 
         name = js['name'] if 'name' in js else ''
         question_form = js['question_form'] if 'question_form' in js else ''
@@ -385,7 +420,8 @@ def upload(request):
         except ValidationError:
             return gen_response(400, "Upload Form Error")
 
-        question_list = js['question_list'] if 'question_list' in js else []
+        if file is None and 'question_list' in js:
+            question_list = js['question_list']
         if not isinstance(question_list, list):
             return gen_response(400, "Question_list Is Not A List")
         if len(question_list) != question_num:
@@ -541,7 +577,7 @@ def power_upgrade(request):
 
         # 目前仅限获取发题权限，无法进一步上升为管理员
         if Users.objects.get(id=user_id).power == 2:
-            return gen_response("Are You Kidding Me?")
+            return gen_response(400, "Are You Kidding Me?")
         Users.objects.get(id=user_id).power = 1
         return gen_response(201, "Upgrade Success")
 

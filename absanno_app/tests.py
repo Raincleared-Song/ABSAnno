@@ -19,10 +19,10 @@ class UnitTest(TestCase):
         Users.objects.create(name='test4', password='test_pw4')  # user with no power
         self.user_num = 4
 
-        mission = Mission.objects.create(name='task_test', question_form='judgement',
+        self.mission = Mission.objects.create(name='task_test', question_form='judgement',
                                          question_num=2, user=self.song, total=5)
-        Question.objects.create(mission=mission, word='title1', pre_ans='T')
-        Question.objects.create(mission=mission, word='title2', pre_ans='F')
+        Question.objects.create(mission=self.mission, word='title1', pre_ans='T')
+        Question.objects.create(mission=self.mission, word='title2', pre_ans='F')
         Mission.objects.create(name='task_test2', question_form='judgement',
                                question_num=3, user=self.wang, total=5)
         self.mission_num = 2
@@ -68,6 +68,10 @@ class UnitTest(TestCase):
         self.mock_login()
         self.song.is_banned = 1
         self.song.save()
+
+    def mock_banned_mission(self):
+        self.mission.is_banned = 1
+        self.mission.save()
 
     def test_hello_world(self):
         res = self.client.get('/absanno')
@@ -209,6 +213,62 @@ class UnitTest(TestCase):
         res = self.client.post('/absanno/upload', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 201)
         self.assertEqual(res.json()['data'], 'Judgement Upload Success')
+
+    def test_upload_pos_zip(self):
+        self.mock_login()
+        file = open('test_data/zip/pos.zip', 'rb')
+        res = self.client.post('/absanno/upload', data={'zip': file})
+        file.close()
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.json()['data'], 'Judgement Upload Success')
+
+    def test_upload_neg_zip_not_zip(self):
+        self.mock_login()
+        file = open('test_data/zip/basic.json', 'rb')
+        res = self.client.post('/absanno/upload', data={'zip': file})
+        file.close()
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'Zip File Error (Not Zip File)')
+
+    def test_upload_neg_zip_basic_json_err(self):
+        self.mock_login()
+        file = open('test_data/zip/neg_basic_json_err.zip', 'rb')
+        res = self.client.post('/absanno/upload', data={'zip': file})
+        file.close()
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'Zip File Error (basic.json Json Error)')
+
+    def test_upload_neg_zip_no_basic(self):
+        self.mock_login()
+        file = open('test_data/zip/neg_no_basic.zip', 'rb')
+        res = self.client.post('/absanno/upload', data={'zip': file})
+        file.close()
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'Zip File Error (basic.json Not Found)')
+
+    def test_upload_neg_zip_no_path(self):
+        self.mock_login()
+        file = open('test_data/zip/neg_no_path.zip', 'rb')
+        res = self.client.post('/absanno/upload', data={'zip': file})
+        file.close()
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'Zip File Error (Question Path Not Found)')
+
+    def test_upload_neg_zip_invalid_path(self):
+        self.mock_login()
+        file = open('test_data/zip/neg_invalid_path.zip', 'rb')
+        res = self.client.post('/absanno/upload', data={'zip': file})
+        file.close()
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'Zip File Error (Question Path Invalid)')
+
+    def test_upload_neg_zip_question_json_err(self):
+        self.mock_login()
+        file = open('test_data/zip/neg_question_json_err.zip', 'rb')
+        res = self.client.post('/absanno/upload', data={'zip': file})
+        file.close()
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'Zip File Error (questions.json Json Error)')
 
     def test_upload_neg_no_token(self):
         body = self.upload_pos_case
@@ -440,6 +500,14 @@ class UnitTest(TestCase):
         self.assertEqual(res.status_code, 400)
         self.assertEqual(res.json()['data'], 'Step Error')
 
+    def test_mission_neg_mission_banned(self):
+        self.mock_login()
+        self.mock_banned_mission()
+        param = "?id=1&num=0&step=1"
+        res = self.client.get('/absanno/mission' + param)
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'This Mission Is Banned')
+
     def test_mission_neg_out_of_bound(self):
         self.mock_login()
         param = "?id=1&num=%d&step=1" % (self.mission_num - 1)
@@ -578,7 +646,6 @@ class UnitTest(TestCase):
         param = "?mission_id=1"
         res = self.client.get('/absanno/mymission' + param)
         self.assertEqual(res.status_code, 201)
-        print(res.json()['data'])
         self.assertEqual(res.json()['data'], self.mission_my_pos_case)
 
     def test_mission_my_neg_no_token(self):
