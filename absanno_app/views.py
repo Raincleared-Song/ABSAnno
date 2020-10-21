@@ -97,6 +97,7 @@ def sign_in(request):
 
         name = js['name'] if 'name' in js else ''
         password = js['password'] if 'password' in js else ''
+        tags = js['tags'] if 'tags' in js else ''
         # email = js['email'] if 'email' in js else ''
 
         # 安全性验证
@@ -112,8 +113,9 @@ def sign_in(request):
         gen_user = Users.objects.filter(name=name).first()
         if gen_user:
             return gen_response(400, "User Name Has Existed")
+
         # user = Users(name=name, password=password, email=email)
-        user = Users(name=name, password=password)
+        user = Users(name=name, password=password, tags=tags)
 
         try:
             user.full_clean()
@@ -166,11 +168,23 @@ def user_show(request):
         # TODO
 
         user_id = request.session['user_id'] if check_token(request)[0] == 201 else 0
+        # user_id = request.GET.get('user_id')
 
         num_ = request.GET.get('num')
+        type__ = request.GET.get('type') if 'type' in request.GET else ""
+        theme__ = request.GET.get('theme') if 'theme' in request.GET else ""
+        kw = request.GET.get('kw') if 'kw' in request.GET else ""
 
         if not num_:
             num_ = "0"
+        if type__ != "":
+            type_ = type__.split(",")
+        else:
+            type_ = []
+        if theme__ != "":
+            theme_ = theme__.split(",")
+        else:
+            theme_ = []
 
         if not num_.isdigit():
             return gen_response(400, "Num Is Not Digit")
@@ -182,9 +196,32 @@ def user_show(request):
         # TODO
 
         if Users.objects.filter(id=user_id).first():
-            mission_list = Mission.objects.filter(Q(to_ans=1) & Q(is_banned=0))
+            mission_list_base = Mission.objects.filter(Q(to_ans=1) & Q(is_banned=0)).order_by('id')
         else:
-            mission_list = Mission.objects.all()
+            mission_list_base = Mission.objects.all().order_by('id')
+
+        mission_list = []
+        for mis in mission_list_base:
+            tag_flag, kw_flag = 0, 0
+            if ('total' in type_) or (type_ == []) or (mis.question_form in type_):
+                if ('total' in theme_) or (theme_ == []):
+                    tag_flag = 1
+                else:
+                    for t in theme_:
+                        if t in mis.tags:
+                            tag_flag = 1
+                if tag_flag == 1:
+                    if kw == "":
+                        kw_flag = 1
+                    else:
+                        if (kw in mis.name) or (kw in mis.user.name) or (kw in mis.tags):
+                            kw_flag = 1
+                        for qs in mis.father_mission.all():
+                            if kw in qs.word:
+                                kw_flag = 1
+                    if kw_flag == 1:
+                        mission_list.append(mis)
+
         show_num = 12  # 设计一次更新获得的任务数
         get_num = min(num + show_num, len(mission_list))  # 本次更新获得的任务数
 
@@ -203,9 +240,10 @@ def user_show(request):
                                               'total_ans': ret.total,
                                               'ans_num': ret.now_num,
                                               'deadline': '',
-                                              'cash': ''
+                                              'cash': '',
+                                              'tags': ret.tags.split(",")
                                           }
-                                          for ret in mission_list.order_by('id')[num: get_num]
+                                          for ret in mission_list[num: get_num]
                                       ]}
                             )
     return gen_response(400, "User Show Error")
@@ -407,6 +445,7 @@ def upload(request):
         question_form = js['question_form'] if 'question_form' in js else ''
         question_num_ = js['question_num'] if 'question_num' in js else ''
         total_ = js['total'] if 'total' in js else ''
+        tags = js['mission_tags'] if 'mission_tags' in js else ''
         if not question_num_.isdigit() or name == '' or question_form == '' or not total_.isdigit():
             return gen_response(400, "Upload Contains Error")
         question_num = int(question_num_)
@@ -414,7 +453,7 @@ def upload(request):
 
         try:
             mission = Mission(name=name, question_form=question_form, question_num=question_num, total=total,
-                              user=user)
+                              user=user, tags=tags)
             mission.full_clean()
             mission.save()
         except ValidationError:
@@ -470,7 +509,8 @@ def about_me(request):
                 'name': ret.name,
                 'score': ret.score,
                 'weight': ret.weight,
-                'num': ret.fin_num
+                'num': ret.fin_num,
+                'tags': ret.tags.split(",")
             })
         elif method == 'mission':
             if ret.power < 1:
@@ -678,8 +718,3 @@ def power_user_show_user(request):
                                   ]})
 
     return gen_response(400, "Show All Users Failed")
-
-
-# 检索筛选题目
-def search_mission(request):
-    return gen_response(400, "Search Mission Failed")

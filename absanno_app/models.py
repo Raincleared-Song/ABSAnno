@@ -18,6 +18,7 @@ class Users(models.Model):
     power = models.IntegerField(default=0)  # 用户权限，0 为普通用户，1 为发布者，2 为管理员
     # email = models.CharField(max_length=50)  # 用户邮箱，目前可能用不到，之后可以增加与用户邮箱的关联
     # 可以用于注册时对于用户的验证以及用户找回密码
+    tags = models.CharField(default="", max_length=1000, blank=True)  # 存储tag，每个tag之间使用|分隔
 
     # 接下来为用户画像设计，每个tag表示相关权重，数值为0-100
     tag_science = models.IntegerField(default=0)
@@ -45,6 +46,7 @@ class Mission(models.Model):
     question_form = models.CharField(default="judgement", max_length=20)  # 任务中题目的类型
     to_ans = models.IntegerField(default=1)  # 当前任务是否需要继续被标注，1表示需要，0表示不需要
     is_banned = models.IntegerField(default=0)  # 是否被封禁，0表示没有被封禁，1表示被封禁
+    tags = models.CharField(default="", max_length=1000, blank=True)  # 存储tag，每个tag之间使用|分隔
 
     # 接下来表示的是当前的任务的tag，可以针对用户画像进行发放
     # 总共有3个tag，用0-9表示，0表示无tag，1-9分别对应上方的tag

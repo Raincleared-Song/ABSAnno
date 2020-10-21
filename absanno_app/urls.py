@@ -15,6 +15,7 @@ urlpatterns = [
     path('user', views.about_me, name='user_main'),
     path('mymission', views.show_my_mission, name='my_mission'),
     path('alluser', views.power_user_show_user, name='show_users'),
-    path('usepower', views.power_use, name='power_use')
+    path('usepower', views.power_use, name='power_use'),
+    path('powerup', views.power_upgrade, name='power_up')
 
 ]
