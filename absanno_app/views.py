@@ -618,7 +618,9 @@ def power_upgrade(request):
         # 目前仅限获取发题权限，无法进一步上升为管理员
         if Users.objects.get(id=user_id).power == 2:
             return gen_response(400, "Are You Kidding Me?")
-        Users.objects.get(id=user_id).power = 1
+        obj = Users.objects.get(id=user_id)
+        obj.power = 1
+        obj.save()
         return gen_response(201, "Upgrade Success")
 
     return gen_response(400, "Upgrade Failed")
