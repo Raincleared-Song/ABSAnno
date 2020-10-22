@@ -167,8 +167,8 @@ def user_show(request):
         # 安全性验证
         # TODO
 
-        user_id = request.session['user_id'] if check_token(request)[0] == 201 else 0
-        # user_id = request.GET.get('user_id')
+        # user_id = request.session['user_id'] if check_token(request)[0] == 201 else 0
+        user_id = request.GET.get('user_id')
 
         num_ = request.GET.get('num')
         type__ = request.GET.get('type') if 'type' in request.GET else ""
@@ -366,14 +366,17 @@ def mission_show(request):
                         now_question.matched_ans = 0
                     else:
                         now_question.matched_ans = 1
+                    now_question.save()
                 mission.now_num += 1
                 if mission.now_num >= mission.total:
                     mission.to_ans = 0
+                mission.save()
             else:
                 user.weight -= 10
                 user.score -= len(ans_list)
             if user.weight <= 0:
                 user.is_banned = 1
+            user.save()
 
             history = History(user=user, mission=mission)
             history.save()
@@ -487,6 +490,11 @@ def upload(request):
                 except ValidationError:
                     return gen_response(400, "Question Form Error")
             return gen_response(201, "Judgement Upload Success")
+        if mission.question_form == "chosen":
+            for i in question_list:
+                contains = i['contains'] if 'contains' in i else ''
+                options_ = i['options'] if 'options' in i else ''
+                ans_ = i['ans'] if 'ans' in i else ''
 
     return gen_response(400, "Upload Error")
 
