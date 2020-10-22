@@ -13,16 +13,16 @@ class UnitTest(TestCase):
     """class for backend unit test"""
 
     def setUp(self):
-        self.song = Users.objects.create(name='test', password='test_pw', power=1)
+        self.song = Users.objects.create(name='test', password='test_pw', power=2)
         self.wang = Users.objects.create(name='test_wang', password='test_pw_wang', power=1)
         Users.objects.create(name='test3', password='test_pw3', is_banned=1)
         Users.objects.create(name='test4', password='test_pw4')  # user with no power
         self.user_num = 4
 
-        mission = Mission.objects.create(name='task_test', question_form='judgement',
+        self.mission = Mission.objects.create(name='task_test', question_form='judgement',
                                          question_num=2, user=self.song, total=5)
-        Question.objects.create(mission=mission, word='title1', pre_ans='T')
-        Question.objects.create(mission=mission, word='title2', pre_ans='F')
+        Question.objects.create(mission=self.mission, word='title1', pre_ans='T')
+        Question.objects.create(mission=self.mission, word='title2', pre_ans='F')
         Mission.objects.create(name='task_test2', question_form='judgement',
                                question_num=3, user=self.wang, total=5)
         self.mission_num = 2
@@ -33,18 +33,22 @@ class UnitTest(TestCase):
         self.upload_pos_case2 = {"name": "task", "question_form": "judgement", "question_num": "2", "total": "5",
                                 "question_list": [{"contains": "title3", "ans": "T"},
                                                   {"contains": "title4", "ans": "F"}]}
-        self.square_pos_case_all = str({'ret': 2, 'total': 2, 'question_list':
-            [{'id': 1, 'name': 'task_test',
-              'user': 'test', 'questionNum': 2, 'questionForm': 'judgement'},
-             {'id': 2, 'name': 'task_test2', 'user': 'test_wang',
-              'questionNum': 3, 'questionForm': 'judgement'}]})
-        self.square_pos_case1 = str({'ret': 1, 'total': 1, 'question_list':
-            [{'id': 2, 'name': 'task_test2', 'user': 'test_wang',
-              'questionNum': 3, 'questionForm': 'judgement'}]})
+        self.square_pos_case1 = str({'ret': 2, 'total': 2, 'question_list':
+            [{'id': 1, 'name': 'task_test', 'user': 'test', 'questionNum': 2, 'questionForm': 'judgement',
+              'is_banned': 0, 'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': '', 'cash': '', 'tags': ['']},
+             {'id': 2, 'name': 'task_test2', 'user': 'test_wang', 'questionNum': 3, 'questionForm': 'judgement',
+              'is_banned': 0, 'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': '', 'cash': '', 'tags': ['']}]})
+        self.square_pos_case2 = str({'ret': 1, 'total': 1, 'question_list':
+            [{'id': 2, 'name': 'task_test2', 'user': 'test_wang', 'questionNum': 3, 'questionForm': 'judgement',
+              'is_banned': 0, 'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': '', 'cash': '', 'tags': ['']}]})
         self.mission_my_pos_case = str(
             {'mission_name': 'task_test', 'question_form': 'judgement', 'question_num': 2, 'total': 5, 'now_num': 0,
-             'question_list': [{'word': 'title1', 'T_num': 0, 'F_num': 0, 'pre_ans': 'T', 'ans': 1},
+             'is_banned': 0, 'question_list': [{'word': 'title1', 'T_num': 0, 'F_num': 0, 'pre_ans': 'T', 'ans': 1},
                                {'word': 'title2', 'T_num': 0, 'F_num': 0, 'pre_ans': 'F', 'ans': 1}]})
+        self.power_user_show = str({'num': 3, 'total': 3, 'user_list':
+            [{'id': 2, 'name': 'test_wang', 'power': 1, 'is_banned': 0, 'score': 0, 'weight': 100, 'fin_num': 0},
+             {'id': 3, 'name': 'test3', 'power': 0, 'is_banned': 1, 'score': 0, 'weight': 100, 'fin_num': 0},
+             {'id': 4, 'name': 'test4', 'power': 0, 'is_banned': 0, 'score': 0, 'weight': 100, 'fin_num': 0}]})
 
     def mock_login(self):
         self.client.post('/absanno/login', data={'name': 'test', 'password': 'test_pw'},
@@ -72,6 +76,10 @@ class UnitTest(TestCase):
         self.song.is_banned = 1
         self.song.save()
 
+    def mock_banned_mission(self):
+        self.mission.is_banned = 1
+        self.mission.save()
+
     def test_hello_world(self):
         res = self.client.get('/absanno')
         self.assertEqual(res.status_code, 301)
@@ -80,7 +88,7 @@ class UnitTest(TestCase):
         body = {"name": "test", "password": "test_pw"}
         res = self.client.post('/absanno/login', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 201)
-        self.assertEqual(res.json()['data'], str({'name': 'test', 'power': 1}))
+        self.assertEqual(res.json()['data'], str({'name': 'test', 'power': 2}))
 
     def test_login_neg_json_err(self):
         body = '{"name": "test", password: "test_pw"}'
@@ -213,6 +221,62 @@ class UnitTest(TestCase):
         self.assertEqual(res.status_code, 201)
         self.assertEqual(res.json()['data'], 'Judgement Upload Success')
 
+    def test_upload_pos_zip(self):
+        self.mock_login()
+        file = open('test_data/zip/pos.zip', 'rb')
+        res = self.client.post('/absanno/upload', data={'zip': file})
+        file.close()
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.json()['data'], 'Judgement Upload Success')
+
+    def test_upload_neg_zip_not_zip(self):
+        self.mock_login()
+        file = open('test_data/zip/basic.json', 'rb')
+        res = self.client.post('/absanno/upload', data={'zip': file})
+        file.close()
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'Zip File Error (Not Zip File)')
+
+    def test_upload_neg_zip_basic_json_err(self):
+        self.mock_login()
+        file = open('test_data/zip/neg_basic_json_err.zip', 'rb')
+        res = self.client.post('/absanno/upload', data={'zip': file})
+        file.close()
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'Zip File Error (basic.json Json Error)')
+
+    def test_upload_neg_zip_no_basic(self):
+        self.mock_login()
+        file = open('test_data/zip/neg_no_basic.zip', 'rb')
+        res = self.client.post('/absanno/upload', data={'zip': file})
+        file.close()
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'Zip File Error (basic.json Not Found)')
+
+    def test_upload_neg_zip_no_path(self):
+        self.mock_login()
+        file = open('test_data/zip/neg_no_path.zip', 'rb')
+        res = self.client.post('/absanno/upload', data={'zip': file})
+        file.close()
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'Zip File Error (Question Path Not Found)')
+
+    def test_upload_neg_zip_invalid_path(self):
+        self.mock_login()
+        file = open('test_data/zip/neg_invalid_path.zip', 'rb')
+        res = self.client.post('/absanno/upload', data={'zip': file})
+        file.close()
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'Zip File Error (Question Path Invalid)')
+
+    def test_upload_neg_zip_question_json_err(self):
+        self.mock_login()
+        file = open('test_data/zip/neg_question_json_err.zip', 'rb')
+        res = self.client.post('/absanno/upload', data={'zip': file})
+        file.close()
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'Zip File Error (questions.json Json Error)')
+
     def test_upload_neg_no_token(self):
         body = self.upload_pos_case
         res = self.client.post('/absanno/upload', data=body, content_type='application/json')
@@ -332,9 +396,7 @@ class UnitTest(TestCase):
         param = "?num=0"
         res = self.client.get('/absanno/square' + param)
         self.assertEqual(res.status_code, 201)
-        self.assertEqual(res.json()['data'], str({'ret': 1, 'total': 1, 'question_list':
-            [{'id': 1, 'name': 'task_test',
-              'user': 'test', 'questionNum': 2, 'questionForm': 'judgement'}]}))
+        self.assertEqual(res.json()['data'], self.square_pos_case1)
 
     def test_square_pos3(self):
         self.mock_login()
@@ -346,14 +408,14 @@ class UnitTest(TestCase):
         param = "?num=0"
         res = self.client.get('/absanno/square' + param)
         self.assertEqual(res.status_code, 201)
-        self.assertEqual(res.json()['data'], self.square_pos_case_all)
+        self.assertEqual(res.json()['data'], self.square_pos_case1)
 
     def test_square_pos_invalid_token(self):
         self.mock_invalid_token()
         param = "?num=0"
         res = self.client.get('/absanno/square' + param)
         self.assertEqual(res.status_code, 201)
-        self.assertEqual(res.json()['data'], self.square_pos_case_all)
+        self.assertEqual(res.json()['data'], self.square_pos_case1)
 
     def test_square_neg_num_illegal(self):
         self.mock_login()
@@ -375,6 +437,13 @@ class UnitTest(TestCase):
         res = self.client.post('/absanno/square', data=param, content_type='application/json')
         self.assertEqual(res.status_code, 400)
         self.assertEqual(res.json()['data'], 'User Show Error')
+
+    def test_squrae_search_get_sk2(self):
+        self.mock_login()
+        param = "?num=0&kw=est2"
+        res = self.client.get('/absanno/square' + param)
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.json()['data'], self.square_pos_case2)
 
     def test_mission_pos(self):
         self.mock_login()
@@ -444,6 +513,14 @@ class UnitTest(TestCase):
         res = self.client.get('/absanno/mission' + param)
         self.assertEqual(res.status_code, 400)
         self.assertEqual(res.json()['data'], 'Step Error')
+
+    def test_mission_neg_mission_banned(self):
+        self.mock_login()
+        self.mock_banned_mission()
+        param = "?id=1&num=0&step=1"
+        res = self.client.get('/absanno/mission' + param)
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'This Mission Is Banned')
 
     def test_mission_neg_out_of_bound(self):
         self.mock_login()
@@ -519,7 +596,7 @@ class UnitTest(TestCase):
         param = "?method=user"
         res = self.client.get('/absanno/user' + param)
         self.assertEqual(res.status_code, 201)
-        self.assertEqual(res.json()['data'], str({'name': 'test', 'score': 0, 'weight': 100, 'num': 0}))
+        self.assertEqual(res.json()['data'], str({'name': 'test', 'score': 0, 'weight': 100, 'num': 0, 'tags': ['']}))
 
     def test_about_pos_mission(self):
         self.mock_login()
@@ -639,3 +716,189 @@ class UnitTest(TestCase):
         res = self.client.post('/absanno/mymission', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 400)
         self.assertEqual(res.json()['data'], 'My Mission Error')
+
+    def test_power_user_show_success(self):
+        self.mock_login()
+        param = "?now_num=0"
+        res = self.client.get('/absanno/alluser' + param)
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.json()['data'], self.power_user_show)
+
+    def test_power_user_show_no_power(self):
+        self.mock_login2()
+        param = "?now_num=0"
+        res = self.client.get('/absanno/alluser' + param)
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], "Dont Have Power")
+
+    def test_power_user_show_now_num_not_digit(self):
+        self.mock_login()
+        param = "?now_num=a"
+        res = self.client.get('/absanno/alluser' + param)
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], "Now_Num Is Not Digit")
+
+    def test_power_user_show_now_num_error(self):
+        self.mock_login()
+        param = "?now_num=999"
+        res = self.client.get('/absanno/alluser' + param)
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], "Now_Num Error")
+
+    def test_power_user_show_method_error(self):
+        self.mock_login()
+        body = {'now_num': '0'}
+        res = self.client.post('/absanno/alluser', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], "Show All Users Failed")
+
+    def test_power_user_show_no_token(self):
+        param = "?now_num=0"
+        res = self.client.get('/absanno/alluser' + param)
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], "No Token Found in Cookie")
+
+    def test_power_user_show_invalid_token(self):
+        self.mock_invalid_token()
+        param = "?now_num=0"
+        res = self.client.get('/absanno/alluser' + param)
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], "Invalid Token or Have Not Login")
+
+    def test_power_upgrade_success(self):
+        self.mock_login2()
+        body = {}
+        res = self.client.post('/absanno/powerup', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.json()['data'], "Upgrade Success")
+
+    def test_power_upgrade_cannot_more(self):
+        self.mock_login()
+        body = {}
+        res = self.client.post('/absanno/powerup', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], "Are You Kidding Me?")
+
+    def test_power_upgrade_method_wrong(self):
+        self.mock_login()
+        param = ""
+        res = self.client.get('/absanno/powerup' + param)
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], "Upgrade Failed")
+
+    def test_power_upgrade_no_token(self):
+        body = {}
+        res = self.client.post('/absanno/powerup', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], "No Token Found in Cookie")
+
+    def test_power_upgrade_invalid_token(self):
+        self.mock_invalid_token()
+        body = {}
+        res = self.client.post('/absanno/powerup', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], "Invalid Token or Have Not Login")
+
+    def test_power_use_method_wrong(self):
+        self.mock_login()
+        param = ""
+        res = self.client.get('/absanno/usepower' + param)
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], "Ban_User Failed")
+
+    def test_power_use_no_token(self):
+        body = {'id': '1', 'method': 'user_ban'}
+        res = self.client.post('/absanno/usepower', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], "No Token Found in Cookie")
+
+    def test_power_use_invalid_token(self):
+        self.mock_invalid_token()
+        body = {'id': '1', 'method': 'user_ban'}
+        res = self.client.post('/absanno/usepower', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], "Invalid Token or Have Not Login")
+
+    def test_power_use_dont_have_power(self):
+        self.mock_login2()
+        body = {'id': '1', 'method': 'user_ban'}
+        res = self.client.post('/absanno/usepower', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], "Dont Have Power")
+
+    def test_power_use_json_error(self):
+        self.mock_login()
+        body = {'id' '1' 'method' 'user_ban'}
+        res = self.client.post('/absanno/usepower', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], "Json Error")
+
+    def test_power_use_id_error(self):
+        self.mock_login()
+        body = {'id': 'a', 'method': 'user_ban'}
+        res = self.client.post('/absanno/usepower', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], "ID Error")
+
+    def test_power_use_no_method(self):
+        self.mock_login()
+        body = {'id': '1'}
+        res = self.client.post('/absanno/usepower', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], "No Method")
+
+    def test_power_use_user_ban_success(self):
+        self.mock_login()
+        body = {'id': '2', 'method': 'user_ban'}
+        res = self.client.post('/absanno/usepower', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.json()['data'], "Ban User Success")
+
+    def test_power_use_user_ban_fail(self):
+        self.mock_login()
+        body = {'id': '0', 'method': 'user_ban'}
+        res = self.client.post('/absanno/usepower', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], "Ban User ID Error")
+
+    def test_power_use_mission_ban_success(self):
+        self.mock_login()
+        body = {'id': '2', 'method': 'mission_ban'}
+        res = self.client.post('/absanno/usepower', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.json()['data'], "Ban Mission Success")
+
+    def test_power_use_mission_ban_fail(self):
+        self.mock_login()
+        body = {'id': '0', 'method': 'mission_ban'}
+        res = self.client.post('/absanno/usepower', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], "Ban Mission ID Error")
+
+    def test_power_use_user_free_success(self):
+        self.mock_login()
+        body = {'id': '2', 'method': 'user_free'}
+        res = self.client.post('/absanno/usepower', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.json()['data'], "Free User Success")
+
+    def test_power_use_user_free_fail(self):
+        self.mock_login()
+        body = {'id': '0', 'method': 'user_free'}
+        res = self.client.post('/absanno/usepower', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], "Free User ID Error")
+
+    def test_power_use_mission_free_success(self):
+        self.mock_login()
+        body = {'id': '2', 'method': 'mission_free'}
+        res = self.client.post('/absanno/usepower', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.json()['data'], "Free Mission Success")
+
+    def test_power_use_mission_free_fail(self):
+        self.mock_login()
+        body = {'id': '0', 'method': 'mission_free'}
+        res = self.client.post('/absanno/usepower', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], "Free Mission ID Error")

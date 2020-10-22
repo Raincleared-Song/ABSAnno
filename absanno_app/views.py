@@ -4,6 +4,7 @@ from .models import Users, Mission, Question, History
 from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.middleware.csrf import get_token
+from zipfile import ZipFile, BadZipFile
 
 
 def hello_world(request):
@@ -96,6 +97,7 @@ def sign_in(request):
 
         name = js['name'] if 'name' in js else ''
         password = js['password'] if 'password' in js else ''
+        tags = js['tags'] if 'tags' in js else ''
         # email = js['email'] if 'email' in js else ''
 
         # 安全性验证
@@ -111,8 +113,9 @@ def sign_in(request):
         gen_user = Users.objects.filter(name=name).first()
         if gen_user:
             return gen_response(400, "User Name Has Existed")
+
         # user = Users(name=name, password=password, email=email)
-        user = Users(name=name, password=password)
+        user = Users(name=name, password=password, tags=tags)
 
         try:
             user.full_clean()
@@ -165,11 +168,23 @@ def user_show(request):
         # TODO
 
         user_id = request.session['user_id'] if check_token(request)[0] == 201 else 0
+        # user_id = request.GET.get('user_id')
 
         num_ = request.GET.get('num')
+        type__ = request.GET.get('type') if 'type' in request.GET else ""
+        theme__ = request.GET.get('theme') if 'theme' in request.GET else ""
+        kw = request.GET.get('kw') if 'kw' in request.GET else ""
 
         if not num_:
             num_ = "0"
+        if type__ != "":
+            type_ = type__.split(",")
+        else:
+            type_ = []
+        if theme__ != "":
+            theme_ = theme__.split(",")
+        else:
+            theme_ = []
 
         if not num_.isdigit():
             return gen_response(400, "Num Is Not Digit")
@@ -180,12 +195,38 @@ def user_show(request):
         # 参考id获取用户画像，进而实现分发算法，目前使用id来进行排序
         # TODO
 
-        mission_list = Mission.objects.filter(Q(to_ans=1) & ~Q(user_id=user_id))
+        if Users.objects.filter(id=user_id).first():
+            mission_list_base = Mission.objects.filter(Q(to_ans=1) & Q(is_banned=0)).order_by('id')
+        else:
+            mission_list_base = Mission.objects.all().order_by('id')
+
+        mission_list = []
+        for mis in mission_list_base:
+            tag_flag, kw_flag = 0, 0
+            if ('total' in type_) or (type_ == []) or (mis.question_form in type_):
+                if ('total' in theme_) or (theme_ == []):
+                    tag_flag = 1
+                else:
+                    for t in theme_:
+                        if t in mis.tags:
+                            tag_flag = 1
+                if tag_flag == 1:
+                    if kw == "":
+                        kw_flag = 1
+                    else:
+                        if (kw in mis.name) or (kw in mis.user.name) or (kw in mis.tags):
+                            kw_flag = 1
+                        for qs in mis.father_mission.all():
+                            if kw in qs.word:
+                                kw_flag = 1
+                    if kw_flag == 1:
+                        mission_list.append(mis)
+
         show_num = 12  # 设计一次更新获得的任务数
         get_num = min(num + show_num, len(mission_list))  # 本次更新获得的任务数
 
         return gen_response(201, {'ret': get_num,
-                                  'total': len(Mission.objects.filter(Q(to_ans=1) & ~Q(user_id=user_id))),
+                                  'total': len(mission_list),
                                   "question_list":
                                       [
                                           {
@@ -193,10 +234,16 @@ def user_show(request):
                                               'name': ret.name,
                                               'user': ret.user.name,
                                               'questionNum': ret.question_num,
-                                              'questionForm': ret.question_form
+                                              'questionForm': ret.question_form,
+                                              'is_banned': ret.is_banned,
+                                              'full': ret.to_ans,
+                                              'total_ans': ret.total,
+                                              'ans_num': ret.now_num,
+                                              'deadline': '',
+                                              'cash': '',
+                                              'tags': ret.tags.split(",")
                                           }
-                                          for ret in Mission.objects.filter(
-                                              Q(to_ans=1) & ~Q(user_id=user_id)).order_by('id')[num: get_num]
+                                          for ret in mission_list[num: get_num]
                                       ]}
                             )
     return gen_response(400, "User Show Error")
@@ -242,6 +289,8 @@ def mission_show(request):
             return gen_response(400, "Num Error")
         if step != -1 and step != 1 and step != 0:
             return gen_response(400, "Step Error")
+        if Mission.objects.get(id=mission_id).is_banned == 1:
+            return gen_response(400, "This Mission Is Banned")
 
         get_num = num + step
         if get_num < 0 or get_num >= len(Mission.objects.get(id=mission_id).father_mission.all()):
@@ -353,15 +402,50 @@ def upload(request):
         if user.power < 1:
             return gen_response(400, "Lack of Permission")
 
-        try:
-            js = json.loads(request.body)
-        except json.decoder.JSONDecodeError:
-            return gen_response(400, "Request Json Error")
+        file = request.FILES.get('zip')
+        question_list = []
+        if file is not None:
+            # upload a zip file
+            try:
+                file = ZipFile(file, mode='r')
+                basic = file.open('basic.json', mode='r')
+                js = json.load(basic)
+                basic.close()
+            except BadZipFile:
+                return gen_response(400, 'Zip File Error (Not Zip File)')
+            except KeyError:
+                return gen_response(400, 'Zip File Error (basic.json Not Found)')
+            except json.JSONDecodeError:
+                return gen_response(400, 'Zip File Error (basic.json Json Error)')
+            if 'question_path' not in js:
+                return gen_response(400, 'Zip File Error (Question Path Not Found)')
+            path = js['question_path']
+            try:
+                q_list = file.open(path, mode='r')
+            except KeyError:
+                return gen_response(400, 'Zip File Error (Question Path Invalid)')
+            for line in q_list.readlines():
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    question_list.append(json.loads(line))
+                except json.JSONDecodeError:
+                    return gen_response(400, 'Zip File Error (questions.json Json Error)')
+            q_list.close()
+            file.close()
+        # normal POST
+        else:
+            try:
+                js = json.loads(request.body)
+            except json.decoder.JSONDecodeError:
+                return gen_response(400, "Request Json Error")
 
         name = js['name'] if 'name' in js else ''
         question_form = js['question_form'] if 'question_form' in js else ''
         question_num_ = js['question_num'] if 'question_num' in js else ''
         total_ = js['total'] if 'total' in js else ''
+        tags = js['mission_tags'] if 'mission_tags' in js else ''
         if not question_num_.isdigit() or name == '' or question_form == '' or not total_.isdigit():
             return gen_response(400, "Upload Contains Error")
         question_num = int(question_num_)
@@ -369,13 +453,14 @@ def upload(request):
 
         try:
             mission = Mission(name=name, question_form=question_form, question_num=question_num, total=total,
-                              user=user)
+                              user=user, tags=tags)
             mission.full_clean()
             mission.save()
         except ValidationError:
             return gen_response(400, "Upload Form Error")
 
-        question_list = js['question_list'] if 'question_list' in js else []
+        if file is None and 'question_list' in js:
+            question_list = js['question_list']
         if not isinstance(question_list, list):
             return gen_response(400, "Question_list Is Not A List")
         if len(question_list) != question_num:
@@ -424,7 +509,8 @@ def about_me(request):
                 'name': ret.name,
                 'score': ret.score,
                 'weight': ret.weight,
-                'num': ret.fin_num
+                'num': ret.fin_num,
+                'tags': ret.tags.split(",")
             })
         elif method == 'mission':
             if ret.power < 1:
@@ -500,6 +586,7 @@ def show_my_mission(request):
                 'question_num': mission.question_num,
                 'total': mission.total,
                 'now_num': mission.now_num,
+                'is_banned': mission.is_banned,
                 'question_list':
                     [
                         {
@@ -513,3 +600,123 @@ def show_my_mission(request):
                     ]
             })
     return gen_response(400, "My Mission Error")
+
+
+# 权限升级
+def power_upgrade(request):
+    if request.method == 'POST':
+
+        code, data = check_token(request)
+        if code == 400:
+            return gen_response(code, data)
+
+        user_id = request.session['user_id']
+
+        if user_id < 1 or user_id > len(Users.objects.all()):
+            return gen_response(400, "User_ID Error")
+
+        # 目前仅限获取发题权限，无法进一步上升为管理员
+        if Users.objects.get(id=user_id).power == 2:
+            return gen_response(400, "Are You Kidding Me?")
+        obj = Users.objects.get(id=user_id)
+        obj.power = 1
+        obj.save()
+        return gen_response(201, "Upgrade Success")
+
+    return gen_response(400, "Upgrade Failed")
+
+
+# 封禁用户
+def power_use(request):
+    if request.method == 'POST':
+
+        code, data = check_token(request)
+        if code == 400:
+            return gen_response(code, data)
+
+        user_id = request.session['user_id']
+        if Users.objects.get(id=user_id).power != 2:
+            return gen_response(400, "Dont Have Power")
+
+        try:
+            js = json.loads(request.body)
+        except json.decoder.JSONDecodeError:
+            return gen_response(400, "Json Error")
+
+        id_ = js['id'] if 'id' in js else '*'
+        method = js['method'] if 'method' in js else 'null'
+        if not id_.isdigit():
+            return gen_response(400, "ID Error")
+        power_id = int(id_)
+        if method == 'null':
+            return gen_response(400, "No Method")
+
+        if method == 'user_ban':
+            if power_id < 1 or power_id > len(Users.objects.all()):
+                return gen_response(400, "Ban User ID Error")
+            if Users.objects.get(id=power_id).power != 2:
+                obj = Users.objects.get(id=power_id)
+                obj.is_banned = 1
+                obj.save()
+                return gen_response(201, "Ban User Success")
+        elif method == 'mission_ban':
+            if power_id < 1 or power_id > len(Mission.objects.all()):
+                return gen_response(400, "Ban Mission ID Error")
+            obj = Mission.objects.get(id=power_id)
+            obj.is_banned = 1
+            obj.save()
+            return gen_response(201, "Ban Mission Success")
+        elif method == 'user_free':
+            if power_id < 1 or power_id > len(Users.objects.all()):
+                return gen_response(400, "Free User ID Error")
+            obj = Users.objects.get(id=power_id)
+            obj.is_banned = 0
+            obj.save()
+            return gen_response(201, "Free User Success")
+        elif method == 'mission_free':
+            if power_id < 1 or power_id > len(Mission.objects.all()):
+                return gen_response(400, "Free Mission ID Error")
+            obj = Mission.objects.get(id=power_id)
+            obj.is_banned = 0
+            obj.save()
+            return gen_response(201, "Free Mission Success")
+
+    return gen_response(400, "Ban_User Failed")
+
+
+# 向管理员展示所有用户
+def power_user_show_user(request):
+    if request.method == 'GET':
+
+        code, data = check_token(request)
+        if code == 400:
+            return gen_response(code, data)
+
+        user_id = request.session['user_id']
+        if Users.objects.get(id=user_id).power != 2:
+            return gen_response(400, "Dont Have Power")
+
+        now_num_ = request.GET.get('now_num') if 'now_num' in request.GET else '0'
+        if not now_num_.isdigit():
+            return gen_response(400, "Now_Num Is Not Digit")
+        now_num = int(now_num_)
+        total = len(Users.objects.filter(Q(power=0) | Q(power=1)))
+        if now_num < 0 or now_num >= total:
+            return gen_response(400, "Now_Num Error")
+
+        num = min(len(Users.objects.filter(Q(power=0) | Q(power=1))), now_num+20)
+
+        return gen_response(201, {'num': num-now_num,
+                                  'total': total,
+                                  'user_list': [{
+                                      'id': ret.id,
+                                      'name': ret.name,
+                                      'power': ret.power,
+                                      'is_banned': ret.is_banned,
+                                      'score': ret.score,
+                                      'weight': ret.weight,
+                                      'fin_num': ret.fin_num,
+                                  } for ret in Users.objects.filter(Q(power=0) | Q(power=1))[now_num: num]
+                                  ]})
+
+    return gen_response(400, "Show All Users Failed")
