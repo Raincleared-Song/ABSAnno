@@ -366,14 +366,17 @@ def mission_show(request):
                         now_question.matched_ans = 0
                     else:
                         now_question.matched_ans = 1
+                    now_question.save()
                 mission.now_num += 1
                 if mission.now_num >= mission.total:
                     mission.to_ans = 0
+                mission.save()
             else:
                 user.weight -= 10
                 user.score -= len(ans_list)
             if user.weight <= 0:
                 user.is_banned = 1
+            user.save()
 
             history = History(user=user, mission=mission)
             history.save()
