@@ -195,8 +195,14 @@ def user_show(request):
         # 参考id获取用户画像，进而实现分发算法，目前使用id来进行排序
         # TODO
 
-        if Users.objects.filter(id=user_id).first():
-            mission_list_base = Mission.objects.filter(Q(to_ans=1) & Q(is_banned=0)).order_by('id')
+        user = Users.objects.filter(id=user_id).first()
+
+        if user:
+            mission_list_temp = Mission.objects.filter(Q(to_ans=1) & Q(is_banned=0)).order_by('id')
+            mission_list_base = []
+            for mission in mission_list_temp:
+                if user.history.filter(mission__id=mission.id).first() is None:
+                    mission_list_base.append(mission)
         else:
             mission_list_base = Mission.objects.all().order_by('id')
 
