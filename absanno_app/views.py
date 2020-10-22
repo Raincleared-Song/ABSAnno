@@ -544,7 +544,7 @@ def about_me(request):
                             'user': mission_ret.mission.user.name,
                             'question_num': mission_ret.mission.question_num,
                             'question_form': mission_ret.mission.question_form,
-                            'ret_time': mission_ret.pub_time
+                            'ret_time': int(mission_ret.pub_time.timestamp() * 1000)
                         }
                         for mission_ret in ret.history.all().order_by('pub_time')
                     ]
