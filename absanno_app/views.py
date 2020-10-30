@@ -5,8 +5,6 @@ from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.middleware.csrf import get_token
 from zipfile import ZipFile, BadZipFile
-import os
-from django.conf import settings
 from django.core.files.base import File
 from io import BytesIO
 
@@ -472,9 +470,6 @@ def upload(request):
                         return gen_response(400, 'Question Image Unspecified')
                     image_name = question['image_name']
                     image_file_path = '/'.join((image_path, image_name))
-                    mission_base_dir = os.path.join(settings.MEDIA_ROOT, name)
-                    if not os.path.exists(mission_base_dir):
-                        os.mkdir(mission_base_dir)
                     try:
                         image_file = file.open(image_file_path)
                         image_list.append(image_file)
@@ -485,7 +480,6 @@ def upload(request):
         elif image_list is not None and len(image_list) > 0:
             try:
                 js = json.loads(request.POST.get('info'))
-                print(js)
             except json.JSONDecodeError:
                 return gen_response(400, "Request Json Error")
             question_num_ = js['question_num'] if 'question_num' in js else ''
