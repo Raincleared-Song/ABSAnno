@@ -308,11 +308,14 @@ def mission_show(request):
 
         ret = Mission.objects.get(id=mission_id).father_mission.all().order_by('id')[get_num]
 
-        if Mission.objects.get(id=mission_id).question_form == "judgement":  # 题目型式为判断题的情况
+        question_form = Mission.objects.get(id=mission_id).question_form
+        if question_form == "judgement" or question_form == "judgement-image":  # 题目型式为判断题的情况
             return gen_response(201, {
                 'total': len(Mission.objects.get(id=mission_id).father_mission.all()),
+                'type': ret.type,
                 'ret': get_num,
                 'word': ret.word,
+                'image_url': ret.picture_url() if question_form.endswith('-image') else ""
             })
 
         # 题目为选择题型式之后实现
@@ -482,6 +485,7 @@ def upload(request):
         elif image_list is not None and len(image_list) > 0:
             try:
                 js = json.loads(request.POST.get('info'))
+                print(js)
             except json.JSONDecodeError:
                 return gen_response(400, "Request Json Error")
             question_num_ = js['question_num'] if 'question_num' in js else ''
@@ -531,7 +535,7 @@ def upload(request):
                 if contains == '':
                     return gen_response(400, "Question Contains is Null")
                 try:
-                    question = Question(word=contains, mission=mission)
+                    question = Question(word=contains, mission=mission, type=mission.question_form)
                     if question_form.endswith('-image'):
                         image_file = image_list[k]
                         file_name = image_file.name.split('/').pop()
