@@ -469,7 +469,6 @@ def upload(request):
                         return gen_response(400, 'Question Image Unspecified')
                     image_name = question['image_name']
                     image_file_path = '/'.join((image_path, image_name))
-                    # image_list.append(image_name)
                     mission_base_dir = os.path.join(settings.MEDIA_ROOT, name)
                     if not os.path.exists(mission_base_dir):
                         os.mkdir(mission_base_dir)
@@ -485,6 +484,13 @@ def upload(request):
                 js = json.loads(request.POST.get('info'))
             except json.JSONDecodeError:
                 return gen_response(400, "Request Json Error")
+            question_num_ = js['question_num'] if 'question_num' in js else ''
+            if not question_num_.isdigit():
+                return gen_response(400, "Upload Contains Error")
+            question_num = int(question_num_)
+            if question_num != len(image_list):
+                return gen_response(400, "ImageList Length Error")
+
         # normal POST
         else:
             try:
