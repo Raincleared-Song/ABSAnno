@@ -1,5 +1,7 @@
 from django.urls import path
 from . import views, tests
+from django.conf.urls.static import static
+from django.conf import settings
 
 urlpatterns = [
 
@@ -18,4 +20,4 @@ urlpatterns = [
     path('usepower', views.power_use, name='power_use'),
     path('powerup', views.power_upgrade, name='power_up')
 
-]
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

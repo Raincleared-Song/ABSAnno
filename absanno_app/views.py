@@ -5,6 +5,10 @@ from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.middleware.csrf import get_token
 from zipfile import ZipFile, BadZipFile
+import os
+from django.conf import settings
+from django.core.files.base import File
+from io import BytesIO
 
 
 def hello_world(request):
@@ -408,7 +412,8 @@ def upload(request):
         if user.power < 1:
             return gen_response(400, "Lack of Permission")
 
-        file = request.FILES.get('zip')
+        file = request.FILES.get('zip', None)
+        image_list = request.FILES.getlist('img_list', None)
         question_list = []
         if file is not None:
             # upload a zip file
@@ -439,12 +444,52 @@ def upload(request):
                 except json.JSONDecodeError:
                     return gen_response(400, 'Zip File Error (questions.json Json Error)')
             q_list.close()
-            file.close()
+
+            name = js['name'] if 'name' in js else ''
+            question_form = js['question_form'] if 'question_form' in js else ''
+            question_num_ = js['question_num'] if 'question_num' in js else ''
+            if not question_num_.isdigit() or question_form == '' or name == '':
+                return gen_response(400, "Upload Contains Error")
+            question_num = int(question_num_)
+            if 'question_list' in js:
+                question_list = js['question_list']
+            if not isinstance(question_list, list):
+                return gen_response(400, "Question_list Is Not A List")
+            if len(question_list) != question_num:
+                return gen_response(400, "Question_list Length Error")
+
+            if question_form.endswith('-image'):
+                # 上传的是图片题
+                image_path = js['image_path'] if 'image_path' in js else ''
+                if image_path == '':
+                    return gen_response(400, "Upload Contains Error")
+                image_list = []
+                for question in question_list:
+                    if 'image_name' not in question:
+                        return gen_response(400, 'Question Image Unspecified')
+                    image_name = question['image_name']
+                    image_file_path = '/'.join((image_path, image_name))
+                    # image_list.append(image_name)
+                    mission_base_dir = os.path.join(settings.MEDIA_ROOT, name)
+                    if not os.path.exists(mission_base_dir):
+                        os.mkdir(mission_base_dir)
+                    try:
+                        image_file = file.open(image_file_path)
+                        image_list.append(image_file)
+                    except KeyError:
+                        return gen_response(400, 'File %s Do Not Exist' % image_file_path)
+
+        # image post
+        elif image_list is not None and len(image_list) > 0:
+            try:
+                js = json.loads(request.POST.get('info'))
+            except json.JSONDecodeError:
+                return gen_response(400, "Request Json Error")
         # normal POST
         else:
             try:
                 js = json.loads(request.body)
-            except json.decoder.JSONDecodeError:
+            except json.JSONDecodeError:
                 return gen_response(400, "Request Json Error")
 
         name = js['name'] if 'name' in js else ''
@@ -457,6 +502,13 @@ def upload(request):
         question_num = int(question_num_)
         total = int(total_)
 
+        if file is None and 'question_list' in js:
+            question_list = js['question_list']
+        if not isinstance(question_list, list):
+            return gen_response(400, "Question_list Is Not A List")
+        if len(question_list) != question_num:
+            return gen_response(400, "Question_list Length Error")
+
         try:
             mission = Mission(name=name, question_form=question_form, question_num=question_num, total=total,
                               user=user, tags=tags)
@@ -465,23 +517,20 @@ def upload(request):
         except ValidationError:
             return gen_response(400, "Upload Form Error")
 
-        if file is None and 'question_list' in js:
-            question_list = js['question_list']
-        if not isinstance(question_list, list):
-            return gen_response(400, "Question_list Is Not A List")
-        if len(question_list) != question_num:
-            return gen_response(400, "Question_list Length Error")
-
         # 判断题限定ver.
-
-        if mission.question_form == "judgement":
-            for i in question_list:
+        if mission.question_form == "judgement" or mission.question_form == "judgement-image":
+            for k, i in enumerate(question_list):
                 contains = i['contains'] if 'contains' in i else ''
                 ans = i['ans'] if 'ans' in i else ''
                 if contains == '':
                     return gen_response(400, "Question Contains is Null")
                 try:
                     question = Question(word=contains, mission=mission)
+                    if question_form.endswith('-image'):
+                        image_file = image_list[k]
+                        file_name = image_file.name.split('/').pop()
+                        question.picture.save(file_name, File(BytesIO(image_file.read())))
+                        image_file.close()
                     if ans == 'T' or ans == 'F' or ans == '':
                         question.pre_ans = ans
                         if ans != '':
@@ -493,6 +542,8 @@ def upload(request):
                 except ValidationError:
                     return gen_response(400, "Question Form Error")
             return gen_response(201, "Judgement Upload Success")
+        if file is not None:
+            file.close()
 
     return gen_response(400, "Upload Error")
 

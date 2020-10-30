@@ -57,8 +57,7 @@ ROOT_URLCONF = 'absanno.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'templates')]
-        ,
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -126,3 +125,9 @@ USE_TZ = False
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
 STATIC_URL = '/static/'
+
+# the folder to store images
+MEDIA_ROOT = os.path.join(BASE_DIR, 'image')
+
+# the url to upload images
+MEDIA_URL = '/media/'
