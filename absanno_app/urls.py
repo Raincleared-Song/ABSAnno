@@ -19,6 +19,7 @@ urlpatterns = [
     path('powerup', views.power_upgrade, name='power_up'),
     path('repshow', views.rep_show, name="rep_show"),
     path('applyshow', views.apply_show, name='apply_show'),
-    path('sendapply', views.send_apply, name='send_apply')
+    path('sendapply', views.send_apply, name='send_apply'),
+    path('receive', views.book_the_mission, name='book_mission')
 
 ]

@@ -319,7 +319,8 @@ def mission_show(request):
         ret = mission.father_mission.all().order_by('id')[get_num]
 
         return gen_response(201, {
-            'total': len(Mission.objects.get(id=mission_id).father_mission.all()),
+            'total': len(mission.father_mission.all()),
+            'type': mission.question_form,
             'ret': get_num,
             'word': ret.word,
             'choices': ret.choices
@@ -715,6 +716,8 @@ def book_the_mission(request):
             return gen_response(400, "Mission ID Error")
         user = Users.objects.get(id=user_id)
         mission = Mission.objects.get(id=mission_id)
+        mission.reception_num += 1
+        mission.save()
 
         try:
             rep = Reception(user=user, mission=mission)
@@ -722,6 +725,7 @@ def book_the_mission(request):
             rep.save()
         except ValidationError:
             return gen_response(400, "Form Error")
+        return gen_response(201, "Book Success")
 
     return gen_response(400, "Book Failed")
 
@@ -750,6 +754,7 @@ def apply_show(request):
             'apply_list':
             [
                 {
+                    'id': ret.id,
                     'user': ret.user,
                     'pub_time': ret.pub_time,
                     'type': ret.type,
@@ -760,6 +765,47 @@ def apply_show(request):
         })
 
     return gen_response(400, "Apply Show Failed")
+
+
+# 操作apply
+def admin_apply(request):
+    if request.method == 'POST':
+
+        code, data = check_token(request)
+        if code == 400:
+            return gen_response(code, data)
+
+        try:
+            js = json.loads(request.body)
+        except json.decoder.JSONDecodeError:
+            return gen_response(400, "Json Error")
+
+        method = js['method'] if 'method' in js else ''
+        apply_id_ = js['apply_id'] if 'apply_id' in js else '0'
+
+        if not apply_id_.isdigit():
+            return gen_response(400, "Apply ID Is Not Digit")
+
+        apply_id = int(apply_id_)
+        if apply_id < 1 or apply_id > len(Apply.objects.all()):
+            return gen_response(400, "Apply ID Error")
+        apply = Apply.objects.get(id=apply_id)
+
+        user_id = request.session['user_id']
+        if user_id < 1 or user_id > len(Users.objects.all()):
+            return gen_response(400, "User ID Error")
+        user = Users.objects.get(id=user_id)
+        if user.power != 2:
+            return gen_response(400, "Dont Have Power")
+
+        if method == 'Accept':
+            apply.accept = 1
+        else:
+            apply.accept = 2
+        apply.save()
+        return gen_response(400, "Admin Success")
+
+    return gen_response(400, "Admin Error")
 
 
 # 展示我的接单内容
