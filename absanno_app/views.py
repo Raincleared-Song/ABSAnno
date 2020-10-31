@@ -1,14 +1,30 @@
 from django.http import JsonResponse, HttpResponse
 import json
-from .models import Users, Mission, Question, History
+from .models import Users, Mission, Question, History, Apply, Message, Reception
 from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.middleware.csrf import get_token
 from zipfile import ZipFile, BadZipFile
+import django.utils.timezone as timezone
+import datetime
 
 
 def hello_world(request):
     return HttpResponse("Hello Absanno!")
+
+
+def int_to_ABC(a: int):
+    return chr(a+ord('A'))
+
+
+def ABC_to_int(c: str):
+    return ord(c)-ord('A')
+
+
+def get_ans_lst(ans: str):
+    ret = ans.split('||')
+    ret.remove('')
+    return ret
 
 
 def get_csrf(request):
@@ -167,8 +183,7 @@ def user_show(request):
         # 安全性验证
         # TODO
 
-        # user_id = request.session['user_id'] if check_token(request)[0] == 201 else 0
-        user_id = request.GET.get('user_id')
+        user_id = request.session['user_id'] if check_token(request)[0] == 201 else 0
 
         num_ = request.GET.get('num')
         type__ = request.GET.get('type') if 'type' in request.GET else ""
@@ -220,7 +235,8 @@ def user_show(request):
                             if kw in qs.word:
                                 kw_flag = 1
                     if kw_flag == 1:
-                        mission_list.append(mis)
+                        if (mis.reception_num < mis.total) and (mis.deadline > timezone.now()):
+                            mission_list.append(mis)
 
         show_num = 12  # 设计一次更新获得的任务数
         get_num = min(num + show_num, len(mission_list))  # 本次更新获得的任务数
@@ -239,8 +255,9 @@ def user_show(request):
                                               'full': ret.to_ans,
                                               'total_ans': ret.total,
                                               'ans_num': ret.now_num,
-                                              'deadline': '',
-                                              'cash': '',
+                                              'deadline': ret.deadline,
+                                              'cash': ret.reward,
+                                              'info': ret.info,
                                               'tags': ret.tags.split(",")
                                           }
                                           for ret in mission_list[num: get_num]
@@ -289,26 +306,24 @@ def mission_show(request):
             return gen_response(400, "Num Error")
         if step != -1 and step != 1 and step != 0:
             return gen_response(400, "Step Error")
-        if Mission.objects.get(id=mission_id).is_banned == 1:
+        mission = Mission.objects.get(id=mission_id)
+        if mission.is_banned == 1:
             return gen_response(400, "This Mission Is Banned")
 
         get_num = num + step
-        if get_num < 0 or get_num >= len(Mission.objects.get(id=mission_id).father_mission.all()):
+        if get_num < 0 or get_num >= len(mission.father_mission.all()):
             return gen_response(400, "Runtime Error")
+        if mission.deadline <= timezone.now():
+            return gen_response(400, "After The Deadline")
 
-        ret = Mission.objects.get(id=mission_id).father_mission.all().order_by('id')[get_num]
+        ret = mission.father_mission.all().order_by('id')[get_num]
 
-        if Mission.objects.get(id=mission_id).question_form == "judgement":  # 题目型式为判断题的情况
-            return gen_response(201, {
-                'total': len(Mission.objects.get(id=mission_id).father_mission.all()),
-                'ret': get_num,
-                'word': ret.word,
-            })
-
-        # 题目为选择题型式之后实现
-        # TODO
-
-        return gen_response(400, "Change Question Error")
+        return gen_response(201, {
+            'total': len(Mission.objects.get(id=mission_id).father_mission.all()),
+            'ret': get_num,
+            'word': ret.word,
+            'choices': ret.choices
+        })
 
     elif request.method == 'POST':
 
@@ -329,9 +344,9 @@ def mission_show(request):
             return gen_response(400, "Request Json Error")
 
         mission_id_ = js['mission_id'] if 'mission_id' in js else '-1'
-        ans_list = js['ans'] if 'ans' in js else []
+        ans = js['ans'] if 'ans' in js else ''
 
-        if not mission_id_.isdigit() or not isinstance(ans_list, list):
+        if not mission_id_.isdigit():
             return gen_response(400, "Not Digit Or Not List Error")
 
         mission_id = int(mission_id_)
@@ -340,53 +355,42 @@ def mission_show(request):
 
         user = find_user_by_token(request)
         mission = Mission.objects.get(id=mission_id)
-        if len(ans_list) != len(mission.father_mission.all()):
-            return gen_response(400, "Ans List Error")
 
-        # 开始结算
-        # 判断题
-        if mission.question_form == "judgement":
-            user.score += len(mission.father_mission.all())
-            user.fin_num += 1
-            flag = True
-            for i in range(0, len(ans_list)):
-                if mission.father_mission.all().order_by('id')[i].pre_ans != "" and \
-                        mission.father_mission.all().order_by('id')[i].pre_ans != ans_list[i]:
-                    user.score -= 5
-                    flag = False
-            if flag:
-                user.weight += 1
-                for i in range(0, len(ans_list)):
-                    now_question = mission.father_mission.all().order_by('id')[i]
-                    if ans_list[i] == 'T':
-                        now_question.T_num += 1
-                    elif ans_list[i] == 'F':
-                        now_question.F_num += 1
-                    if now_question.F_num > now_question.T_num:
-                        now_question.matched_ans = 0
-                    else:
-                        now_question.matched_ans = 1
-                    now_question.save()
+        flag = 1
+        tot, g = 0, 0
+
+        if mission.question_form == 'Chosen':
+            ans_list = get_ans_lst(ans)
+            q_list = mission.father_mission.all()
+            for i in range(len(ans_list)):
+                if q_list[i].pre_ans != '':
+                    tot += 1
+                    if q_list[i].pre_ans == ans_list[i]:
+                        g += 1
+            if g * 100 / tot < 60:
+                flag = 0
+            if flag == 1:
+                user.weight += 5
+                if user.weight > 100:
+                    user.weight = 100
+                user.coin += mission.reward
+                user.fin_num += 1
+                user.save()
                 mission.now_num += 1
-                if mission.now_num >= mission.total:
+                if mission.now_num == mission.total:
                     mission.to_ans = 0
                 mission.save()
+                history = History(user=user, mission=mission, ans=ans, ans_weight=user.weight)
+                history.save()
+                return gen_response(201, "Success")
             else:
-                user.weight -= 10
-                user.score -= len(ans_list)
-            if user.weight <= 0:
-                user.is_banned = 1
-            user.save()
+                user.weight -= 5
+                if user.weight < 0:
+                    user.weight = 0
+                    user.is_banned = 1
+                user.save()
+                return gen_response(201, "Didnt Pass The Test")
 
-            history = History(user=user, mission=mission)
-            history.save()
-
-        # 选择题
-        # TODO
-
-        # 之后需要优化weight等内容
-
-        return gen_response(201, "Answer Pushed")
     return gen_response(400, 'Mission Show Error')
 
 
@@ -448,15 +452,27 @@ def upload(request):
         question_form = js['question_form'] if 'question_form' in js else ''
         question_num_ = js['question_num'] if 'question_num' in js else ''
         total_ = js['total'] if 'total' in js else ''
+        reward_ = js['reward'] if 'reward' in js else '100'
+        deadline_ = js['deadline'] if 'deadline' in js else '2022-6-30'
+        check_way = js['check_way'] if 'check_way' in js else 'auto'
+        info = js['info'] if 'info' in js else ''
         tags = js['mission_tags'] if 'mission_tags' in js else ''
-        if not question_num_.isdigit() or name == '' or question_form == '' or not total_.isdigit():
+        if not question_num_.isdigit() or name == '' or question_form == '' or not total_.isdigit() or not reward_.isdigit():
             return gen_response(400, "Upload Contains Error")
         question_num = int(question_num_)
         total = int(total_)
+        reward = int(reward_)
+        d_list = deadline_.split('-')
+        y, m, d = int(d_list[0]), int(d_list[1]), int(d_list[2])
+        deadline = datetime.date(y, m, d)
+
+        cost = reward * total
+        if user.coin < cost:
+            return gen_response(400, "You Dont Have Enough Coin")
 
         try:
             mission = Mission(name=name, question_form=question_form, question_num=question_num, total=total,
-                              user=user, tags=tags)
+                              user=user, tags=tags, reward=reward, check_way=check_way, info=info, deadline=deadline)
             mission.full_clean()
             mission.save()
         except ValidationError:
@@ -469,32 +485,21 @@ def upload(request):
         if len(question_list) != question_num:
             return gen_response(400, "Question_list Length Error")
 
-        # 判断题限定ver.
-
-        if mission.question_form == "judgement":
-            for i in question_list:
-                contains = i['contains'] if 'contains' in i else ''
-                ans = i['ans'] if 'ans' in i else ''
-                if contains == '':
-                    return gen_response(400, "Question Contains is Null")
-                try:
-                    question = Question(word=contains, mission=mission)
-                    if ans == 'T' or ans == 'F' or ans == '':
-                        question.pre_ans = ans
-                        if ans != '':
-                            question.has_pre_ans = 1
-                    else:
-                        return gen_response(400, "Ans Set Error")
-                    question.full_clean()
-                    question.save()
-                except ValidationError:
-                    return gen_response(400, "Question Form Error")
-            return gen_response(201, "Judgement Upload Success")
-        if mission.question_form == "chosen":
-            for i in question_list:
-                contains = i['contains'] if 'contains' in i else ''
-                options_ = i['options'] if 'options' in i else ''
-                ans_ = i['ans'] if 'ans' in i else ''
+        for i in question_list:
+            contains = i['contains'] if 'contains' in i else ''
+            ans = i['ans'] if 'ans' in i else ''
+            choices = i['choices'] if 'choices' in i else ''
+            if contains == '':
+                return gen_response(400, "Question Contains is Null")
+            if choices == '':
+                return gen_response(400, "There Is No Choice")
+            try:
+                question = Question(word=contains, mission=mission, choices=choices, pre_ans=ans)
+                question.full_clean()
+                question.save()
+            except ValidationError:
+                return gen_response(400, "Question Form Error")
+        return gen_response(201, "Judgement Upload Success")
 
     return gen_response(400, "Upload Error")
 
@@ -513,13 +518,17 @@ def about_me(request):
             return gen_response(400, 'User is Banned')
 
         if method == 'user':
+            tags = ret.tags.split(",")
+            tags.remove('')
             return gen_response(201, {
                 'name': ret.name,
-                'score': ret.score,
+                'coin': ret.coin,
                 'weight': ret.weight,
                 'num': ret.fin_num,
-                'tags': ret.tags.split(",")
+                'tags': tags,
+                'power': ret.power
             })
+
         elif method == 'mission':
             if ret.power < 1:
                 return gen_response(400, "Lack of Permission")
@@ -533,7 +542,13 @@ def about_me(request):
                             'total': mission_ret.total,
                             'num': mission_ret.now_num,
                             'question_num': mission_ret.question_num,
-                            'question_form': mission_ret.question_form
+                            'question_form': mission_ret.question_form,
+                            'to_ans': mission_ret.to_ans,
+                            'reward': mission_ret.reward,
+                            'deadline': mission_ret.deadline,
+                            'info': mission_ret.info,
+                            'check_way': mission_ret.check_way,
+                            'is_banned': mission_ret.is_banned
                         }
                         for mission_ret in ret.promulgator.all().order_by('id')
                     ]
@@ -549,10 +564,25 @@ def about_me(request):
                             'user': mission_ret.mission.user.name,
                             'question_num': mission_ret.mission.question_num,
                             'question_form': mission_ret.mission.question_form,
+                            'reward': mission_ret.mission.reward,
+                            'info': mission_ret.mission.info,
                             'ret_time': mission_ret.pub_time
                         }
                         for mission_ret in ret.history.all().order_by('pub_time')
                     ]
+            })
+        elif method == 'apply':
+            return gen_response(201, {
+                'total_num': len(ret.user_apply.all()),
+                'apply_list':
+                [
+                    {
+                        'type': apply_ret.type,
+                        'pub_time': apply_ret.pub_time,
+                        'accept': apply_ret.accept
+                    }
+                    for apply_ret in ret.user_apply.all().order_by('pub_time')
+                ]
             })
         else:
             return gen_response(400, "Method Is Illegal")
@@ -585,9 +615,29 @@ def show_my_mission(request):
             return gen_response(400, "The ID Is Wrong")
         mission = Mission.objects.get(id=mission_id)
 
-        # 判断题模式
+        # 选择题模式
 
-        if mission.question_form == "judgement":
+        if mission.question_form == "Chosen":
+
+            for i in range(len(mission.father_mission.all())):
+                if mission.father_mission.all()[i].ans == "NULL":
+                    weight_list = []
+                    ans, tot_weight = 0, 0
+                    q = mission.father_mission.all()[i]
+                    c_lst = get_ans_lst(q.choices)
+                    c_num = len(c_lst)
+                    for j in range(c_num):
+                        weight_list.append(0)
+                    for his in mission.ans_history.all():
+                        a_lst = get_ans_lst(his.ans)
+                        weight_list[ABC_to_int(a_lst[i])] += his.ans_weight
+                        tot_weight += his.ans_weight
+                    for j in range(c_num):
+                        if weight_list[j] > weight_list[ans]:
+                            ans = j
+                    q.ans = int_to_ABC(ans)
+                    q.ans_weight = weight_list[ans] / tot_weight
+
             return gen_response(201, {
                 'mission_name': mission.name,
                 'question_form': mission.question_form,
@@ -599,10 +649,9 @@ def show_my_mission(request):
                     [
                         {
                             'word': ret.word,
-                            'T_num': ret.T_num,
-                            'F_num': ret.F_num,
                             'pre_ans': ret.pre_ans,
-                            'ans': ret.matched_ans
+                            'ans': ret.ans,
+                            'ans_weight': ret.ans_weight,
                         }
                         for ret in mission.father_mission.all()
                     ]
@@ -610,8 +659,8 @@ def show_my_mission(request):
     return gen_response(400, "My Mission Error")
 
 
-# 权限升级
-def power_upgrade(request):
+# 申请
+def send_apply(request):
     if request.method == 'POST':
 
         code, data = check_token(request)
@@ -619,6 +668,156 @@ def power_upgrade(request):
             return gen_response(code, data)
 
         user_id = request.session['user_id']
+        user = Users.objects.get(id=user_id)
+
+        try:
+            js = json.loads(request.body)
+        except json.decoder.JSONDecodeError:
+            return gen_response(400, "Json Error")
+
+        type_ = js['type'] if 'type' in js else ''
+        if type_ == '':
+            return gen_response(400, "No Type Send")
+
+        try:
+            apply = Apply(user=user, type=type_)
+            apply.full_clean()
+            apply.save()
+        except ValidationError:
+            return gen_response(400, "Apply Form Error")
+
+        return gen_response(201, "Send Success")
+
+    return gen_response(400, "Send Failed")
+
+
+# 接单
+def book_the_mission(request):
+    if request.method == 'POST':
+
+        code, data = check_token(request)
+        if code == 400:
+            return gen_response(code, data)
+
+        user_id = request.session['user_id']
+
+        try:
+            js = json.loads(request.body)
+        except json.decoder.JSONDecodeError:
+            return gen_response(400, "Json Error")
+
+        mission_id_ = js['mission_id'] if 'mission_id' in js else '0'
+        if not mission_id_.isdigit():
+            return gen_response(400, "Mission ID Is Not Digit")
+        mission_id = int(mission_id_)
+
+        if user_id < 1 or user_id > len(Users.objects.all()):
+            return gen_response(400, "User ID Error")
+        if mission_id < 1 or mission_id > len(Mission.objects.all()):
+            return gen_response(400, "Mission ID Error")
+        user = Users.objects.get(id=user_id)
+        mission = Mission.objects.get(id=mission_id)
+
+        try:
+            rep = Reception(user=user, mission=mission)
+            rep.full_clean()
+            rep.save()
+        except ValidationError:
+            return gen_response(400, "Form Error")
+
+    return gen_response(400, "Book Failed")
+
+
+# 展示申请，对管理员
+def apply_show(request):
+    if request.method == 'GET':
+
+        code, data = check_token(request)
+        if code == 400:
+            return gen_response(code, data)
+
+        user_id = request.session['user_id']
+        if user_id < 1 or user_id > len(Users.objects.all()):
+            return gen_response(400, "User ID Error")
+        user = Users.objects.get(id=user_id)
+        if user.power < 2:
+            return gen_response(400, "Dont Have Power")
+
+        return gen_response(201, {
+            'apply_num': len(Apply.objects.all()),
+            'apply_list':
+            [
+                {
+                    'user': ret.user,
+                    'pub_time': ret.pub_time,
+                    'type': ret.type,
+                    'accept': ret.accept
+                }
+                for ret in Apply.objects.all().order_by('pub_time')
+            ]
+        })
+
+    return gen_response(400, "Apply Show Failed")
+
+
+# 展示我的接单内容
+def rep_show(request):
+    if request.method == 'GET':
+
+        code, data = check_token(request)
+        if code == 400:
+            return gen_response(code, data)
+
+        user_id = request.session['user_id']
+        if user_id < 1 or user_id > len(Users.objects.all()):
+            return gen_response(400, "User ID Error")
+        user = Users.objects.get(id=user_id)
+
+        rep_list = Reception.objects.filter(Q(user=user) & Q(can_do=True)).order_by('pub_time')
+
+        return gen_response(201, {
+            'total_num': len(rep_list),
+            'user_name': user.name,
+            'rep_list':
+            [
+                {
+                    'pub_time': ret.pub_time,
+                    'deadline': ret.deadline,
+                    'mission_name': ret.mission.name,
+                    'mission_info': ret.mission.info,
+                    'mission_deadline': ret.mission.deadline,
+                    'mission_reward': ret.mission.reward,
+                    'question_form': ret.mission.question_form,
+                    'question_num': ret.mission.question_num
+                }
+                for ret in rep_list
+            ]
+        })
+
+    return gen_response(400, "Rep Show Failed")
+
+
+# 权限升级管理员审批
+def power_upgrade(request):
+    if request.method == 'POST':
+
+        code, data = check_token(request)
+        if code == 400:
+            return gen_response(code, data)
+
+        now_id = request.session['user_id']
+        if Users.objects.get(id=now_id).power < 2:
+            return gen_response(400, "You Dont Have Power")
+
+        try:
+            js = json.loads(request.body)
+        except json.decoder.JSONDecodeError:
+            return gen_response(400, "Json Error")
+
+        user_id_ = js['p_id'] if 'p_id' in js else '0'
+        if not user_id_.isdigit():
+            return gen_response(400, "UserID Error")
+        user_id = int(user_id_)
 
         if user_id < 1 or user_id > len(Users.objects.all()):
             return gen_response(400, "User_ID Error")
@@ -721,9 +920,10 @@ def power_user_show_user(request):
                                       'name': ret.name,
                                       'power': ret.power,
                                       'is_banned': ret.is_banned,
-                                      'score': ret.score,
+                                      'coin': ret.coin,
                                       'weight': ret.weight,
                                       'fin_num': ret.fin_num,
+                                      'tags': ret.tags
                                   } for ret in Users.objects.filter(Q(power=0) | Q(power=1))[now_num: num]
                                   ]})
 
