@@ -1,5 +1,6 @@
 from django.db import models
 import django.utils.timezone as timezone
+import os
 
 
 class Users(models.Model):
@@ -58,6 +59,10 @@ class Mission(models.Model):
     # TODO
 
 
+def question_image_path(instance, filename):
+    return os.path.join(instance.mission.name, filename)
+
+
 class Question(models.Model):  # 判断题和选择题均使用Question存储
     mission = models.ForeignKey(Mission, on_delete=models.CASCADE, related_name="father_mission")  # 关联题目来自的任务
     word = models.CharField(default="", max_length=200, blank=True)  # 文字描述，最多200字
@@ -76,11 +81,18 @@ class Question(models.Model):  # 判断题和选择题均使用Question存储
     pre_ans = models.CharField(default="", max_length=1, blank=True)
 
     # 选择题内容
-
     chosen_num = models.IntegerField(default=2)  # 选项的数目，最多为8个
     ans_num = models.IntegerField(default=0)  # 答案的数目，最多为chosen_num
     single = models.IntegerField(default=1)  # 是否作单选题处理，1表示作单选题处理，0表示作不定项选择题处理
     has_pre_ans = models.IntegerField(default=0)  # 是否有预设选项，0表示没有，1表示有
+
+    picture = models.ImageField(upload_to=question_image_path, blank=True, null=True)
+
+    def picture_url(self):
+        if self.picture:
+            return '/'.join(('', 'backend', 'media', self.mission.name, self.picture.name))
+        else:
+            return '/backend/media/logo/app.png'
 
     # 设置选项，分别为选项的文字描述，图片描述和被选择的次数
     # 文字描述长度限制为30字，图片描述中""表示没有图片

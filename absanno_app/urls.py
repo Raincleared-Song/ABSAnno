@@ -1,5 +1,8 @@
 from django.urls import path
 from . import views, tests
+from django.conf.urls import url
+from django.conf import settings
+from django.views.static import serve
 
 urlpatterns = [
 
@@ -16,6 +19,7 @@ urlpatterns = [
     path('mymission', views.show_my_mission, name='my_mission'),
     path('alluser', views.power_user_show_user, name='show_users'),
     path('usepower', views.power_use, name='power_use'),
-    path('powerup', views.power_upgrade, name='power_up')
+    path('powerup', views.power_upgrade, name='power_up'),
+    url(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
 
 ]

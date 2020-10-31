@@ -33,6 +33,9 @@ class UnitTest(TestCase):
         self.upload_pos_case2 = {"name": "task", "question_form": "judgement", "question_num": "2", "total": "5",
                                 "question_list": [{"contains": "title3", "ans": "T"},
                                                   {"contains": "title4", "ans": "F"}]}
+        self.upload_pos_case3 = '{"name": "test_image", "question_form": "judgement-image", "question_num": "2", ' \
+                                '"total": "5", "question_list": [{"contains": "title3", "ans": ""}, {"contains": ' \
+                                '"title4", "ans": ""}]}'
         self.square_pos_case1 = str({'ret': 2, 'total': 2, 'question_list':
             [{'id': 1, 'name': 'task_test', 'user': 'test', 'questionNum': 2, 'questionForm': 'judgement',
               'is_banned': 0, 'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': '', 'cash': '', 'tags': ['']},
@@ -226,6 +229,23 @@ class UnitTest(TestCase):
         file = open('test_data/zip/pos.zip', 'rb')
         res = self.client.post('/absanno/upload', data={'zip': file})
         file.close()
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.json()['data'], 'Judgement Upload Success')
+
+    def test_upload_pos_zip_image(self):
+        self.mock_login()
+        file = open('test_data/zip/pos_img.zip', 'rb')
+        res = self.client.post('/absanno/upload', data={'zip': file})
+        file.close()
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.json()['data'], 'Judgement Upload Success')
+
+    def test_upload_pos_image_list(self):
+        self.mock_login()
+        files = [open('test_data/zip/res/app.png', 'rb'), open('test_data/zip/res/app2.png', 'rb')]
+        res = self.client.post('/absanno/upload', data={'info': self.upload_pos_case3, 'img_list': files})
+        files[0].close()
+        files[1].close()
         self.assertEqual(res.status_code, 201)
         self.assertEqual(res.json()['data'], 'Judgement Upload Success')
 
@@ -450,7 +470,8 @@ class UnitTest(TestCase):
         param = "?id=1&num=0&step=1"
         res = self.client.get('/absanno/mission' + param)
         self.assertEqual(res.status_code, 201)
-        self.assertEqual(res.json()['data'], str({'total': 2, 'ret': 1, 'word': 'title2'}))
+        self.assertEqual(res.json()['data'], str({'total': 2, 'type': 'judgement', 'ret': 1,
+                                                  'word': 'title2', 'image_url': ''}))
 
     def test_mission_neg_no_token(self):
         param = "?id=1&num=0&step=1"
