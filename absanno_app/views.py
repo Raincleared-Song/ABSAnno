@@ -740,11 +740,15 @@ def apply_show(request):
         if user_id < 1 or user_id > len(Users.objects.all()):
             return gen_response(400, "User ID Error")
         user = Users.objects.get(id=user_id)
-        if user.power < 2:
-            return gen_response(400, "Dont Have Power")
+
+        apply_list = []
+        if user.power == 2:
+            apply_list = Apply.objects.all().order_by('pub_time')
+        else:
+            apply_list = Apply.objects.filter(user=user).order_by('pub_time')
 
         return gen_response(201, {
-            'apply_num': len(Apply.objects.all()),
+            'apply_num': len(apply_list),
             'apply_list':
             [
                 {
@@ -753,7 +757,7 @@ def apply_show(request):
                     'type': ret.type,
                     'accept': ret.accept
                 }
-                for ret in Apply.objects.all().order_by('pub_time')
+                for ret in apply_list
             ]
         })
 
