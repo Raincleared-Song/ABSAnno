@@ -19,7 +19,7 @@ class Users(models.Model):
     power = models.IntegerField(default=0)  # 用户权限，0 为普通用户，1 为发布者，2 为管理员
     # email = models.CharField(max_length=50)  # 用户邮箱，目前可能用不到，之后可以增加与用户邮箱的关联
     # 可以用于注册时对于用户的验证以及用户找回密码
-    tags = models.CharField(default="", max_length=1000, blank=True)  # 存储tag，每个tag之间使用|分隔
+    tags = models.CharField(default="", max_length=1000, blank=True)  # 存储tag，每个tag之间使用||分隔
 
 
 class Mission(models.Model):
@@ -33,7 +33,7 @@ class Mission(models.Model):
     question_form = models.CharField(default="Chosen", max_length=20)
     to_ans = models.IntegerField(default=1)  # 当前任务是否需要继续被标注，1表示需要，0表示不需要
     is_banned = models.IntegerField(default=0)  # 是否被封禁，0表示没有被封禁，1表示被封禁
-    tags = models.CharField(default="", max_length=1000, blank=True)  # 存储tag，每个tag之间使用|分隔
+    tags = models.CharField(default="", max_length=1000, blank=True)  # 存储tag，每个tag之间使用||分隔
     reward = models.IntegerField(default=5)  # 当前任务给每个做题用户的报酬
     deadline = models.DateTimeField(default=datetime.date(2022, 6, 30))  # 任务结束时间
     retrieve_time = models.IntegerField(default=24)  # 用户接单后需要在多长时间内完成，以小时为单位

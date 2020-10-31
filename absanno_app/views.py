@@ -1,6 +1,6 @@
 from django.http import JsonResponse, HttpResponse
 import json
-from .models import Users, Mission, Question, History, Apply, Message, Reception
+from .models import Users, Mission, Question, History, Apply, Reception
 from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.middleware.csrf import get_token
@@ -21,7 +21,7 @@ def ABC_to_int(c: str):
     return ord(c)-ord('A')
 
 
-def get_ans_lst(ans: str):
+def get_lst(ans: str):
     ret = ans.split('||')
     ret.remove('')
     return ret
@@ -193,11 +193,11 @@ def user_show(request):
         if not num_:
             num_ = "0"
         if type__ != "":
-            type_ = type__.split(",")
+            type_ = get_lst(type__)
         else:
             type_ = []
         if theme__ != "":
-            theme_ = theme__.split(",")
+            theme_ = get_lst(theme__)
         else:
             theme_ = []
 
@@ -258,7 +258,7 @@ def user_show(request):
                                               'deadline': ret.deadline,
                                               'cash': ret.reward,
                                               'info': ret.info,
-                                              'tags': ret.tags.split(",")
+                                              'tags': get_lst(ret.tags)
                                           }
                                           for ret in mission_list[num: get_num]
                                       ]}
@@ -360,7 +360,7 @@ def mission_show(request):
         tot, g = 0, 0
 
         if mission.question_form == 'Chosen':
-            ans_list = get_ans_lst(ans)
+            ans_list = get_lst(ans)
             q_list = mission.father_mission.all()
             for i in range(len(ans_list)):
                 if q_list[i].pre_ans != '':
@@ -518,14 +518,12 @@ def about_me(request):
             return gen_response(400, 'User is Banned')
 
         if method == 'user':
-            tags = ret.tags.split(",")
-            tags.remove('')
             return gen_response(201, {
                 'name': ret.name,
                 'coin': ret.coin,
                 'weight': ret.weight,
                 'num': ret.fin_num,
-                'tags': tags,
+                'tags': get_lst(ret.tags),
                 'power': ret.power
             })
 
@@ -624,12 +622,12 @@ def show_my_mission(request):
                     weight_list = []
                     ans, tot_weight = 0, 0
                     q = mission.father_mission.all()[i]
-                    c_lst = get_ans_lst(q.choices)
+                    c_lst = get_lst(q.choices)
                     c_num = len(c_lst)
                     for j in range(c_num):
                         weight_list.append(0)
                     for his in mission.ans_history.all():
-                        a_lst = get_ans_lst(his.ans)
+                        a_lst = get_lst(his.ans)
                         weight_list[ABC_to_int(a_lst[i])] += his.ans_weight
                         tot_weight += his.ans_weight
                     for j in range(c_num):
