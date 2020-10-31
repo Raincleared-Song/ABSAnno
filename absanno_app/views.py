@@ -925,7 +925,7 @@ def power_user_show_user(request):
                                       'coin': ret.coin,
                                       'weight': ret.weight,
                                       'fin_num': ret.fin_num,
-                                      'tags': ret.tags
+                                      'tags': get_lst(ret.tags)
                                   } for ret in Users.objects.filter(Q(power=0) | Q(power=1))[now_num: num]
                                   ]})
 
