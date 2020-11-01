@@ -1,5 +1,7 @@
 from django.db import models
+from django.core.files.storage import FileSystemStorage
 import django.utils.timezone as timezone
+from django.conf import settings
 import datetime
 import os
 
@@ -11,7 +13,7 @@ class Users(models.Model):
     # 之后需要考虑在用户名中禁止特定字符，如" ",","等
     password = models.CharField(max_length=20)  # 密码，最大长度20位
     # 之后需要增加最短长度6位，同时保证密码不能仅含数字，以及不能和用户名匹配度过高
-    coin = models.IntegerField(default=100)  # 用户积分，参与答题即可获得积分(金币)，作为答题奖励
+    coin = models.IntegerField(default=1000)  # 用户积分，参与答题即可获得积分(金币)，作为答题奖励
     weight = models.IntegerField(default=50)  # 用户权重，有关用户答题质量的评定
     # 用户答题被判断乱答题时会扣除weight， weight被扣到0时用户可能被自动封禁
     # photo = models.ImageField(default="")  # 用户头像，存储图片所在地址，""表示默认头像
@@ -36,7 +38,7 @@ class Mission(models.Model):
     is_banned = models.IntegerField(default=0)  # 是否被封禁，0表示没有被封禁，1表示被封禁
     tags = models.CharField(default="", max_length=1000, blank=True)  # 存储tag，每个tag之间使用||分隔
     reward = models.IntegerField(default=5)  # 当前任务给每个做题用户的报酬
-    deadline = models.DateTimeField(default=datetime.date(2022, 6, 30))  # 任务结束时间
+    deadline = models.DateTimeField(default=datetime.date(2021, 6, 30))  # 任务结束时间
     retrieve_time = models.IntegerField(default=24)  # 用户接单后需要在多长时间内完成，以小时为单位
     check_way = models.CharField(default="auto", max_length=10)  # 验收方式，目前为自动验收
     info = models.CharField(default="", max_length=200, blank=True)  # 任务简介
@@ -47,15 +49,24 @@ def question_image_path(instance, filename):
     return os.path.join(instance.mission.name, filename)
 
 
+class OverWriteStorage(FileSystemStorage):
+    """重写原本的存储类，实现重名覆盖"""
+    def get_available_name(self, name, max_length=None):
+        # if the filename already exists, remove it
+        if self.exists(name):
+            os.remove(os.path.join(settings.MEDIA_ROOT, name))
+        return name
+
+
 class Question(models.Model):  # 判断题和选择题均使用 Question 存储
     mission = models.ForeignKey(Mission, on_delete=models.CASCADE, related_name="father_mission")  # 关联题目来自的任务
     word = models.CharField(default="", max_length=200, blank=True)  # 文字描述，最多200字
-    pre_ans = models.CharField(default="", max_length=1, blank=True)  # 预埋答案，使用 ABCD 表示
-    choices = models.CharField(default="", blank=True, max_length=500)  # 存储选项，不同选项间使用||分隔
-    ans = models.CharField(default="NULL", max_length=1)  # 统合答案，读取答案利用history读取
-    ans_weight = models.FloatField(default=0.0)  # 答案的权重
+    pre_ans = models.CharField(default="", max_length=10, blank=True)  # 预埋答案，使用 ABCD 表示
+    choices = models.CharField(max_length=500)  # 存储选项，不同选项间使用||分隔
+    ans = models.CharField(default="NULL", max_length=10, blank=True)  # 统合答案，读取答案利用history读取
+    ans_weight = models.FloatField(default=0.0, blank=True)  # 答案的权重
 
-    picture = models.ImageField(upload_to=question_image_path, blank=True, null=True)
+    picture = models.ImageField(upload_to=question_image_path, storage=OverWriteStorage(), blank=True, null=True)
 
     def picture_url(self):
         if self.picture:

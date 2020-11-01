@@ -5,9 +5,8 @@
     "name": "songchenyang",
     "password": "woshisongchenyang",
     "power": 2,
-    "score": 0, "weight": 100, "fin_num": 0, "is_banned": 0,
-    "tag_science": 0, "tag_art": 0, "tag_sports": 0, "tag_literature": 0,
-    "tag_food": 0, "tag_music": 0, "tag_game": 0, "tag_daily": 0, "tag_others": 0}
+    "coin": 0, "weight": 100, "fin_num": 0, "is_banned": 0,
+	"tags": "Science||Art"}
   },
   {"model": "absanno_app.users",
   "pk": 2,
@@ -15,9 +14,8 @@
     "name": "wangjunwei",
     "password": "woshiwangjunwei",
     "power": 0,
-    "score": 0, "weight": 100, "fin_num": 0, "is_banned": 0,
-    "tag_science": 0, "tag_art": 0, "tag_sports": 0, "tag_literature": 0,
-    "tag_food": 0, "tag_music": 0, "tag_game": 0, "tag_daily": 0, "tag_others": 0}
+    "coin": 0, "weight": 100, "fin_num": 0, "is_banned": 0,
+    "tags": "Science||Music"}
   },
   {"model": "absanno_app.users",
   "pk": 3,
@@ -25,9 +23,8 @@
     "name": "zhangyizhuo",
     "password": "woshizhangyizhuo",
     "power": 1,
-    "score": 0, "weight": 100, "fin_num": 0, "is_banned": 0,
-    "tag_science": 0, "tag_art": 0, "tag_sports": 0, "tag_literature": 0,
-    "tag_food": 0, "tag_music": 0, "tag_game": 0, "tag_daily": 0, "tag_others": 0}
+    "coin": 0, "weight": 100, "fin_num": 0, "is_banned": 0,
+    "tags": "Game||Daily"}
   },
   {"model": "absanno_app.users",
   "pk": 4,
@@ -35,9 +32,8 @@
     "name": "xieyuqing",
     "password": "woshixieyuqing",
     "power": 2,
-    "score": 0, "weight": 100, "fin_num": 0, "is_banned": 0,
-    "tag_science": 0, "tag_art": 0, "tag_sports": 0, "tag_literature": 0,
-    "tag_food": 0, "tag_music": 0, "tag_game": 0, "tag_daily": 0, "tag_others": 0}
+    "coin": 0, "weight": 100, "fin_num": 0, "is_banned": 0,
+    "tags": "Math||Others"}
   },
   {"model": "absanno_app.users",
   "pk": 5,
@@ -45,8 +41,7 @@
     "name": "luojingjia",
     "password": "woshiluojingjia",
     "power": 1,
-    "score": 0, "weight": 100, "fin_num": 0, "is_banned": 0,
-    "tag_science": 0, "tag_art": 0, "tag_sports": 0, "tag_literature": 0,
-    "tag_food": 0, "tag_music": 0, "tag_game": 0, "tag_daily": 0, "tag_others": 0}
+    "coin": 0, "weight": 100, "fin_num": 0, "is_banned": 0,
+    "tags": "Game||Daily"}
   }
 ]

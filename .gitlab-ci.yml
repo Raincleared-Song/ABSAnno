@@ -29,7 +29,6 @@ build:
 
 unit-test:
   extends: .test
-  allow_failure: true
   script:
     - ls
     - coverage run --source '.' manage.py test

@@ -21,7 +21,7 @@ def int_to_abc(a: int):
 
 
 def abc_to_int(c: str):
-    return ord(c)-ord('A')
+    return ord(c) - ord('A')
 
 
 def get_lst(ans: str):
@@ -266,7 +266,7 @@ def user_show(request):
                                               'full': ret.to_ans,
                                               'total_ans': ret.total,
                                               'ans_num': ret.now_num,
-                                              'deadline': ret.deadline,
+                                              'deadline': int(ret.deadline.timestamp() * 1000),
                                               'cash': ret.reward,
                                               'info': ret.info,
                                               'tags': get_lst(ret.tags)
@@ -335,7 +335,7 @@ def mission_show(request):
             'ret': get_num,
             'word': ret.word,
             'choices': ret.choices,
-            'image_url': ret.picture_url() if ret.question_form.endswith('-image') else ""
+            'image_url': ret.picture_url() if mission.question_form.endswith('-image') else ""
         })
 
     elif request.method == 'POST':
@@ -526,6 +526,7 @@ def upload(request):
 
         cost = reward * total
         if user.coin < cost:
+            print(user.coin, cost)
             return gen_response(400, "You Dont Have Enough Coin")
 
         if file is None and 'question_list' in js:
@@ -566,7 +567,7 @@ def upload(request):
         if file is not None:
             file.close()
 
-        return gen_response(201, "Judgement Upload Success")
+        return gen_response(201, "Chosen Upload Success")
 
     return gen_response(400, "Upload Error")
 
@@ -610,7 +611,7 @@ def about_me(request):
                             'question_form': mission_ret.question_form,
                             'to_ans': mission_ret.to_ans,
                             'reward': mission_ret.reward,
-                            'deadline': mission_ret.deadline,
+                            'deadline': int(mission_ret.deadline.timestamp() * 1000),
                             'info': mission_ret.info,
                             'check_way': mission_ret.check_way,
                             'is_banned': mission_ret.is_banned
@@ -643,7 +644,7 @@ def about_me(request):
                 [
                     {
                         'type': apply_ret.type,
-                        'pub_time': apply_ret.pub_time,
+                        'pub_time': int(apply_ret.pub_time.timestamp() * 1000),
                         'accept': apply_ret.accept
                     }
                     for apply_ret in ret.user_apply.all().order_by('pub_time')
@@ -681,19 +682,23 @@ def show_my_mission(request):
         mission = Mission.objects.get(id=mission_id)
 
         # 选择题模式
+        if mission.question_form == "chosen":
 
-        if mission.question_form == "Chosen":
+            question_list = mission.father_mission.all()
+            history_list = mission.ans_history.all()
+            if len(history_list) == 0:
+                return gen_response(400, 'No Answer History Yet')
 
-            for i in range(len(mission.father_mission.all())):
+            for i in range(len(question_list)):
                 if mission.father_mission.all()[i].ans == "NULL":
                     weight_list = []
                     ans, tot_weight = 0, 0
-                    q = mission.father_mission.all()[i]
+                    q = question_list[i]
                     c_lst = get_lst(q.choices)
                     c_num = len(c_lst)
                     for j in range(c_num):
                         weight_list.append(0)
-                    for his in mission.ans_history.all():
+                    for his in history_list:
                         a_lst = get_lst(his.ans)
                         weight_list[abc_to_int(a_lst[i])] += his.ans_weight
                         tot_weight += his.ans_weight
@@ -702,6 +707,7 @@ def show_my_mission(request):
                             ans = j
                     q.ans = int_to_abc(ans)
                     q.ans_weight = weight_list[ans] / tot_weight
+                    q.save()
 
             return gen_response(201, {
                 'mission_name': mission.name,
@@ -821,7 +827,7 @@ def apply_show(request):
                 {
                     'id': ret.id,
                     'user': ret.user,
-                    'pub_time': ret.pub_time,
+                    'pub_time': int(ret.pub_time.timestamp() * 1000),
                     'type': ret.type,
                     'accept': ret.accept
                 }
@@ -894,12 +900,12 @@ def rep_show(request):
             'rep_list':
             [
                 {
-                    'pub_time': ret.pub_time,
-                    'deadline': ret.deadline,
+                    'pub_time': int(ret.pub_time.timestamp() * 1000),
+                    'deadline': int(ret.deadline.timestamp() * 1000),
                     'mission_id': ret.mission.id,
                     'mission_name': ret.mission.name,
                     'mission_info': ret.mission.info,
-                    'mission_deadline': ret.mission.deadline,
+                    'mission_deadline': int(ret.mission.deadline.timestamp() * 1000),
                     'mission_reward': ret.mission.reward,
                     'mission_tag': get_lst(ret.mission.tags),
                     'question_form': ret.mission.question_form,
@@ -933,6 +939,7 @@ def power_upgrade(request):
         if not user_id_.isdigit():
             return gen_response(400, "UserID Error")
         user_id = int(user_id_)
+        print(user_id_, user_id)
 
         if user_id < 1 or user_id > len(Users.objects.all()):
             return gen_response(400, "User_ID Error")
