@@ -22,8 +22,11 @@ def ABC_to_int(c: str):
 
 
 def get_lst(ans: str):
-    ret = ans.split('||')
-    ret.remove('')
+    raw_ret = ans.split('||')
+    ret = []
+    for r in raw_ret:
+        if r != '':
+            ret.append(r)
     return ret
 
 
@@ -831,10 +834,12 @@ def rep_show(request):
                 {
                     'pub_time': ret.pub_time,
                     'deadline': ret.deadline,
+                    'mission_id': ret.mission.id,
                     'mission_name': ret.mission.name,
                     'mission_info': ret.mission.info,
                     'mission_deadline': ret.mission.deadline,
                     'mission_reward': ret.mission.reward,
+                    'mission_tag': get_lst(ret.mission.tags),
                     'question_form': ret.mission.question_form,
                     'question_num': ret.mission.question_num
                 }
