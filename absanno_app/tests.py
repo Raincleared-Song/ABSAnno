@@ -23,8 +23,8 @@ class UnitTest(TestCase):
 
         self.mission = Mission.objects.create(name='task_test', question_form='chosen',
                                          question_num=2, user=self.song, total=5)
-        Question.objects.create(mission=self.mission, word='title1', pre_ans='T', choices='A||B||C||D')
-        Question.objects.create(mission=self.mission, word='title2', pre_ans='F', choices='D||E||F||G')
+        Question.objects.create(mission=self.mission, word='title1', pre_ans='A', choices='A||B||C||D')
+        Question.objects.create(mission=self.mission, word='title2', pre_ans='C', choices='D||E||F||G')
         History.objects.create(user=self.song, mission=self.mission, ans='A||B', pub_time=datetime.date(2021, 6, 30))
         Mission.objects.create(name='task_test2', question_form='chosen',
                                question_num=3, user=self.wang, total=5)
@@ -53,8 +53,8 @@ class UnitTest(TestCase):
               'cash': 5, 'info': '', 'tags': []}]})
         self.mission_my_pos_case = str(
             {'mission_name': 'task_test', 'question_form': 'chosen', 'question_num': 2, 'total': 5, 'now_num': 0,
-             'is_banned': 0, 'question_list': [{'word': 'title1', 'pre_ans': 'T', 'ans': 'A', 'ans_weight': 1.0},
-                                               {'word': 'title2', 'pre_ans': 'F', 'ans': 'B', 'ans_weight': 1.0}]})
+             'is_banned': 0, 'question_list': [{'word': 'title1', 'pre_ans': 'A', 'ans': 'A', 'ans_weight': 1.0},
+                                               {'word': 'title2', 'pre_ans': 'C', 'ans': 'B', 'ans_weight': 1.0}]})
         self.power_user_show = str({'num': 3, 'total': 3, 'user_list':
             [{'id': 2, 'name': 'test_wang', 'power': 1, 'is_banned': 0, 'coin': 1000, 'weight': 50, 'fin_num': 0,
               'tags': []},
@@ -572,53 +572,60 @@ class UnitTest(TestCase):
         self.assertEqual(res.status_code, 400)
         self.assertEqual(res.json()['data'], 'Runtime Error')
 
-    # def test_mission_p_pos(self):
-    #     self.mock_login()
-    #     body = {'mission_id': '1', 'ans': ['T', 'F']}
-    #     res = self.client.post('/absanno/mission', data=body, content_type='application/json')
-    #     # self.assertEqual(res.status_code, 201)
-    #     self.assertEqual(res.json()['data'], 'Answer Pushed')
+    def test_mission_p_pos(self):
+        self.mock_login()
+        body = {'mission_id': '1', 'ans': 'A||C'}
+        res = self.client.post('/absanno/mission', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.json()['data'], 'Answer Pushed')
+
+    def test_mission_p_neg(self):
+        self.mock_login()
+        body = {'mission_id': '1', 'ans': 'A||B'}
+        res = self.client.post('/absanno/mission', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.json()['data'], 'Did Not Pass The Test')
 
     def test_mission_p_neg_no_token(self):
-        body = {'mission_id': '1', 'ans': ['T', 'F']}
+        body = {'mission_id': '1', 'ans': 'A||B'}
         res = self.client.post('/absanno/mission', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 400)
         self.assertEqual(res.json()['data'], 'No Token Found in Cookie')
 
     def test_mission_p_neg_invalid_token(self):
         self.mock_invalid_token()
-        body = {'mission_id': '1', 'ans': ['T', 'F']}
+        body = {'mission_id': '1', 'ans': 'A||B'}
         res = self.client.post('/absanno/mission', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 400)
         self.assertEqual(res.json()['data'], 'Invalid Token or Have Not Login')
 
     def test_mission_p_neg_banned(self):
         self.mock_banned_login()
-        body = {'mission_id': '1', 'ans': ['T', 'F']}
+        body = {'mission_id': '1', 'ans': 'A||B'}
         res = self.client.post('/absanno/mission', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 400)
         self.assertEqual(res.json()['data'], 'User is Banned')
 
     def test_mission_p_neg_json_err(self):
         self.mock_login()
-        body = "{'mission_id': '1', ans: ['T', 'F']}"
+        body = "{'mission_id': '1', ans: 'A||B'}"
         res = self.client.post('/absanno/mission', data=body, content_type='application/text')
         self.assertEqual(res.status_code, 400)
         self.assertEqual(res.json()['data'], 'Request Json Error')
 
     def test_mission_p_neg_mid_illegal(self):
         self.mock_login()
-        body = {'mission_id': 'a', 'ans': ['T', 'F']}
+        body = {'mission_id': 'a', 'ans': 'A||B'}
         res = self.client.post('/absanno/mission', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 400)
         self.assertEqual(res.json()['data'], 'Not Digit Or Not List Error')
 
     def test_mission_p_neg_ans_illegal(self):
         self.mock_login()
-        body = {'mission_id': '1', 'ans': 'T'}
+        body = {'mission_id': '1', 'ans': 'A'}
         res = self.client.post('/absanno/mission', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 400)
-        self.assertEqual(res.json()['data'], 'Mission Show Error')
+        self.assertEqual(res.json()['data'], 'Answer List Length Error')
 
     def test_mission_p_neg_mid_big(self):
         self.mock_login()
@@ -629,10 +636,10 @@ class UnitTest(TestCase):
 
     def test_mission_p_neg_ans_len(self):
         self.mock_login()
-        body = {'mission_id': '1', 'ans': ['T', 'F', 'T']}
+        body = {'mission_id': '1', 'ans': 'A||B||C'}
         res = self.client.post('/absanno/mission', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 400)
-        self.assertEqual(res.json()['data'], 'Mission Show Error')
+        self.assertEqual(res.json()['data'], 'Answer List Length Error')
 
     def test_about_pos_user(self):
         self.mock_login()

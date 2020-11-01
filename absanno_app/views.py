@@ -136,7 +136,6 @@ def sign_in(request):
         if gen_user:
             return gen_response(400, "User Name Has Existed")
 
-        # user = Users(name=name, password=password, email=email)
         user = Users(name=name, password=password, tags=tags)
 
         try:
@@ -372,14 +371,17 @@ def mission_show(request):
         flag = 1
         tot, g = 0, 0
 
-        if mission.question_form == 'Chosen':
+        if mission.question_form.startswith('chosen'):
             ans_list = get_lst(ans)
             q_list = mission.father_mission.all()
+            if len(ans_list) != len(q_list):
+                return gen_response(400, 'Answer List Length Error')
             for i in range(len(ans_list)):
                 if q_list[i].pre_ans != '':
                     tot += 1
                     if q_list[i].pre_ans == ans_list[i]:
                         g += 1
+            print(g, tot)
             if g * 100 / tot < 60:
                 flag = 0
             if flag == 1:
@@ -395,14 +397,14 @@ def mission_show(request):
                 mission.save()
                 history = History(user=user, mission=mission, ans=ans, ans_weight=user.weight)
                 history.save()
-                return gen_response(201, "Success")
+                return gen_response(201, "Answer Pushed")
             else:
                 user.weight -= 5
                 if user.weight < 0:
                     user.weight = 0
                     user.is_banned = 1
                 user.save()
-                return gen_response(201, "Didnt Pass The Test")
+                return gen_response(201, "Did Not Pass The Test")
 
     return gen_response(400, 'Mission Show Error')
 
@@ -682,7 +684,7 @@ def show_my_mission(request):
         mission = Mission.objects.get(id=mission_id)
 
         # 选择题模式
-        if mission.question_form == "chosen":
+        if mission.question_form.startswith('chosen'):
 
             question_list = mission.father_mission.all()
             history_list = mission.ans_history.all()
