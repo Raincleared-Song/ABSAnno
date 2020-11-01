@@ -1,6 +1,7 @@
 from django.db import models
 import django.utils.timezone as timezone
 import datetime
+import os
 
 
 class Users(models.Model):
@@ -42,14 +43,25 @@ class Mission(models.Model):
     reception_num = models.IntegerField(default=0)  # 目前接单数
 
 
-class Question(models.Model):  # 判断题和选择题均使用Question存储
+def question_image_path(instance, filename):
+    return os.path.join(instance.mission.name, filename)
+
+
+class Question(models.Model):  # 判断题和选择题均使用 Question 存储
     mission = models.ForeignKey(Mission, on_delete=models.CASCADE, related_name="father_mission")  # 关联题目来自的任务
     word = models.CharField(default="", max_length=200, blank=True)  # 文字描述，最多200字
-    pre_ans = models.CharField(default="", max_length=1, blank=True)  # 预埋答案，使用ABCD表示
+    pre_ans = models.CharField(default="", max_length=1, blank=True)  # 预埋答案，使用 ABCD 表示
     choices = models.CharField(default="", blank=True, max_length=500)  # 存储选项，不同选项间使用||分隔
-    ans = models.CharField(default="NULL", max_length=1)  # 统合答案
+    ans = models.CharField(default="NULL", max_length=1)  # 统合答案，读取答案利用history读取
     ans_weight = models.FloatField(default=0.0)  # 答案的权重
-    # 读取答案利用history读取
+
+    picture = models.ImageField(upload_to=question_image_path, blank=True, null=True)
+
+    def picture_url(self):
+        if self.picture:
+            return '/'.join(('', 'backend', 'media', self.mission.name, self.picture.name))
+        else:
+            return '/backend/media/logo/app.png'
 
 
 class History(models.Model):
@@ -82,4 +94,3 @@ class Message(models.Model):
     sender = models.ForeignKey(Users, on_delete=models.CASCADE, related_name="send_message")
     receiver = models.ForeignKey(Users, on_delete=models.CASCADE, related_name="receive_message")
     pub_time = models.DateTimeField(default=timezone.now)
-
