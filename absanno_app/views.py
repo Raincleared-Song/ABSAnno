@@ -18,6 +18,7 @@ def int_to_ABC(a: int):
 
 
 def ABC_to_int(c: str):
+    assert len(c) == 1
     return ord(c)-ord('A')
 
 
@@ -469,6 +470,7 @@ def upload(request):
 
         cost = reward * total
         if user.coin < cost:
+            print(user.coin, cost)
             return gen_response(400, "You Dont Have Enough Coin")
 
         try:
@@ -496,6 +498,7 @@ def upload(request):
                 return gen_response(400, "There Is No Choice")
             try:
                 question = Question(word=contains, mission=mission, choices=choices, pre_ans=ans)
+                print(contains, mission, choices, ans)
                 question.full_clean()
                 question.save()
             except ValidationError:
@@ -616,7 +619,7 @@ def show_my_mission(request):
 
         # 选择题模式
 
-        if mission.question_form == "Chosen":
+        if mission.question_form == "judgement":
 
             for i in range(len(mission.father_mission.all())):
                 if mission.father_mission.all()[i].ans == "NULL":
@@ -866,6 +869,7 @@ def power_upgrade(request):
         if not user_id_.isdigit():
             return gen_response(400, "UserID Error")
         user_id = int(user_id_)
+        print(user_id_, user_id)
 
         if user_id < 1 or user_id > len(Users.objects.all()):
             return gen_response(400, "User_ID Error")
