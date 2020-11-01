@@ -1,4 +1,4 @@
-from django.http import JsonResponse, HttpResponse
+from django.http import JsonResponse, HttpResponse, FileResponse
 import json
 from .models import Users, Mission, Question, History, Apply, Reception
 from django.core.exceptions import ValidationError
@@ -7,23 +7,29 @@ from django.middleware.csrf import get_token
 from zipfile import ZipFile, BadZipFile
 import django.utils.timezone as timezone
 import datetime
+from django.core.files.base import File
+from io import BytesIO
+import os
 
 
 def hello_world(request):
     return HttpResponse("Hello Absanno!")
 
 
-def int_to_ABC(a: int):
+def int_to_abc(a: int):
     return chr(a+ord('A'))
 
 
-def ABC_to_int(c: str):
+def abc_to_int(c: str):
     return ord(c)-ord('A')
 
 
 def get_lst(ans: str):
-    ret = ans.split('||')
-    ret.remove('')
+    tmp = ans.split('||')
+    ret = []
+    for tag in tmp:
+        if tag != '':
+            ret.append(tag)
     return ret
 
 
@@ -210,8 +216,13 @@ def user_show(request):
         # 参考id获取用户画像，进而实现分发算法，目前使用id来进行排序
         # TODO
 
-        if Users.objects.filter(id=user_id).first():
-            mission_list_base = Mission.objects.filter(Q(to_ans=1) & Q(is_banned=0)).order_by('id')
+        user = Users.objects.filter(id=user_id).first()
+        if user:
+            mission_list_temp = Mission.objects.filter(Q(to_ans=1) & Q(is_banned=0)).order_by('id')
+            mission_list_base = []
+            for mission in mission_list_temp:
+                if user.history.filter(mission__id=mission.id).first() is None:
+                    mission_list_base.append(mission)
         else:
             mission_list_base = Mission.objects.all().order_by('id')
 
@@ -323,7 +334,8 @@ def mission_show(request):
             'type': mission.question_form,
             'ret': get_num,
             'word': ret.word,
-            'choices': ret.choices
+            'choices': ret.choices,
+            'image_url': ret.picture_url() if ret.question_form.endswith('-image') else ""
         })
 
     elif request.method == 'POST':
@@ -410,7 +422,8 @@ def upload(request):
         if user.power < 1:
             return gen_response(400, "Lack of Permission")
 
-        file = request.FILES.get('zip')
+        file = request.FILES.get('zip', None)
+        image_list = request.FILES.getlist('img_list', None)
         question_list = []
         if file is not None:
             # upload a zip file
@@ -441,12 +454,55 @@ def upload(request):
                 except json.JSONDecodeError:
                     return gen_response(400, 'Zip File Error (questions.json Json Error)')
             q_list.close()
-            file.close()
+
+            name = js['name'] if 'name' in js else ''
+            question_form = js['question_form'] if 'question_form' in js else ''
+            question_num_ = js['question_num'] if 'question_num' in js else ''
+            if not question_num_.isdigit() or question_form == '' or name == '':
+                return gen_response(400, "Upload Contains Error")
+            question_num = int(question_num_)
+            if 'question_list' in js:
+                question_list = js['question_list']
+            if not isinstance(question_list, list):
+                return gen_response(400, "Question_list Is Not A List")
+            if len(question_list) != question_num:
+                return gen_response(400, "Question_list Length Error")
+
+            if question_form.endswith('-image'):
+                # 上传的是图片题
+                image_path = js['image_path'] if 'image_path' in js else ''
+                if image_path == '':
+                    return gen_response(400, "Upload Contains Error")
+                image_list = []
+                for question in question_list:
+                    if 'image_name' not in question:
+                        return gen_response(400, 'Question Image Unspecified')
+                    image_name = question['image_name']
+                    image_file_path = '/'.join((image_path, image_name))
+                    try:
+                        image_file = file.open(image_file_path)
+                        image_list.append(image_file)
+                    except KeyError:
+                        return gen_response(400, 'File %s Do Not Exist' % image_file_path)
+
+            # image post
+        elif image_list is not None and len(image_list) > 0:
+            try:
+                js = json.loads(request.POST.get('info'))
+            except json.JSONDecodeError:
+                return gen_response(400, "Request Json Error")
+            question_num_ = js['question_num'] if 'question_num' in js else ''
+            if not question_num_.isdigit():
+                return gen_response(400, "Upload Contains Error")
+            question_num = int(question_num_)
+            if question_num != len(image_list):
+                return gen_response(400, "ImageList Length Error")
+
         # normal POST
         else:
             try:
                 js = json.loads(request.body)
-            except json.decoder.JSONDecodeError:
+            except json.JSONDecodeError:
                 return gen_response(400, "Request Json Error")
 
         name = js['name'] if 'name' in js else ''
@@ -458,7 +514,8 @@ def upload(request):
         check_way = js['check_way'] if 'check_way' in js else 'auto'
         info = js['info'] if 'info' in js else ''
         tags = js['mission_tags'] if 'mission_tags' in js else ''
-        if not question_num_.isdigit() or name == '' or question_form == '' or not total_.isdigit() or not reward_.isdigit():
+        if not question_num_.isdigit() or name == '' or question_form == '' or \
+                not total_.isdigit() or not reward_.isdigit():
             return gen_response(400, "Upload Contains Error")
         question_num = int(question_num_)
         total = int(total_)
@@ -471,6 +528,13 @@ def upload(request):
         if user.coin < cost:
             return gen_response(400, "You Dont Have Enough Coin")
 
+        if file is None and 'question_list' in js:
+            question_list = js['question_list']
+        if not isinstance(question_list, list):
+            return gen_response(400, "Question_list Is Not A List")
+        if len(question_list) != question_num:
+            return gen_response(400, "Question_list Length Error")
+
         try:
             mission = Mission(name=name, question_form=question_form, question_num=question_num, total=total,
                               user=user, tags=tags, reward=reward, check_way=check_way, info=info, deadline=deadline)
@@ -479,14 +543,7 @@ def upload(request):
         except ValidationError:
             return gen_response(400, "Upload Form Error")
 
-        if file is None and 'question_list' in js:
-            question_list = js['question_list']
-        if not isinstance(question_list, list):
-            return gen_response(400, "Question_list Is Not A List")
-        if len(question_list) != question_num:
-            return gen_response(400, "Question_list Length Error")
-
-        for i in question_list:
+        for k, i in enumerate(question_list):
             contains = i['contains'] if 'contains' in i else ''
             ans = i['ans'] if 'ans' in i else ''
             choices = i['choices'] if 'choices' in i else ''
@@ -496,10 +553,19 @@ def upload(request):
                 return gen_response(400, "There Is No Choice")
             try:
                 question = Question(word=contains, mission=mission, choices=choices, pre_ans=ans)
+                if question_form.endswith('-image'):
+                    image_file = image_list[k]
+                    file_name = image_file.name.split('/').pop()
+                    question.picture.save(file_name, File(BytesIO(image_file.read())))
+                    image_file.close()
                 question.full_clean()
                 question.save()
             except ValidationError:
                 return gen_response(400, "Question Form Error")
+
+        if file is not None:
+            file.close()
+
         return gen_response(201, "Judgement Upload Success")
 
     return gen_response(400, "Upload Error")
@@ -565,7 +631,7 @@ def about_me(request):
                             'question_form': mission_ret.mission.question_form,
                             'reward': mission_ret.mission.reward,
                             'info': mission_ret.mission.info,
-                            'ret_time': mission_ret.pub_time
+                            'ret_time': int(mission_ret.pub_time.timestamp() * 1000)
                         }
                         for mission_ret in ret.history.all().order_by('pub_time')
                     ]
@@ -629,12 +695,12 @@ def show_my_mission(request):
                         weight_list.append(0)
                     for his in mission.ans_history.all():
                         a_lst = get_lst(his.ans)
-                        weight_list[ABC_to_int(a_lst[i])] += his.ans_weight
+                        weight_list[abc_to_int(a_lst[i])] += his.ans_weight
                         tot_weight += his.ans_weight
                     for j in range(c_num):
                         if weight_list[j] > weight_list[ans]:
                             ans = j
-                    q.ans = int_to_ABC(ans)
+                    q.ans = int_to_abc(ans)
                     q.ans_weight = weight_list[ans] / tot_weight
 
             return gen_response(201, {
@@ -743,7 +809,6 @@ def apply_show(request):
             return gen_response(400, "User ID Error")
         user = Users.objects.get(id=user_id)
 
-        apply_list = []
         if user.power == 2:
             apply_list = Apply.objects.all().order_by('pub_time')
         else:
@@ -976,3 +1041,51 @@ def power_user_show_user(request):
                                   ]})
 
     return gen_response(400, "Show All Users Failed")
+
+
+def get_answer_list(mission_id: int) -> list:
+    """
+    获取指定任务的导出答案列表
+    """
+    # todo
+
+
+def download(request):
+    """需求方导出结果文件"""
+    code, data = check_token(request)
+    if code == 400:
+        return gen_response(code, data)
+
+    user_id = request.session['user_id']
+    if Users.objects.get(id=user_id).power < 2:
+        return gen_response(400, "Dont Have Power")
+
+    mission_id_ = request.GET.get('mission_id') if 'mission_id' in request.GET else ''
+
+    if not mission_id_.isdigit():
+        return gen_response(400, 'Mission ID Is Not Digit')
+    if mission_id_ <= 0 or mission_id_ > len(Mission.objects.all()):
+        return gen_response(400, 'Mission ID Illegal')
+
+    mission_id = int(mission_id_)
+
+    if Mission.objects.get(id=mission_id).user.id != user_id:
+        return gen_response(400, 'User ID Is Wrong')
+
+    if not os.path.exists('cache'):
+        os.mkdir('cache')
+    else:  # 文件数过多时清楚缓存
+        file_list = os.listdir('cache')
+        if len(file_list) > 20:
+            file_list.sort(key=lambda x: os.path.getmtime('cache/' + x))
+            os.remove('cache/' + file_list[0])
+
+    file_name = 'result-%d.json' % mission_id
+    file = open('cache/' + file_name, 'w')
+    json.dump(get_answer_list(mission_id), file)
+    file.close()
+    file = open('cache/' + file_name, 'rb')
+    response = FileResponse(file, status=201)
+    response['Content-Type'] = 'application/octet-stream'
+    response['Content-Disposition'] = 'attachment;filename="%s"' % file_name
+    return response
