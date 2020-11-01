@@ -962,3 +962,31 @@ class UnitTest(TestCase):
         param = '?mission_id=1'
         res = self.client.get('/absanno/result' + param)
         self.assertEqual(res.status_code, 201)
+
+    def test_result_neg_no_power(self):
+        self.mock_no_power_login()
+        param = '?mission_id=1'
+        res = self.client.get('/absanno/result' + param)
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'Dont Have Power')
+
+    def test_result_neg_id_not_digit(self):
+        self.mock_login()
+        param = '?mission_id=a'
+        res = self.client.get('/absanno/result' + param)
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'Mission ID Is Not Digit')
+
+    def test_result_neg_id_illegal(self):
+        self.mock_login()
+        param = '?mission_id=%d' % (self.mission_num + 1)
+        res = self.client.get('/absanno/result' + param)
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'Mission ID Illegal')
+
+    def test_result_neg_user_wrong(self):
+        self.mock_login()
+        param = '?mission_id=2'
+        res = self.client.get('/absanno/result' + param)
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'User ID Is Wrong')
