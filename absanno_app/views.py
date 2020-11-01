@@ -17,7 +17,7 @@ def hello_world(request):
 
 
 def int_to_abc(a: int):
-    return chr(a+ord('A'))
+    return chr(a + ord('A'))
 
 
 def abc_to_int(c: str):
@@ -683,52 +683,58 @@ def show_my_mission(request):
             return gen_response(400, "The ID Is Wrong")
         mission = Mission.objects.get(id=mission_id)
 
-        # 选择题模式
-        if mission.question_form.startswith('chosen'):
+        return integrate_mission(mission)
 
-            question_list = mission.father_mission.all()
-            history_list = mission.ans_history.all()
-            if len(history_list) == 0:
-                return gen_response(400, 'No Answer History Yet')
+    return gen_response(400, "My Mission Error")
 
-            for i in range(len(question_list)):
-                if mission.father_mission.all()[i].ans == "NULL":
-                    weight_list = []
-                    ans, tot_weight = 0, 0
-                    q = question_list[i]
-                    c_lst = get_lst(q.choices)
-                    c_num = len(c_lst)
-                    for j in range(c_num):
-                        weight_list.append(0)
-                    for his in history_list:
-                        a_lst = get_lst(his.ans)
-                        weight_list[abc_to_int(a_lst[i])] += his.ans_weight
-                        tot_weight += his.ans_weight
-                    for j in range(c_num):
-                        if weight_list[j] > weight_list[ans]:
-                            ans = j
-                    q.ans = int_to_abc(ans)
-                    q.ans_weight = weight_list[ans] / tot_weight
-                    q.save()
 
-            return gen_response(201, {
-                'mission_name': mission.name,
-                'question_form': mission.question_form,
-                'question_num': mission.question_num,
-                'total': mission.total,
-                'now_num': mission.now_num,
-                'is_banned': mission.is_banned,
-                'question_list':
-                    [
-                        {
-                            'word': ret.word,
-                            'pre_ans': ret.pre_ans,
-                            'ans': ret.ans,
-                            'ans_weight': ret.ans_weight,
-                        }
-                        for ret in mission.father_mission.all()
-                    ]
-            })
+def integrate_mission(mission):
+    # 选择题模式
+    if mission.question_form.startswith('chosen'):
+
+        question_list = mission.father_mission.all()
+        history_list = mission.ans_history.all()
+        if len(history_list) == 0:
+            return gen_response(400, 'No Answer History Yet')
+
+        for i in range(len(question_list)):
+            if mission.father_mission.all()[i].ans == "NULL":
+                weight_list = []
+                ans, tot_weight = 0, 0
+                q = question_list[i]
+                c_lst = get_lst(q.choices)
+                c_num = len(c_lst)
+                for j in range(c_num):
+                    weight_list.append(0)
+                for his in history_list:
+                    a_lst = get_lst(his.ans)
+                    weight_list[abc_to_int(a_lst[i])] += his.ans_weight
+                    tot_weight += his.ans_weight
+                for j in range(c_num):
+                    if weight_list[j] > weight_list[ans]:
+                        ans = j
+                q.ans = int_to_abc(ans)
+                q.ans_weight = weight_list[ans] / tot_weight
+                q.save()
+
+        return gen_response(201, {
+            'mission_name': mission.name,
+            'question_form': mission.question_form,
+            'question_num': mission.question_num,
+            'total': mission.total,
+            'now_num': mission.now_num,
+            'is_banned': mission.is_banned,
+            'question_list':
+                [
+                    {
+                        'word': ret.word,
+                        'pre_ans': ret.pre_ans,
+                        'ans': ret.ans,
+                        'ans_weight': ret.ans_weight,
+                    }
+                    for ret in mission.father_mission.all()
+                ]
+        })
     return gen_response(400, "My Mission Error")
 
 
@@ -941,7 +947,6 @@ def power_upgrade(request):
         if not user_id_.isdigit():
             return gen_response(400, "UserID Error")
         user_id = int(user_id_)
-        print(user_id_, user_id)
 
         if user_id < 1 or user_id > len(Users.objects.all()):
             return gen_response(400, "User_ID Error")
@@ -1054,11 +1059,20 @@ def power_user_show_user(request):
     return gen_response(400, "Show All Users Failed")
 
 
-def get_answer_list(mission_id: int) -> list:
-    """
-    获取指定任务的导出答案列表
-    """
-    # todo
+def get_answer_dict(mission: Mission) -> dict:
+    """获取指定任务的导出答案列表"""
+    res = {'name': mission.name, 'form': mission.question_form, 'question_num': mission.question_num,
+           'total': mission.total, 'now_num': mission.now_num,
+           'word': [], 'pre_ans': [], 'ans': [], 'weight': []}
+    response = integrate_mission(mission)
+    if response.status_code == 400:
+        return json.loads(response.content)
+    for question in mission.father_mission.all():
+        res['word'].append(question.word)
+        res['pre_ans'].append(question.pre_ans)
+        res['ans'].append(question.ans)
+        res['weight'].append(question.ans_weight)
+    return res
 
 
 def download(request):
@@ -1075,12 +1089,15 @@ def download(request):
 
     if not mission_id_.isdigit():
         return gen_response(400, 'Mission ID Is Not Digit')
-    if mission_id_ <= 0 or mission_id_ > len(Mission.objects.all()):
-        return gen_response(400, 'Mission ID Illegal')
 
     mission_id = int(mission_id_)
 
-    if Mission.objects.get(id=mission_id).user.id != user_id:
+    if mission_id <= 0 or mission_id > len(Mission.objects.all()):
+        return gen_response(400, 'Mission ID Illegal')
+
+    mission = Mission.objects.get(id=mission_id)
+
+    if mission.user.id != user_id:
         return gen_response(400, 'User ID Is Wrong')
 
     if not os.path.exists('cache'):
@@ -1093,7 +1110,10 @@ def download(request):
 
     file_name = 'result-%d.json' % mission_id
     file = open('cache/' + file_name, 'w')
-    json.dump(get_answer_list(mission_id), file)
+    ans_dict = get_answer_dict(mission)
+    if 'name' not in ans_dict:
+        return gen_response(400, ans_dict['data'])
+    json.dump(get_answer_dict(mission), file)
     file.close()
     file = open('cache/' + file_name, 'rb')
     response = FileResponse(file, status=201)

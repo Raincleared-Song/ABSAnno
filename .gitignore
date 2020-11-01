@@ -2,6 +2,7 @@
 /data
 /__pycache__
 /coverage-reports
+/cache
 
 db.sqlite3
 dst.json

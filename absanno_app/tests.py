@@ -956,3 +956,9 @@ class UnitTest(TestCase):
         res = self.client.post('/absanno/usepower', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 400)
         self.assertEqual(res.json()['data'], "Free Mission ID Error")
+
+    def test_result_pos(self):
+        self.mock_login()
+        param = '?mission_id=1'
+        res = self.client.get('/absanno/result' + param)
+        self.assertEqual(res.status_code, 201)
