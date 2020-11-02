@@ -1177,8 +1177,11 @@ def check_result(request):
             return gen_response(400, "Mission ID Error")
 
         mission = Mission.objects.get(id=mission_id)
+        print(mission.user.id, user_id)
+        if mission.user.id != user_id:
+            return gen_response(400, "Mission Not Published by You")
 
-        if mission.question_form == "judgement":
+        if mission.question_form == "chosen":
 
             for i in range(len(mission.father_mission.all())):
                 if mission.father_mission.all()[i].ans == "NULL":
@@ -1211,7 +1214,7 @@ def check_result(request):
                         for ret in mission.father_mission.all()
                     ]
             })
-        return gen_response(400, "Check Mission Error, Judgement Expected")
+        return gen_response(400, "Check Mission Error, Chosen Expected")
     return gen_response(400, "Check Mission Error, Use GET Instead")
 
 

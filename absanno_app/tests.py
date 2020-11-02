@@ -17,8 +17,8 @@ class UnitTest(TestCase):
     def setUp(self):
         self.song = Users.objects.create(name='test', password='test_pw', power=2)
         self.wang = Users.objects.create(name='test_wang', password='test_pw_wang', power=1)
-        Users.objects.create(name='test3', password='test_pw3', is_banned=1)
-        Users.objects.create(name='test4', password='test_pw4')  # user with no power
+        self.banned_user = Users.objects.create(name='test3', password='test_pw3', is_banned=1)
+        self.normal_user = Users.objects.create(name='test4', password='test_pw4')  # user with no power
         self.user_num = 4
 
         self.mission = Mission.objects.create(name='task_test', question_form='chosen', question_num=2,
@@ -38,8 +38,8 @@ class UnitTest(TestCase):
                                                   {"contains": "title4", "ans": "", "choices": "A||B||C||D"}]}
         self.upload_pos_case2 = {"name": "task", "question_form": "chosen", "question_num": "2", "total": "5",
                                  "retrieve_time": "1",
-                                "question_list": [{"contains": "title3", "ans": "T", "choices": "yes||no"},
-                                                  {"contains": "title4", "ans": "F", "choices": "yes||no"}]}
+                                 "question_list": [{"contains": "title3", "ans": "T", "choices": "yes||no"},
+                                                   {"contains": "title4", "ans": "F", "choices": "yes||no"}]}
         self.upload_pos_case3 = '{"name": "test_image", "question_form": "chosen-image", "question_num": "2", ' \
                                 '"total": "5", "retrieve_time": "1", "question_list": [{"contains": "title3", ' \
                                 '"choices": "A||B||C||D", "ans": ""}, {"contains": "title4", "choices": "E||F||G||H",' \
@@ -1044,3 +1044,33 @@ class UnitTest(TestCase):
         res = self.client.get('/absanno/repshow')
         self.assertEqual(res.status_code, 201)
         self.assertTrue(res.json()['data'].find('[{') >= 0)
+
+    def test_check_result_neg_no_power(self):
+        self.mock_no_power_login()
+        body = {'mission_id': '1'}
+        res = self.client.get('/absanno/check', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'Dont Have Power')
+
+    def test_check_result_neg_wrong_method(self):
+        self.mock_login()
+        body = {'mission_id': '1'}
+        res = self.client.post('/absanno/check', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'Check Mission Error, Use GET Instead')
+
+    def test_check_result_neg_wrong_user(self):
+        self.mock_login2()
+        body = {'mission_id': '1'}
+        res = self.client.get('/absanno/check', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'Mission Not Published by You')
+
+    def test_check_result_pos(self):
+        self.mock_login()
+        body = {'mission_id': '1'}
+        res = self.client.get('/absanno/check', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.json()['data'], str({'question_list': [
+            {'word': 'title1', 'pre_ans': 'A', 'ans': 'NULL', 'ans_weight': 0.0},
+            {'word': 'title2', 'pre_ans': 'C', 'ans': 'NULL', 'ans_weight': 0.0}]}))
