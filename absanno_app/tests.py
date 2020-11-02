@@ -21,36 +21,47 @@ class UnitTest(TestCase):
         Users.objects.create(name='test4', password='test_pw4')  # user with no power
         self.user_num = 4
 
-        self.mission = Mission.objects.create(name='task_test', question_form='chosen',
-                                         question_num=2, user=self.song, total=5)
+        self.mission = Mission.objects.create(name='task_test', question_form='chosen', question_num=2,
+                                              user=self.song, total=5, reception_num=1)
         Question.objects.create(mission=self.mission, word='title1', pre_ans='A', choices='A||B||C||D')
         Question.objects.create(mission=self.mission, word='title2', pre_ans='C', choices='D||E||F||G')
         History.objects.create(user=self.song, mission=self.mission, ans='A||B', pub_time=datetime.date(2021, 6, 30))
-        Mission.objects.create(name='task_test2', question_form='chosen',
-                               question_num=3, user=self.wang, total=5)
+        self.mission2 = Mission.objects.create(name='task_test2', question_form='chosen',
+                                               question_num=3, user=self.wang, total=5)
+        Reception.objects.create(user=self.wang, mission=self.mission)
         self.mission_num = 2
         self.maxDiff = None
         self.default_timestamp = int(datetime.datetime(2021, 6, 30, 0, 0).timestamp() * 1000)
         self.upload_pos_case = {"name": "task", "question_form": "chosen", "question_num": "2", "total": "5",
+                                "retrieve_time": "1",
                                 "question_list": [{"contains": "title3", "ans": "", "choices": "yes||no"},
                                                   {"contains": "title4", "ans": "", "choices": "A||B||C||D"}]}
         self.upload_pos_case2 = {"name": "task", "question_form": "chosen", "question_num": "2", "total": "5",
+                                 "retrieve_time": "1",
                                 "question_list": [{"contains": "title3", "ans": "T", "choices": "yes||no"},
                                                   {"contains": "title4", "ans": "F", "choices": "yes||no"}]}
         self.upload_pos_case3 = '{"name": "test_image", "question_form": "chosen-image", "question_num": "2", ' \
-                                '"total": "5", "question_list": [{"contains": "title3", "choices": "A||B||C||D", ' \
-                                '"ans": ""}, {"contains": "title4", "choices": "E||F||G||H", "ans": ""}]}'
+                                '"total": "5", "retrieve_time": "1", "question_list": [{"contains": "title3", ' \
+                                '"choices": "A||B||C||D", "ans": ""}, {"contains": "title4", "choices": "E||F||G||H",' \
+                                ' "ans": ""}]}'
         self.square_pos_case1 = str({'ret': 2, 'total': 2, 'question_list':
             [{'id': 1, 'name': 'task_test', 'user': 'test', 'questionNum': 2, 'questionForm': 'chosen',
               'is_banned': 0, 'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': self.default_timestamp,
-              'cash': 5, 'info': '', 'tags': []},
+              'cash': 5, 'info': '', 'tags': [], 'received': 'T'},
              {'id': 2, 'name': 'task_test2', 'user': 'test_wang', 'questionNum': 3, 'questionForm': 'chosen',
               'is_banned': 0, 'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': self.default_timestamp,
-              'cash': 5, 'info': '', 'tags': []}]})
+              'cash': 5, 'info': '', 'tags': [], 'received': 'F'}]})
         self.square_pos_case2 = str({'ret': 1, 'total': 1, 'question_list':
             [{'id': 2, 'name': 'task_test2', 'user': 'test_wang', 'questionNum': 3, 'questionForm': 'chosen',
               'is_banned': 0, 'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': self.default_timestamp,
-              'cash': 5, 'info': '', 'tags': []}]})
+              'cash': 5, 'info': '', 'tags': [], 'received': 'F'}]})
+        self.square_pos_case_all = str({'ret': 2, 'total': 2, 'question_list':
+            [{'id': 1, 'name': 'task_test', 'user': 'test', 'questionNum': 2, 'questionForm': 'chosen',
+              'is_banned': 0, 'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': self.default_timestamp,
+              'cash': 5, 'info': '', 'tags': [], 'received': ''},
+             {'id': 2, 'name': 'task_test2', 'user': 'test_wang', 'questionNum': 3, 'questionForm': 'chosen',
+              'is_banned': 0, 'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': self.default_timestamp,
+              'cash': 5, 'info': '', 'tags': [], 'received': ''}]})
         self.mission_my_pos_case = str(
             {'mission_name': 'task_test', 'question_form': 'chosen', 'question_num': 2, 'total': 5, 'now_num': 0,
              'is_banned': 0, 'question_list': [{'word': 'title1', 'pre_ans': 'A', 'ans': 'A', 'ans_weight': 1.0},
@@ -233,14 +244,14 @@ class UnitTest(TestCase):
         self.mock_login()
         body = self.upload_pos_case
         res = self.client.post('/absanno/upload', data=body, content_type='application/json')
-        # self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.status_code, 201)
         self.assertEqual(res.json()['data'], 'Chosen Upload Success')
 
     def test_upload_pos2(self):
         self.mock_login2()
         body = self.upload_pos_case2
         res = self.client.post('/absanno/upload', data=body, content_type='application/json')
-        # self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.status_code, 201)
         self.assertEqual(res.json()['data'], 'Chosen Upload Success')
 
     def test_upload_pos_zip(self):
@@ -248,7 +259,7 @@ class UnitTest(TestCase):
         file = open('test_data/zip/pos.zip', 'rb')
         res = self.client.post('/absanno/upload', data={'zip': file})
         file.close()
-        # self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.status_code, 201)
         self.assertEqual(res.json()['data'], 'Chosen Upload Success')
 
     def test_upload_pos_zip_image(self):
@@ -265,7 +276,7 @@ class UnitTest(TestCase):
         res = self.client.post('/absanno/upload', data={'info': self.upload_pos_case3, 'img_list': files})
         files[0].close()
         files[1].close()
-        # self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.status_code, 201)
         self.assertEqual(res.json()['data'], 'Chosen Upload Success')
 
     def test_upload_neg_zip_not_zip(self):
@@ -369,7 +380,7 @@ class UnitTest(TestCase):
 
     def test_upload_neg_name_long(self):
         self.mock_login()
-        body = {"name": "task" * 8, "question_form": "chosen", "question_num": "2", "total": "5",
+        body = {"name": "task" * 8, "question_form": "chosen", "question_num": "2", "total": "5", "retrieve_time": "1",
                 "question_list": [{"contains": "title3", "ans": ""}, {"contains": "title4", "ans": ""}]}
         res = self.client.post('/absanno/upload', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 400)
@@ -377,7 +388,7 @@ class UnitTest(TestCase):
 
     def test_upload_neg_list_type_err(self):
         self.mock_login()
-        body = {"name": "task", "question_form": "chosen", "question_num": "2", "total": "5",
+        body = {"name": "task", "question_form": "chosen", "question_num": "2", "total": "5", "retrieve_time": "1",
                 "question_list": {'data': [{"contains": "title3", "ans": ""}, {"contains": "title4", "ans": ""}]}}
         res = self.client.post('/absanno/upload', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 400)
@@ -386,14 +397,14 @@ class UnitTest(TestCase):
     def test_upload_neg_list_size_err(self):
         self.mock_login()
         body = {"name": "task", "question_form": "chosen", "question_num": "2", "total": "5",
-                "question_list": [{"contains": "title3", "ans": ""}]}
+                "retrieve_time": "1", "question_list": [{"contains": "title3", "ans": ""}]}
         res = self.client.post('/absanno/upload', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 400)
         self.assertEqual(res.json()['data'], 'Question_list Length Error')
 
     def test_upload_neg_que_null(self):
         self.mock_login()
-        body = {"name": "task", "question_form": "chosen", "question_num": "2", "total": "5",
+        body = {"name": "task", "question_form": "chosen", "question_num": "2", "total": "5", "retrieve_time": "1",
                 "question_list": [{"contains": "title3", "ans": "", "choices": "T||F"},
                                   {"contains": "", "ans": "", "choices": "T||F"}]}
         res = self.client.post('/absanno/upload', data=body, content_type='application/json')
@@ -402,7 +413,7 @@ class UnitTest(TestCase):
 
     def test_upload_neg_ans_err(self):
         self.mock_login()
-        body = {"name": "task", "question_form": "chosen", "question_num": "2", "total": "5",
+        body = {"name": "task", "question_form": "chosen", "question_num": "2", "total": "5", "retrieve_time": "1",
                 "question_list": [{"contains": "title3", "ans": "A", "choices": "A||B"},
                                   {"contains": "title4", "ans": "", "choices": "T||F"}]}
         res = self.client.post('/absanno/upload', data=body, content_type='application/json')
@@ -411,7 +422,7 @@ class UnitTest(TestCase):
 
     def test_upload_neg_que_word_long(self):
         self.mock_login()
-        body = {"name": "task", "question_form": "chosen", "question_num": "2", "total": "5",
+        body = {"name": "task", "question_form": "chosen", "question_num": "2", "total": "5", "retrieve_time": "1",
                 "question_list": [{"contains": "title3" * 40, "ans": "", "choices": "T||F"},
                                   {"contains": "title4", "ans": "", "choices": "yes||no"}]}
         res = self.client.post('/absanno/upload', data=body, content_type='application/json')
@@ -450,14 +461,14 @@ class UnitTest(TestCase):
         param = "?num=0"
         res = self.client.get('/absanno/square' + param)
         self.assertEqual(res.status_code, 201)
-        self.assertEqual(res.json()['data'], self.square_pos_case1)
+        self.assertEqual(res.json()['data'], self.square_pos_case_all)
 
     def test_square_pos_invalid_token(self):
         self.mock_invalid_token()
         param = "?num=0"
         res = self.client.get('/absanno/square' + param)
         self.assertEqual(res.status_code, 201)
-        self.assertEqual(res.json()['data'], self.square_pos_case1)
+        self.assertEqual(res.json()['data'], self.square_pos_case_all)
 
     def test_square_neg_num_illegal(self):
         self.mock_login()
@@ -990,3 +1001,23 @@ class UnitTest(TestCase):
         res = self.client.get('/absanno/result' + param)
         self.assertEqual(res.status_code, 400)
         self.assertEqual(res.json()['data'], 'User ID Is Wrong')
+
+    def test_receive_pos(self):
+        self.mock_login()
+        body = {'mission_id': '2'}
+        res = self.client.post('/absanno/receive', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.json()['data'], 'Book Success')
+
+    def test_receive_pos_cancel(self):
+        self.mock_login2()
+        body = {'mission_id': '1'}
+        res = self.client.post('/absanno/receive', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.json()['data'], 'Cancel Book Success')
+
+    def test_rep_show_pos(self):
+        self.mock_login2()
+        res = self.client.get('/absanno/repshow')
+        self.assertEqual(res.status_code, 201)
+        self.assertTrue(res.json()['data'].find('[{') >= 0)

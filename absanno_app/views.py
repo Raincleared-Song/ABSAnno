@@ -5,12 +5,15 @@ from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.middleware.csrf import get_token
 from zipfile import ZipFile, BadZipFile
-import django.utils.timezone as timezone
+from django.utils import timezone
 import datetime
 
 from django.core.files.base import File
 from io import BytesIO
 import os
+
+from apscheduler.schedulers.background import BackgroundScheduler
+from django_apscheduler.jobstores import DjangoJobStore, register_job
 
 
 def hello_world(request):
@@ -217,14 +220,25 @@ def user_show(request):
         # TODO
 
         user = Users.objects.filter(id=user_id).first()
+        receive_set = None
         if user:
             mission_list_temp = Mission.objects.filter(Q(to_ans=1) & Q(is_banned=0)).order_by('id')
             mission_list_base = []
             for mission in mission_list_temp:
-                if user.history.filter(mission__id=mission.id).first() is None:
+                # 做过的和已经接完的单不显示
+                if user.history.filter(mission__id=mission.id).first() is None \
+                        and mission.reception_num < mission.total:
                     mission_list_base.append(mission)
+            rec_list = user.user_reception.all()
+            receive_set = set([r.mission.id for r in rec_list])
         else:
             mission_list_base = Mission.objects.all().order_by('id')
+
+        def get_mission_rec_status(m):
+            if receive_set is None:
+                return ''
+            else:
+                return 'T' if m.id in receive_set else 'F'
 
         mission_list = []
         for mis in mission_list_base:
@@ -269,7 +283,8 @@ def user_show(request):
                                               'deadline': int(ret.deadline.timestamp() * 1000),
                                               'cash': ret.reward,
                                               'info': ret.info,
-                                              'tags': get_lst(ret.tags)
+                                              'tags': get_lst(ret.tags),
+                                              'received': get_mission_rec_status(ret)
                                           }
                                           for ret in mission_list[num: get_num]
                                       ]}
@@ -514,11 +529,12 @@ def upload(request):
         total_ = js['total'] if 'total' in js else ''
         reward_ = js['reward'] if 'reward' in js else '100'
         deadline_ = js['deadline'] if 'deadline' in js else '2022-6-30'
+        retrieve_time_ = js['retrieve_time'] if 'retrieve_time' in js else ''
         check_way = js['check_way'] if 'check_way' in js else 'auto'
         info = js['info'] if 'info' in js else ''
         tags = js['mission_tags'] if 'mission_tags' in js else ''
         if not question_num_.isdigit() or name == '' or question_form == '' or \
-                not total_.isdigit() or not reward_.isdigit():
+                not total_.isdigit() or not reward_.isdigit() or not retrieve_time_.isdigit():
             return gen_response(400, "Upload Contains Error")
         question_num = int(question_num_)
         total = int(total_)
@@ -526,6 +542,7 @@ def upload(request):
         d_list = deadline_.split('-')
         y, m, d = int(d_list[0]), int(d_list[1]), int(d_list[2])
         deadline = datetime.date(y, m, d)
+        retrieve_time = int(retrieve_time_)
 
         cost = reward * total
         if user.coin < cost:
@@ -541,7 +558,8 @@ def upload(request):
 
         try:
             mission = Mission(name=name, question_form=question_form, question_num=question_num, total=total,
-                              user=user, tags=tags, reward=reward, check_way=check_way, info=info, deadline=deadline)
+                              user=user, tags=tags, reward=reward, check_way=check_way,
+                              info=info, deadline=deadline, retrieve_time=retrieve_time)
             mission.full_clean()
             mission.save()
         except ValidationError:
@@ -771,8 +789,8 @@ def send_apply(request):
     return gen_response(400, "Send Failed")
 
 
-# 接单
-def book_the_mission(request):
+# 接单与取消接单
+def book_cancel_mission(request):
     if request.method == 'POST':
 
         code, data = check_token(request)
@@ -791,22 +809,35 @@ def book_the_mission(request):
             return gen_response(400, "Mission ID Is Not Digit")
         mission_id = int(mission_id_)
 
-        if user_id < 1 or user_id > len(Users.objects.all()):
-            return gen_response(400, "User ID Error")
         if mission_id < 1 or mission_id > len(Mission.objects.all()):
             return gen_response(400, "Mission ID Error")
+        if user_id < 1 or user_id > len(Users.objects.all()):
+            return gen_response(400, "User ID Error")
         user = Users.objects.get(id=user_id)
         mission = Mission.objects.get(id=mission_id)
-        mission.reception_num += 1
-        mission.save()
 
-        try:
-            rep = Reception(user=user, mission=mission)
-            rep.full_clean()
-            rep.save()
-        except ValidationError:
-            return gen_response(400, "Form Error")
-        return gen_response(201, "Book Success")
+        reception = Reception.objects.filter(user__id=user_id, mission__id=mission_id).first()
+        if reception is None:
+            # 接单
+            mission.reception_num += 1
+            mission.save()
+
+            try:
+                rep = Reception(user=user, mission=mission)
+                rep.deadline = timezone.now() + datetime.timedelta(hours=mission.retrieve_time)
+                rep.full_clean()
+                rep.save()
+            except ValidationError:
+                return gen_response(400, "Form Error")
+            return gen_response(201, "Book Success")
+        else:
+            # 取消接单
+            if mission.reception_num == 0:
+                return gen_response(400, 'No Reception Yet')
+            mission.reception_num -= 1
+            mission.save()
+            reception.delete()
+            return gen_response(201, "Cancel Book Success")
 
     return gen_response(400, "Book Failed")
 
@@ -1187,3 +1218,28 @@ def interests(request):
     return None
 
 
+# 开启检查线程
+scheduler = BackgroundScheduler()
+scheduler.add_jobstore(DjangoJobStore())
+try:
+    # jobs that should be executed periodically
+    @register_job(scheduler, 'interval', hours=1, id='check', replace_existing=True)
+    def check_deadline():
+        mission_list = Mission.objects.all()
+        for mission in mission_list:
+            if mission.to_ans == 1 and timezone.now() > mission.deadline:
+                mission.to_ans = 0
+                for rec in mission.mission_reception.all():
+                    rec.can_do = False
+                    rec.save()
+                mission.save()
+        rec_list = Reception.objects.all()
+        for rec in rec_list:
+            if rec.can_do and timezone.now() > rec.deadline:
+                rec.can_do = False
+                rec.save()
+    scheduler.start()
+except Exception as e:
+    print(e)
+    if scheduler.state > 0:  # is running or paused
+        scheduler.shutdown()
