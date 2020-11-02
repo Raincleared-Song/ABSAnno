@@ -7,6 +7,7 @@ from django.middleware.csrf import get_token
 from zipfile import ZipFile, BadZipFile
 import django.utils.timezone as timezone
 import datetime
+
 from django.core.files.base import File
 from io import BytesIO
 import os
@@ -1040,9 +1041,9 @@ def power_user_show_user(request):
         if now_num < 0 or now_num >= total:
             return gen_response(400, "Now_Num Error")
 
-        num = min(len(Users.objects.filter(Q(power=0) | Q(power=1))), now_num+20)
+        num = min(len(Users.objects.filter(Q(power=0) | Q(power=1))), now_num + 20)
 
-        return gen_response(201, {'num': num-now_num,
+        return gen_response(201, {'num': num - now_num,
                                   'total': total,
                                   'user_list': [{
                                       'id': ret.id,
@@ -1120,3 +1121,69 @@ def download(request):
     response['Content-Type'] = 'application/octet-stream'
     response['Content-Disposition'] = 'attachment;filename="%s"' % file_name
     return response
+
+
+# 验收内容，GET
+def check_result(request):
+    if request.method == "GET":
+        code, data = check_token(request)
+        if code == 400:
+            return gen_response(400, data)
+
+        user_id = request.session['user_id']
+        if Users.objects.get(id=user_id).power < 1:
+            return gen_response(400, "Dont Have Power")
+
+        mission_id = request.GET.get("mission_id") if 'mission_id' in request.GET else '0'
+        if not mission_id.isdigit():
+            return gen_response(400, "mission_id Is Not Digit")
+
+        mission_id = int(mission_id)
+        if user_id < 1 or user_id > len(Users.objects.all()):
+            return gen_response(400, "User ID Error")
+        if mission_id < 1 or mission_id > len(Mission.objects.all()):
+            return gen_response(400, "Mission ID Error")
+
+        mission = Mission.objects.get(id=mission_id)
+
+        if mission.question_form == "judgement":
+
+            for i in range(len(mission.father_mission.all())):
+                if mission.father_mission.all()[i].ans == "NULL":
+                    weight_list = []
+                    ans, tot_weight = 0, 0
+                    q = mission.father_mission.all()[i]
+                    c_lst = get_lst(q.choices)
+                    c_num = len(c_lst)
+                    for j in range(c_num):
+                        weight_list.append(0)
+                    for his in mission.ans_history.all():
+                        a_lst = get_lst(his.ans)
+                        weight_list[abc_to_int(a_lst[i])] += his.ans_weight
+                        tot_weight += his.ans_weight
+                    for j in range(c_num):
+                        if weight_list[j] > weight_list[ans]:
+                            ans = j
+                    q.ans = int_to_abc(ans)
+                    q.ans_weight = weight_list[ans] / tot_weight
+
+            return gen_response(201, {
+                'question_list':
+                    [
+                        {
+                            'word': ret.word,
+                            'pre_ans': ret.pre_ans,
+                            'ans': ret.ans,
+                            'ans_weight': ret.ans_weight,
+                        }
+                        for ret in mission.father_mission.all()
+                    ]
+            })
+        return gen_response(400, "Check Mission Error, Judgement Expected")
+    return gen_response(400, "Check Mission Error, Use GET Instead")
+
+
+def interests(request):
+    return None
+
+

@@ -1,6 +1,6 @@
 import datetime
 from django.test import TestCase
-from .models import Users, Mission, Question, History
+from .models import Users, Mission, Question, Reception, History
 from django.http import HttpResponse
 from .views import int_to_abc, abc_to_int
 
