@@ -29,7 +29,7 @@ class Mission(models.Model):
     # 任务的id使用默认的主键
 
     name = models.CharField(max_length=30)  # 发布的任务的名字，不是唯一，因此在显示时可能要显示小的编号
-    user = models.ForeignKey(Users, on_delete=models.CASCADE, related_name="promulgator")  # 关联任务的发布用户
+    user = models.ForeignKey(Users, on_delete=models.DO_NOTHING, related_name="promulgator")  # 关联任务的发布用户
     total = models.IntegerField()  # 任务需要完成的次数
     now_num = models.IntegerField(default=0)  # 目前已经完成的次数
     question_num = models.IntegerField(default=0)  # 任务中题目的数量，题目最多为20题
@@ -59,7 +59,7 @@ class OverWriteStorage(FileSystemStorage):
 
 
 class Question(models.Model):  # 判断题和选择题均使用 Question 存储
-    mission = models.ForeignKey(Mission, on_delete=models.CASCADE, related_name="father_mission")  # 关联题目来自的任务
+    mission = models.ForeignKey(Mission, on_delete=models.DO_NOTHING, related_name="father_mission")  # 关联题目来自的任务
     word = models.CharField(default="", max_length=200, blank=True)  # 文字描述，最多200字
     pre_ans = models.CharField(default="", max_length=10, blank=True)  # 预埋答案，使用 ABCD 表示
     choices = models.CharField(max_length=500)  # 存储选项，不同选项间使用||分隔
@@ -76,8 +76,8 @@ class Question(models.Model):  # 判断题和选择题均使用 Question 存储
 
 
 class History(models.Model):
-    user = models.ForeignKey(Users, on_delete=models.CASCADE, related_name="history")
-    mission = models.ForeignKey(Mission, on_delete=models.CASCADE, related_name="ans_history")
+    user = models.ForeignKey(Users, on_delete=models.DO_NOTHING, related_name="history")
+    mission = models.ForeignKey(Mission, on_delete=models.DO_NOTHING, related_name="ans_history")
     pub_time = models.DateTimeField(default=timezone.now)
     ans_time = models.IntegerField(default=0)  # 用户答题所花时间
     ans_weight = models.IntegerField(default=50)  # 答题时用户权重
@@ -85,15 +85,15 @@ class History(models.Model):
 
 
 class Apply(models.Model):
-    user = models.ForeignKey(Users, on_delete=models.CASCADE, related_name="user_apply")
+    user = models.ForeignKey(Users, on_delete=models.DO_NOTHING, related_name="user_apply")
     type = models.CharField(default="", blank=True, max_length=10)  # 请求的类别
     pub_time = models.DateTimeField(default=timezone.now)
     accept = models.IntegerField(default=0)  # 审批状态，0表示待审批，1表示通过，2表示拒绝
 
 
 class Reception(models.Model):
-    user = models.ForeignKey(Users, on_delete=models.CASCADE, related_name="user_reception")
-    mission = models.ForeignKey(Mission, on_delete=models.CASCADE, related_name="mission_reception")
+    user = models.ForeignKey(Users, on_delete=models.DO_NOTHING, related_name="user_reception")
+    mission = models.ForeignKey(Mission, on_delete=models.DO_NOTHING, related_name="mission_reception")
     pub_time = models.DateTimeField(default=timezone.now)
     deadline = models.DateTimeField(default=datetime.date(2021, 6, 30))
     can_do = models.BooleanField(default=True)  # 表示这个接单目前是否可以做
@@ -102,6 +102,6 @@ class Reception(models.Model):
 class Message(models.Model):
     title = models.CharField(default="title", max_length=50)
     content = models.CharField(default="content", max_length=500)
-    sender = models.ForeignKey(Users, on_delete=models.CASCADE, related_name="send_message")
-    receiver = models.ForeignKey(Users, on_delete=models.CASCADE, related_name="receive_message")
+    sender = models.ForeignKey(Users, on_delete=models.DO_NOTHING, related_name="send_message")
+    receiver = models.ForeignKey(Users, on_delete=models.DO_NOTHING, related_name="receive_message")
     pub_time = models.DateTimeField(default=timezone.now)

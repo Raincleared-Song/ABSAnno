@@ -23,7 +23,7 @@ urlpatterns = [
     path('repshow', views.rep_show, name="rep_show"),
     path('applyshow', views.apply_show, name='apply_show'),
     path('sendapply', views.send_apply, name='send_apply'),
-    path('receive', views.book_the_mission, name='book_mission'),
+    path('receive', views.book_cancel_mission, name='book_mission'),
     path('result', views.download, name='download'),
     url(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
     path('check', views.check_result, name='check_result'),
