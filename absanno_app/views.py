@@ -1,4 +1,4 @@
-from django.http import JsonResponse, HttpResponse
+from django.http import JsonResponse, HttpResponse, FileResponse
 import json
 from .models import Users, Mission, Question, History, Apply, Reception
 from django.core.exceptions import ValidationError
@@ -7,6 +7,7 @@ from django.middleware.csrf import get_token
 from zipfile import ZipFile, BadZipFile
 import django.utils.timezone as timezone
 import datetime
+import os
 
 
 def hello_world(request):
@@ -14,12 +15,12 @@ def hello_world(request):
 
 
 def int_to_ABC(a: int):
-    return chr(a+ord('A'))
+    return chr(a + ord('A'))
 
 
 def ABC_to_int(c: str):
     assert len(c) == 1
-    return ord(c)-ord('A')
+    return ord(c) - ord('A')
 
 
 def get_lst(ans: str):
@@ -577,14 +578,14 @@ def about_me(request):
             return gen_response(201, {
                 'total_num': len(ret.user_apply.all()),
                 'apply_list':
-                [
-                    {
-                        'type': apply_ret.type,
-                        'pub_time': apply_ret.pub_time,
-                        'accept': apply_ret.accept
-                    }
-                    for apply_ret in ret.user_apply.all().order_by('pub_time')
-                ]
+                    [
+                        {
+                            'type': apply_ret.type,
+                            'pub_time': apply_ret.pub_time,
+                            'accept': apply_ret.accept
+                        }
+                        for apply_ret in ret.user_apply.all().order_by('pub_time')
+                    ]
             })
         else:
             return gen_response(400, "Method Is Illegal")
@@ -755,16 +756,16 @@ def apply_show(request):
         return gen_response(201, {
             'apply_num': len(apply_list),
             'apply_list':
-            [
-                {
-                    'id': ret.id,
-                    'user': ret.user,
-                    'pub_time': ret.pub_time,
-                    'type': ret.type,
-                    'accept': ret.accept
-                }
-                for ret in apply_list
-            ]
+                [
+                    {
+                        'id': ret.id,
+                        'user': ret.user,
+                        'pub_time': ret.pub_time,
+                        'type': ret.type,
+                        'accept': ret.accept
+                    }
+                    for ret in apply_list
+                ]
         })
 
     return gen_response(400, "Apply Show Failed")
@@ -830,19 +831,19 @@ def rep_show(request):
             'total_num': len(rep_list),
             'user_name': user.name,
             'rep_list':
-            [
-                {
-                    'pub_time': ret.pub_time,
-                    'deadline': ret.deadline,
-                    'mission_name': ret.mission.name,
-                    'mission_info': ret.mission.info,
-                    'mission_deadline': ret.mission.deadline,
-                    'mission_reward': ret.mission.reward,
-                    'question_form': ret.mission.question_form,
-                    'question_num': ret.mission.question_num
-                }
-                for ret in rep_list
-            ]
+                [
+                    {
+                        'pub_time': ret.pub_time,
+                        'deadline': ret.deadline,
+                        'mission_name': ret.mission.name,
+                        'mission_info': ret.mission.info,
+                        'mission_deadline': ret.mission.deadline,
+                        'mission_reward': ret.mission.reward,
+                        'question_form': ret.mission.question_form,
+                        'question_num': ret.mission.question_num
+                    }
+                    for ret in rep_list
+                ]
         })
 
     return gen_response(400, "Rep Show Failed")
@@ -963,9 +964,9 @@ def power_user_show_user(request):
         if now_num < 0 or now_num >= total:
             return gen_response(400, "Now_Num Error")
 
-        num = min(len(Users.objects.filter(Q(power=0) | Q(power=1))), now_num+20)
+        num = min(len(Users.objects.filter(Q(power=0) | Q(power=1))), now_num + 20)
 
-        return gen_response(201, {'num': num-now_num,
+        return gen_response(201, {'num': num - now_num,
                                   'total': total,
                                   'user_list': [{
                                       'id': ret.id,
@@ -980,3 +981,145 @@ def power_user_show_user(request):
                                   ]})
 
     return gen_response(400, "Show All Users Failed")
+
+
+# 验收内容，GET
+def check_result(request):
+    if request.method == "GET":
+        code, data = check_token(request)
+        if code == 400:
+            return gen_response(400, data)
+
+        user_id = request.session['user_id']
+        if Users.objects.get(id=user_id).power < 1:
+            return gen_response(400, "Dont Have Power")
+
+        mission_id = request.GET.get("mission_id") if 'mission_id' in request.GET else '0'
+        if not mission_id.isdigit():
+            return gen_response(400, "mission_id Is Not Digit")
+
+        mission_id = int(mission_id)
+        if user_id < 1 or user_id > len(Users.objects.all()):
+            return gen_response(400, "User ID Error")
+        if mission_id < 1 or mission_id > len(Mission.objects.all()):
+            return gen_response(400, "Mission ID Error")
+
+        mission = Mission.objects.get(id=mission_id)
+
+        if mission.question_form == "judgement":
+
+            for i in range(len(mission.father_mission.all())):
+                if mission.father_mission.all()[i].ans == "NULL":
+                    weight_list = []
+                    ans, tot_weight = 0, 0
+                    q = mission.father_mission.all()[i]
+                    c_lst = get_lst(q.choices)
+                    c_num = len(c_lst)
+                    for j in range(c_num):
+                        weight_list.append(0)
+                    for his in mission.ans_history.all():
+                        a_lst = get_lst(his.ans)
+                        weight_list[ABC_to_int(a_lst[i])] += his.ans_weight
+                        tot_weight += his.ans_weight
+                    for j in range(c_num):
+                        if weight_list[j] > weight_list[ans]:
+                            ans = j
+                    q.ans = int_to_ABC(ans)
+                    q.ans_weight = weight_list[ans] / tot_weight
+
+            return gen_response(201, {
+                'question_list':
+                    [
+                        {
+                            'word': ret.word,
+                            'pre_ans': ret.pre_ans,
+                            'ans': ret.ans,
+                            'ans_weight': ret.ans_weight,
+                        }
+                        for ret in mission.father_mission.all()
+                    ]
+            })
+        return gen_response(400, "Check Mission Error, Judgement Expected")
+    return gen_response(400, "Check Mission Error, Use GET Instead")
+
+
+def interests(request):
+    return None
+
+# 验收下载，GET
+def download_result(request):
+    if request.method == "GET":
+        code, data = check_token(request)
+        if code == 400:
+            return gen_response(400, data)
+
+        user_id = request.session['user_id']
+        if Users.objects.get(id=user_id).power < 1:
+            return gen_response(400, "Dont Have Power")
+
+        mission_id = request.GET.get("mission_id") if 'mission_id' in request.GET else '0'
+        if not mission_id.isdigit():
+            return gen_response(400, "mission_id Is Not Digit")
+
+        mission_id = int(mission_id)
+        if user_id < 1 or user_id > len(Users.objects.all()):
+            return gen_response(400, "User ID Error")
+        if mission_id < 1 or mission_id > len(Mission.objects.all()):
+            return gen_response(400, "Mission ID Error")
+
+        mission = Mission.objects.get(id=mission_id)
+
+        if mission.question_form == "judgement":
+
+            for i in range(len(mission.father_mission.all())):
+                if mission.father_mission.all()[i].ans == "NULL":
+                    weight_list = []
+                    ans, tot_weight = 0, 0
+                    q = mission.father_mission.all()[i]
+                    c_lst = get_lst(q.choices)
+                    c_num = len(c_lst)
+                    for j in range(c_num):
+                        weight_list.append(0)
+                    for his in mission.ans_history.all():
+                        a_lst = get_lst(his.ans)
+                        weight_list[ABC_to_int(a_lst[i])] += his.ans_weight
+                        tot_weight += his.ans_weight
+                    for j in range(c_num):
+                        if weight_list[j] > weight_list[ans]:
+                            ans = j
+                    q.ans = int_to_ABC(ans)
+                    q.ans_weight = weight_list[ans] / tot_weight
+
+            nowdir = os.getcwd() + '\\tmp_results'
+            if not os.path.exists(nowdir):
+                os.mkdir(nowdir)
+            filename = os.path.join(nowdir, f"result_of_{mission_id}.txt")
+            with open(filename, 'w') as file:
+                file.write(f"This is the results of the mission, id={mission_id}, name={mission.name}\n")
+                file.write("The following results are listed in this way:\n")
+                file.write("word, pre_ans, ans, ans_weight\n")
+
+                for ret in mission.father_mission.all():
+                    file.write(f"{ret.word}, {ret.pre_ans}, {ret.ans}, {ret.ans_weight}\n")
+
+            response = FileResponse(filename, request=request)
+            response['content-type'] = "text/plain"
+            response['Content-Disposition'] = 'attachment; filename=' + os.path.basename(filename)
+            response['code'] = 201
+            return response
+
+
+            # return gen_response(201, {
+            #     'question_list':
+            #         [
+            #             {
+            #                 'word': ret.word,
+            #                 'pre_ans': ret.pre_ans,
+            #                 'ans': ret.ans,
+            #                 'ans_weight': ret.ans_weight,
+            #             }
+            #             for ret in mission.father_mission.all()
+            #         ]
+            # })
+        return gen_response(400, "Check Mission Error, Judgement Expected")
+    return gen_response(400, "Check Mission Error, Use GET Instead")

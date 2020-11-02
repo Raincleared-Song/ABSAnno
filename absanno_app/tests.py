@@ -1,7 +1,7 @@
 import datetime
 
 from django.test import TestCase
-from .models import Users, Mission, Question
+from .models import Users, Mission, Question, Reception
 from django.http import HttpResponse
 
 from .views import int_to_ABC, ABC_to_int
@@ -24,9 +24,15 @@ class UnitTest(TestCase):
         self.user_num = 4
 
         self.mission = Mission.objects.create(name='task_test', question_form='judgement',
-                                         question_num=2, user=self.song, total=5)
+                        question_num=2, user=self.song, total=5)
         Question.objects.create(mission=self.mission, word='title1', pre_ans='T')
         Question.objects.create(mission=self.mission, word='title2', pre_ans='F')
+        self.recep1 = Reception(self.wang, self.mission)
+        self.mission2 = Mission.objects.create(name="task_test2", question_form='judgement',
+                        question_num=2, user=self.song, total=5)
+        Question.objects.create(mission=self.mission2, word='title1', pre_ans='T')
+        Question.objects.create(mission=self.mission2, word='title2', pre_ans='F')
+        self.recep2 = Reception(self.song, self.mission2)
         Mission.objects.create(name='task_test2', question_form='judgement',
                                question_num=3, user=self.wang, total=5)
         self.mission_num = 2
@@ -666,6 +672,10 @@ class UnitTest(TestCase):
         res = self.client.post('/absanno/user', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 400)
         self.assertEqual(res.json()['data'], 'About Me Error')
+
+    def test_about_book_mission_pos(self):
+        self.mock_login()
+        body = {''}
 
     # def test_mission_my_pos(self):
     #     self.mock_login()
