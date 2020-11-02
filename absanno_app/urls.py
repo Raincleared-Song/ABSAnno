@@ -20,6 +20,13 @@ urlpatterns = [
     path('alluser', views.power_user_show_user, name='show_users'),
     path('usepower', views.power_use, name='power_use'),
     path('powerup', views.power_upgrade, name='power_up'),
+    path('repshow', views.rep_show, name="rep_show"),
+    path('applyshow', views.apply_show, name='apply_show'),
+    path('sendapply', views.send_apply, name='send_apply'),
+    path('receive', views.book_cancel_mission, name='book_mission'),
+    path('result', views.download, name='download'),
     url(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
+    path('check', views.check_result, name='check_result'),
+    path('interest', views.interests, name='personal_interest'),
 
 ]
