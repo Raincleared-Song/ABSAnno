@@ -1008,6 +1008,28 @@ class UnitTest(TestCase):
         res = self.client.post('/absanno/receive', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 201)
         self.assertEqual(res.json()['data'], 'Book Success')
+        self.assertEqual(len(self.song.user_reception.all()), 1)
+
+    def test_receive_neg_json_err(self):
+        self.mock_login()
+        body = "{'mission_id' '2'}"
+        res = self.client.post('/absanno/receive', data=body, content_type='application/text')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'Json Error')
+
+    def test_receive_neg_mission_id_not_digit(self):
+        self.mock_login()
+        body = {'mission_id': 'a'}
+        res = self.client.post('/absanno/receive', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'Mission ID Is Not Digit')
+
+    def test_receive_neg_mission_id(self):
+        self.mock_login()
+        body = {'mission_id': '3'}
+        res = self.client.post('/absanno/receive', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'Mission ID Error')
 
     def test_receive_pos_cancel(self):
         self.mock_login2()
@@ -1015,6 +1037,7 @@ class UnitTest(TestCase):
         res = self.client.post('/absanno/receive', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 201)
         self.assertEqual(res.json()['data'], 'Cancel Book Success')
+        self.assertEqual(len(self.wang.user_reception.all()), 0)
 
     def test_rep_show_pos(self):
         self.mock_login2()
