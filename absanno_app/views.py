@@ -12,6 +12,9 @@ from django.core.files.base import File
 from io import BytesIO
 import os
 
+from apscheduler.schedulers.background import BackgroundScheduler
+from django_apscheduler.jobstores import DjangoJobStore, register_job
+
 
 def hello_world(request):
     return HttpResponse("Hello Absanno!")
@@ -1213,3 +1216,30 @@ def check_result(request):
 
 def interests(request):
     return None
+
+
+# 开启检查线程
+scheduler = BackgroundScheduler()
+scheduler.add_jobstore(DjangoJobStore())
+try:
+    # jobs that should be executed periodically
+    @register_job(scheduler, 'interval', hours=1, id='check', replace_existing=True)
+    def check_deadline():
+        mission_list = Mission.objects.all()
+        for mission in mission_list:
+            if mission.to_ans == 1 and timezone.now() > mission.deadline:
+                mission.to_ans = 0
+                for rec in mission.mission_reception.all():
+                    rec.can_do = False
+                    rec.save()
+                mission.save()
+        rec_list = Reception.objects.all()
+        for rec in rec_list:
+            if rec.can_do and timezone.now() > rec.deadline:
+                rec.can_do = False
+                rec.save()
+    scheduler.start()
+except Exception as e:
+    print(e)
+    if scheduler.state > 0:  # is running or paused
+        scheduler.shutdown()

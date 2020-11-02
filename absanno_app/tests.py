@@ -3,7 +3,6 @@ from django.test import TestCase
 from .models import Users, Mission, Question, Reception, History
 from django.http import HttpResponse
 from .views import int_to_abc, abc_to_int
-import json
 
 
 def cookie_test_view(request):
@@ -22,7 +21,7 @@ class UnitTest(TestCase):
         Users.objects.create(name='test4', password='test_pw4')  # user with no power
         self.user_num = 4
 
-        self.mission = Mission.objects.create(name='task_test', question_form='chosen',question_num=2,
+        self.mission = Mission.objects.create(name='task_test', question_form='chosen', question_num=2,
                                               user=self.song, total=5, reception_num=1)
         Question.objects.create(mission=self.mission, word='title1', pre_ans='A', choices='A||B||C||D')
         Question.objects.create(mission=self.mission, word='title2', pre_ans='C', choices='D||E||F||G')
@@ -43,8 +42,8 @@ class UnitTest(TestCase):
                                                   {"contains": "title4", "ans": "F", "choices": "yes||no"}]}
         self.upload_pos_case3 = '{"name": "test_image", "question_form": "chosen-image", "question_num": "2", ' \
                                 '"total": "5", "retrieve_time": "1", "question_list": [{"contains": "title3", ' \
-                                '"choices": "A||B||C||D", "ans": ""}, {"contains": "title4", "choices": "E||F||G||H", ' \
-                                '"ans": ""}]}'
+                                '"choices": "A||B||C||D", "ans": ""}, {"contains": "title4", "choices": "E||F||G||H",' \
+                                ' "ans": ""}]}'
         self.square_pos_case1 = str({'ret': 2, 'total': 2, 'question_list':
             [{'id': 1, 'name': 'task_test', 'user': 'test', 'questionNum': 2, 'questionForm': 'chosen',
               'is_banned': 0, 'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': self.default_timestamp,

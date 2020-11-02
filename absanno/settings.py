@@ -39,7 +39,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'absanno_app.apps.AbsannoAppConfig'
+    'absanno_app.apps.AbsannoAppConfig',
+    'django_apscheduler',
 ]
 
 MIDDLEWARE = [
