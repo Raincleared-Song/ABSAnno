@@ -33,7 +33,7 @@ class UnitTest(TestCase):
         Question.objects.create(mission=self.mission2, word='title1', pre_ans='T')
         Question.objects.create(mission=self.mission2, word='title2', pre_ans='F')
         self.recep2 = Reception(self.song, self.mission2)
-        Mission.objects.create(name='task_test2', question_form='judgement',
+        Mission.objects.create(name='task_test3', question_form='judgement',
                                question_num=3, user=self.wang, total=5)
         self.mission_num = 2
         self.maxDiff = None
@@ -43,14 +43,16 @@ class UnitTest(TestCase):
         self.upload_pos_case2 = {"name": "task", "question_form": "judgement", "question_num": "2", "total": "5",
                                 "question_list": [{"contains": "title3", "ans": "T", "choices": "yes||no"},
                                                   {"contains": "title4", "ans": "F", "choices": "yes||no"}]}
-        self.square_pos_case1 = str({'ret': 2, 'total': 2, 'question_list':
-            [{'id': 1, 'name': 'task_test', 'user': 'test', 'questionNum': 2, 'questionForm': 'judgement', 'is_banned': 0,
-              'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': datetime.datetime(2022, 6, 30, 0, 0), 'cash': 5, 'info': '', 'tags': []},
-             {'id': 2, 'name': 'task_test2', 'user': 'test_wang', 'questionNum': 3, 'questionForm': 'judgement', 'is_banned': 0,
-              'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': datetime.datetime(2022, 6, 30, 0, 0), 'cash': 5, 'info': '', 'tags': []}]})
-        self.square_pos_case2 = str({'ret': 1, 'total': 1, 'question_list':
-            [{'id': 2, 'name': 'task_test2', 'user': 'test_wang', 'questionNum': 3, 'questionForm': 'judgement',
-              'is_banned': 0, 'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': datetime.datetime(2022, 6, 30, 0, 0), 'cash': 5, 'info': '', 'tags': []}]})
+        self.square_pos_case1 = str({'ret': 3, 'total': 3, 'question_list': [
+            {'id': 1, 'name': 'task_test', 'user': 'test', 'questionNum': 2, 'questionForm': 'judgement', 'is_banned': 0,
+             'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': datetime.datetime(2022, 6, 30, 0, 0), 'cash': 5, 'info': '', 'tags': []},
+            {'id': 2, 'name': 'task_test2', 'user': 'test', 'questionNum': 2, 'questionForm': 'judgement', 'is_banned': 0,
+             'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': datetime.datetime(2022, 6, 30, 0, 0), 'cash': 5, 'info': '', 'tags': []},
+            {'id': 3, 'name': 'task_test3', 'user': 'test_wang', 'questionNum': 3, 'questionForm': 'judgement', 'is_banned': 0,
+             'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': datetime.datetime(2022, 6, 30, 0, 0), 'cash': 5, 'info': '', 'tags': []}]})
+        self.square_pos_case2 = str({'ret': 1, 'total': 1, 'question_list': [
+            {'id': 2, 'name': 'task_test2', 'user': 'test', 'questionNum': 2, 'questionForm': 'judgement', 'is_banned': 0,
+             'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': datetime.datetime(2022, 6, 30, 0, 0), 'cash': 5, 'info': '', 'tags': []}]})
         self.mission_my_pos_case = str(
             {'mission_name': 'task_test', 'question_form': 'judgement', 'question_num': 2, 'total': 5, 'now_num': 0,
              'is_banned': 0, 'question_list': [{'word': 'title1', 'T_num': 0, 'F_num': 0, 'pre_ans': 'T', 'ans': 1},
@@ -620,10 +622,14 @@ class UnitTest(TestCase):
         res = self.client.get('/absanno/user' + param)
         self.assertEqual(res.status_code, 201)
         self.assertEqual(res.json()['data'], str(
-            {'total_num': 1, 'mission_list': [{'id': 1, 'name': 'task_test', 'total': 5, 'num': 0,
-                                               'question_num': 2, 'question_form': 'judgement',
-                                               'to_ans': 1, 'reward': 5, 'deadline': datetime.datetime(2022, 6, 30, 0, 0),
-                                               'info': '', 'check_way': 'auto', 'is_banned': 0}]}))
+            {'total_num': 2, 'mission_list': [
+                {'id': 1, 'name': 'task_test', 'total': 5, 'num': 0, 'question_num': 2, 'question_form': 'judgement',
+                 'to_ans': 1, 'reward': 5, 'deadline': datetime.datetime(2022, 6, 30, 0, 0), 'info': '',
+                 'check_way': 'auto', 'is_banned': 0},
+                {'id': 2, 'name': 'task_test2', 'total': 5, 'num': 0, 'question_num': 2, 'question_form': 'judgement',
+                 'to_ans': 1, 'reward': 5, 'deadline': datetime.datetime(2022, 6, 30, 0, 0), 'info': '',
+                 'check_way': 'auto', 'is_banned': 0}]}
+        ))
 
     def test_about_pos_history(self):
         self.mock_login()

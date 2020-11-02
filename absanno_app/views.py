@@ -1046,6 +1046,7 @@ def check_result(request):
 def interests(request):
     return None
 
+
 # 验收下载，GET
 def download_result(request):
     if request.method == "GET":
