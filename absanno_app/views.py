@@ -1114,7 +1114,7 @@ def download(request):
         return gen_response(code, data)
 
     user_id = request.session['user_id']
-    if Users.objects.get(id=user_id).power < 2:
+    if Users.objects.get(id=user_id).power < 1:
         return gen_response(400, "Dont Have Power")
 
     mission_id_ = request.GET.get('mission_id') if 'mission_id' in request.GET else ''
