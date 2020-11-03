@@ -1,3 +1,4 @@
+import functools
 from django.http import JsonResponse, HttpResponse, FileResponse
 import json
 from .models import Users, Mission, Question, History, Apply, Reception
@@ -663,14 +664,14 @@ def about_me(request):
             return gen_response(201, {
                 'total_num': len(ret.user_apply.all()),
                 'apply_list':
-                [
-                    {
-                        'type': apply_ret.type,
-                        'pub_time': int(apply_ret.pub_time.timestamp() * 1000),
-                        'accept': apply_ret.accept
-                    }
-                    for apply_ret in ret.user_apply.all().order_by('pub_time')
-                ]
+                    [
+                        {
+                            'type': apply_ret.type,
+                            'pub_time': int(apply_ret.pub_time.timestamp() * 1000),
+                            'accept': apply_ret.accept
+                        }
+                        for apply_ret in ret.user_apply.all().order_by('pub_time')
+                    ]
             })
         else:
             return gen_response(400, "Method Is Illegal")
@@ -864,16 +865,16 @@ def apply_show(request):
         return gen_response(201, {
             'apply_num': len(apply_list),
             'apply_list':
-            [
-                {
-                    'id': ret.id,
-                    'user': ret.user,
-                    'pub_time': int(ret.pub_time.timestamp() * 1000),
-                    'type': ret.type,
-                    'accept': ret.accept
-                }
-                for ret in apply_list
-            ]
+                [
+                    {
+                        'id': ret.id,
+                        'user': ret.user,
+                        'pub_time': int(ret.pub_time.timestamp() * 1000),
+                        'type': ret.type,
+                        'accept': ret.accept
+                    }
+                    for ret in apply_list
+                ]
         })
 
     return gen_response(400, "Apply Show Failed")
@@ -939,21 +940,21 @@ def rep_show(request):
             'total_num': len(rep_list),
             'user_name': user.name,
             'rep_list':
-            [
-                {
-                    'pub_time': int(ret.pub_time.timestamp() * 1000),
-                    'deadline': int(ret.deadline.timestamp() * 1000),
-                    'mission_id': ret.mission.id,
-                    'mission_name': ret.mission.name,
-                    'mission_info': ret.mission.info,
-                    'mission_deadline': int(ret.mission.deadline.timestamp() * 1000),
-                    'mission_reward': ret.mission.reward,
-                    'mission_tag': get_lst(ret.mission.tags),
-                    'question_form': ret.mission.question_form,
-                    'question_num': ret.mission.question_num
-                }
-                for ret in rep_list
-            ]
+                [
+                    {
+                        'pub_time': int(ret.pub_time.timestamp() * 1000),
+                        'deadline': int(ret.deadline.timestamp() * 1000),
+                        'mission_id': ret.mission.id,
+                        'mission_name': ret.mission.name,
+                        'mission_info': ret.mission.info,
+                        'mission_deadline': int(ret.mission.deadline.timestamp() * 1000),
+                        'mission_reward': ret.mission.reward,
+                        'mission_tag': get_lst(ret.mission.tags),
+                        'question_form': ret.mission.question_form,
+                        'question_num': ret.mission.question_num
+                    }
+                    for ret in rep_list
+                ]
         })
 
     return gen_response(400, "Rep Show Failed")
@@ -1218,9 +1219,98 @@ def check_result(request):
     return gen_response(400, "Check Mission Error, Use GET Instead")
 
 
-def interests(request):
-    return None
+def sort_mission_list_by_interest(mission_list, user):
+    if not user:
+        print("not login, sort by tag numbers")
+        mission_list.sort(key=lambda x: len(x.tags.split('||')))
+        return mission_list
+    else:
+        print("logged in, sort by same tag numbers")
+        user_tag = user.tags.split('||')
+        # print(user_tag)
+        mission_list.sort(key=lambda x: len(set(user_tag) & set(x.tags.split('||'))), reverse=True)
+        # print(mission_list)
+        return mission_list
 
+
+def interests(request):
+    if request.method == 'GET':
+
+        # 安全性验证
+        # TODO
+        user_id = request.session['user_id'] if check_token(request)[0] == 201 else 0
+
+        num_ = request.GET.get('num')
+        type__ = request.GET.get('type') if 'type' in request.GET else ""
+        theme__ = request.GET.get('theme') if 'theme' in request.GET else ""
+        kw = request.GET.get('kw') if 'kw' in request.GET else ""
+
+        if not num_:
+            num_ = "0"
+        if type__ != "":
+            type_ = get_lst(type__)
+        else:
+            type_ = []
+        if theme__ != "":
+            theme_ = get_lst(theme__)
+        else:
+            theme_ = []
+
+        if not num_.isdigit():
+            return gen_response(400, "Num Is Not Digit")
+        num = int(num_)
+        if num < 0 or num >= len(Mission.objects.filter(to_ans=1)):
+            return gen_response(400, "Num Error")
+
+        user = Users.objects.filter(id=user_id).first()
+        receive_set = None
+        if user:
+            mission_list_base = Mission.objects.filter(Q(to_ans=1) & Q(is_banned=0)).order_by('id')
+            rec_list = user.user_reception.all()
+            receive_set = set([r.mission.id for r in rec_list])
+        else:
+            mission_list_base = Mission.objects.all().order_by('id')
+
+        def get_mission_rec_status(m):
+            if receive_set is None:
+                return ''
+            else:
+                return 'T' if m.id in receive_set else 'F'
+
+        mission_list = sort_mission_list_by_interest(list(mission_list_base), user)
+
+        show_num = 12  # 设计一次更新获得的任务数
+        get_num = min(num + show_num, len(mission_list))  # 本次更新获得的任务数
+
+        return gen_response(201, {'ret': get_num,
+                                  'total': len(mission_list),
+                                  "question_list":
+                                      [
+                                          {
+                                              'id': ret.id,
+                                              'name': ret.name,
+                                              'user': ret.user.name,
+                                              'questionNum': ret.question_num,
+                                              'questionForm': ret.question_form,
+                                              'is_banned': ret.is_banned,
+                                              'full': ret.to_ans,
+                                              'total_ans': ret.total,
+                                              'ans_num': ret.now_num,
+                                              'deadline': int(ret.deadline.timestamp() * 1000),
+                                              'cash': ret.reward,
+                                              'info': ret.info,
+                                              'tags': get_lst(ret.tags),
+                                              'received': get_mission_rec_status(ret)
+                                          }
+                                          for ret in mission_list[num: get_num]
+                                      ]}
+                            )
+    return gen_response(400, "User Show Error")
+
+def modify_personal_info(request):
+    if request.method == "POST":
+        pass
+    return gen_response(400, "Please Use Post Method")
 
 # 开启检查线程
 scheduler = BackgroundScheduler()
@@ -1242,6 +1332,8 @@ try:
             if rec.can_do and timezone.now() > rec.deadline:
                 rec.can_do = False
                 rec.save()
+
+
     scheduler.start()
 except Exception as e:
     print(e)

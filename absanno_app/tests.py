@@ -18,16 +18,16 @@ class UnitTest(TestCase):
         self.song = Users.objects.create(name='test', password='test_pw', power=2)
         self.wang = Users.objects.create(name='test_wang', password='test_pw_wang', power=1)
         self.banned_user = Users.objects.create(name='test3', password='test_pw3', is_banned=1)
-        self.normal_user = Users.objects.create(name='test4', password='test_pw4')  # user with no power
+        self.normal_user = Users.objects.create(name='test4', password='test_pw4', tags='Sports||Plant||Animal')  # user with no power
         self.user_num = 4
 
         self.mission = Mission.objects.create(name='task_test', question_form='chosen', question_num=2,
-                                              user=self.song, total=5, reception_num=1)
+                                              user=self.song, total=5, reception_num=1, tags="Sports||Game||Lifestyle")
         Question.objects.create(mission=self.mission, word='title1', pre_ans='A', choices='A||B||C||D')
         Question.objects.create(mission=self.mission, word='title2', pre_ans='C', choices='D||E||F||G')
         History.objects.create(user=self.song, mission=self.mission, ans='A||B', pub_time=datetime.date(2021, 6, 30))
         self.mission2 = Mission.objects.create(name='task_test2', question_form='chosen',
-                                               question_num=3, user=self.wang, total=5)
+                                               question_num=3, user=self.wang, total=5, tags="Animal||Plant||Space")
         Reception.objects.create(user=self.wang, mission=self.mission)
         self.mission_num = 2
         self.maxDiff = None
@@ -44,35 +44,39 @@ class UnitTest(TestCase):
                                 '"total": "5", "retrieve_time": "1", "question_list": [{"contains": "title3", ' \
                                 '"choices": "A||B||C||D", "ans": ""}, {"contains": "title4", "choices": "E||F||G||H",' \
                                 ' "ans": ""}]}'
-        self.square_pos_case1 = str({'ret': 2, 'total': 2, 'question_list':
-            [{'id': 1, 'name': 'task_test', 'user': 'test', 'questionNum': 2, 'questionForm': 'chosen',
-              'is_banned': 0, 'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': self.default_timestamp,
-              'cash': 5, 'info': '', 'tags': [], 'received': 'T'},
-             {'id': 2, 'name': 'task_test2', 'user': 'test_wang', 'questionNum': 3, 'questionForm': 'chosen',
-              'is_banned': 0, 'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': self.default_timestamp,
-              'cash': 5, 'info': '', 'tags': [], 'received': 'F'}]})
-        self.square_pos_case2 = str({'ret': 1, 'total': 1, 'question_list':
-            [{'id': 2, 'name': 'task_test2', 'user': 'test_wang', 'questionNum': 3, 'questionForm': 'chosen',
-              'is_banned': 0, 'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': self.default_timestamp,
-              'cash': 5, 'info': '', 'tags': [], 'received': 'F'}]})
-        self.square_pos_case_all = str({'ret': 2, 'total': 2, 'question_list':
-            [{'id': 1, 'name': 'task_test', 'user': 'test', 'questionNum': 2, 'questionForm': 'chosen',
-              'is_banned': 0, 'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': self.default_timestamp,
-              'cash': 5, 'info': '', 'tags': [], 'received': ''},
-             {'id': 2, 'name': 'task_test2', 'user': 'test_wang', 'questionNum': 3, 'questionForm': 'chosen',
-              'is_banned': 0, 'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': self.default_timestamp,
-              'cash': 5, 'info': '', 'tags': [], 'received': ''}]})
+        self.square_pos_case1 = str({'ret': 2, 'total': 2, 'question_list': [
+            {'id': 1, 'name': 'task_test', 'user': 'test', 'questionNum': 2, 'questionForm': 'chosen', 'is_banned': 0,
+             'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': 1624982400000, 'cash': 5, 'info': '',
+             'tags': ['Sports', 'Game', 'Lifestyle'], 'received': 'T'},
+            {'id': 2, 'name': 'task_test2', 'user': 'test_wang', 'questionNum': 3, 'questionForm': 'chosen', 'is_banned': 0,
+             'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': 1624982400000, 'cash': 5, 'info': '',
+             'tags': ['Animal', 'Plant', 'Space'], 'received': 'F'}]})
+        self.square_pos_case2 = str({'ret': 1, 'total': 1, 'question_list': [
+            {'id': 2, 'name': 'task_test2', 'user': 'test_wang', 'questionNum': 3, 'questionForm': 'chosen', 'is_banned': 0,
+             'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': 1624982400000, 'cash': 5, 'info': '',
+             'tags': ['Animal', 'Plant', 'Space'], 'received': 'F'}]})
+        self.square_pos_case_all = str({'ret': 2, 'total': 2, 'question_list': [
+            {'id': 1, 'name': 'task_test', 'user': 'test', 'questionNum': 2, 'questionForm': 'chosen', 'is_banned': 0,
+             'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': 1624982400000, 'cash': 5, 'info': '',
+             'tags': ['Sports', 'Game', 'Lifestyle'], 'received': ''},
+            {'id': 2, 'name': 'task_test2', 'user': 'test_wang', 'questionNum': 3, 'questionForm': 'chosen', 'is_banned': 0,
+             'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': 1624982400000, 'cash': 5, 'info': '',
+             'tags': ['Animal', 'Plant', 'Space'], 'received': ''}]})
+        self.interest_pos_case = str({'ret': 2, 'total': 2, 'question_list': [
+            {'id': 2, 'name': 'task_test2', 'user': 'test_wang', 'questionNum': 3, 'questionForm': 'chosen', 'is_banned': 0,
+             'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': 1624982400000, 'cash': 5, 'info': '',
+             'tags': ['Animal', 'Plant', 'Space'], 'received': 'F'},
+            {'id': 1, 'name': 'task_test', 'user': 'test', 'questionNum': 2, 'questionForm': 'chosen', 'is_banned': 0,
+             'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': 1624982400000, 'cash': 5, 'info': '',
+             'tags': ['Sports', 'Game', 'Lifestyle'], 'received': 'F'}]})
         self.mission_my_pos_case = str(
             {'mission_name': 'task_test', 'question_form': 'chosen', 'question_num': 2, 'total': 5, 'now_num': 0,
              'is_banned': 0, 'question_list': [{'word': 'title1', 'pre_ans': 'A', 'ans': 'A', 'ans_weight': 1.0},
                                                {'word': 'title2', 'pre_ans': 'C', 'ans': 'B', 'ans_weight': 1.0}]})
-        self.power_user_show = str({'num': 3, 'total': 3, 'user_list':
-            [{'id': 2, 'name': 'test_wang', 'power': 1, 'is_banned': 0, 'coin': 1000, 'weight': 50, 'fin_num': 0,
-              'tags': []},
-             {'id': 3, 'name': 'test3', 'power': 0, 'is_banned': 1, 'coin': 1000, 'weight': 50, 'fin_num': 0,
-              'tags': []},
-             {'id': 4, 'name': 'test4', 'power': 0, 'is_banned': 0, 'coin': 1000, 'weight': 50, 'fin_num': 0,
-              'tags': []}]})
+        self.power_user_show = str({'num': 3, 'total': 3, 'user_list': [
+            {'id': 2, 'name': 'test_wang', 'power': 1, 'is_banned': 0, 'coin': 1000, 'weight': 50, 'fin_num': 0, 'tags': []},
+            {'id': 3, 'name': 'test3', 'power': 0, 'is_banned': 1, 'coin': 1000, 'weight': 50, 'fin_num': 0, 'tags': []},
+            {'id': 4, 'name': 'test4', 'power': 0, 'is_banned': 0, 'coin': 1000, 'weight': 50, 'fin_num': 0, 'tags': ['Sports', 'Plant', 'Animal']}]})
         self.about_pos_case = str({'total_num': 1, 'mission_list':
             [{'id': 1, 'name': 'task_test', 'user': 'test', 'question_num': 2, 'question_form': 'chosen',
               'reward': 5, 'info': '', 'ret_time': self.default_timestamp}]})
@@ -491,12 +495,24 @@ class UnitTest(TestCase):
         self.assertEqual(res.status_code, 400)
         self.assertEqual(res.json()['data'], 'User Show Error')
 
-    def test_squrae_search_get_sk2(self):
+    def test_square_search_get_sk2(self):
         self.mock_login()
         param = "?num=0&kw=est2"
         res = self.client.get('/absanno/square' + param)
         self.assertEqual(res.status_code, 201)
         self.assertEqual(res.json()['data'], self.square_pos_case2)
+
+    def test_login_interest_square_pos(self):
+        self.mock_no_power_login()
+        res = self.client.get('/absanno/interest')
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.json()['data'], self.interest_pos_case)
+
+    def test_visitor_interest_square_neg(self):
+        self.mock_invalid_token()
+        res = self.client.get('/absanno/interest')
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.json()['data'], self.square_pos_case_all)
 
     def test_mission_pos(self):
         self.mock_login()
