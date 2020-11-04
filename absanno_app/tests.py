@@ -17,17 +17,17 @@ class UnitTest(TestCase):
     def setUp(self):
         self.song = Users.objects.create(name='test', password='test_pw', power=2)
         self.wang = Users.objects.create(name='test_wang', password='test_pw_wang', power=1)
-        Users.objects.create(name='test3', password='test_pw3', is_banned=1)
-        Users.objects.create(name='test4', password='test_pw4')  # user with no power
+        self.banned_user = Users.objects.create(name='test3', password='test_pw3', is_banned=1)
+        self.normal_user = Users.objects.create(name='test4', password='test_pw4', tags='Sports||Plant||Animal')  # user with no power
         self.user_num = 4
 
         self.mission = Mission.objects.create(name='task_test', question_form='chosen', question_num=2,
-                                              user=self.song, total=5, reception_num=1)
+                                              user=self.song, total=5, reception_num=1, tags="Sports||Game||Lifestyle".lower())
         Question.objects.create(mission=self.mission, word='title1', pre_ans='A', choices='A||B||C||D')
         Question.objects.create(mission=self.mission, word='title2', pre_ans='C', choices='D||E||F||G')
         History.objects.create(user=self.song, mission=self.mission, ans='A||B', pub_time=datetime.date(2021, 6, 30))
         self.mission2 = Mission.objects.create(name='task_test2', question_form='chosen',
-                                               question_num=3, user=self.wang, total=5)
+                                               question_num=3, user=self.wang, total=5, tags="Animal||Plant||Space".lower())
         Reception.objects.create(user=self.wang, mission=self.mission)
         self.mission_num = 2
         self.maxDiff = None
@@ -38,41 +38,45 @@ class UnitTest(TestCase):
                                                   {"contains": "title4", "ans": "", "choices": "A||B||C||D"}]}
         self.upload_pos_case2 = {"name": "task", "question_form": "chosen", "question_num": "2", "total": "5",
                                  "retrieve_time": "1",
-                                "question_list": [{"contains": "title3", "ans": "T", "choices": "yes||no"},
-                                                  {"contains": "title4", "ans": "F", "choices": "yes||no"}]}
+                                 "question_list": [{"contains": "title3", "ans": "T", "choices": "yes||no"},
+                                                   {"contains": "title4", "ans": "F", "choices": "yes||no"}]}
         self.upload_pos_case3 = '{"name": "test_image", "question_form": "chosen-image", "question_num": "2", ' \
                                 '"total": "5", "retrieve_time": "1", "question_list": [{"contains": "title3", ' \
                                 '"choices": "A||B||C||D", "ans": ""}, {"contains": "title4", "choices": "E||F||G||H",' \
                                 ' "ans": ""}]}'
-        self.square_pos_case1 = str({'ret': 2, 'total': 2, 'question_list':
-            [{'id': 1, 'name': 'task_test', 'user': 'test', 'questionNum': 2, 'questionForm': 'chosen',
-              'is_banned': 0, 'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': self.default_timestamp,
-              'cash': 5, 'info': '', 'tags': [], 'received': 'T'},
-             {'id': 2, 'name': 'task_test2', 'user': 'test_wang', 'questionNum': 3, 'questionForm': 'chosen',
-              'is_banned': 0, 'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': self.default_timestamp,
-              'cash': 5, 'info': '', 'tags': [], 'received': 'F'}]})
-        self.square_pos_case2 = str({'ret': 1, 'total': 1, 'question_list':
-            [{'id': 2, 'name': 'task_test2', 'user': 'test_wang', 'questionNum': 3, 'questionForm': 'chosen',
-              'is_banned': 0, 'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': self.default_timestamp,
-              'cash': 5, 'info': '', 'tags': [], 'received': 'F'}]})
-        self.square_pos_case_all = str({'ret': 2, 'total': 2, 'question_list':
-            [{'id': 1, 'name': 'task_test', 'user': 'test', 'questionNum': 2, 'questionForm': 'chosen',
-              'is_banned': 0, 'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': self.default_timestamp,
-              'cash': 5, 'info': '', 'tags': [], 'received': ''},
-             {'id': 2, 'name': 'task_test2', 'user': 'test_wang', 'questionNum': 3, 'questionForm': 'chosen',
-              'is_banned': 0, 'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': self.default_timestamp,
-              'cash': 5, 'info': '', 'tags': [], 'received': ''}]})
+        self.square_pos_case1 = str({'ret': 2, 'total': 2, 'question_list': [
+            {'id': 1, 'name': 'task_test', 'user': 'test', 'questionNum': 2, 'questionForm': 'chosen', 'is_banned': 0,
+             'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': 1624982400000, 'cash': 5, 'info': '',
+             'tags': ['sports', 'game', 'lifestyle'], 'received': 'T'},
+            {'id': 2, 'name': 'task_test2', 'user': 'test_wang', 'questionNum': 3, 'questionForm': 'chosen', 'is_banned': 0,
+             'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': 1624982400000, 'cash': 5, 'info': '',
+             'tags': ['animal', 'plant', 'space'], 'received': 'F'}]})
+        self.square_pos_case2 = str({'ret': 1, 'total': 1, 'question_list': [
+            {'id': 2, 'name': 'task_test2', 'user': 'test_wang', 'questionNum': 3, 'questionForm': 'chosen', 'is_banned': 0,
+             'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': 1624982400000, 'cash': 5, 'info': '',
+             'tags': ['animal', 'plant', 'space'], 'received': 'F'}]})
+        self.square_pos_case_all = str({'ret': 2, 'total': 2, 'question_list': [
+            {'id': 1, 'name': 'task_test', 'user': 'test', 'questionNum': 2, 'questionForm': 'chosen', 'is_banned': 0,
+             'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': 1624982400000, 'cash': 5, 'info': '',
+             'tags': ['sports', 'game', 'lifestyle'], 'received': ''},
+            {'id': 2, 'name': 'task_test2', 'user': 'test_wang', 'questionNum': 3, 'questionForm': 'chosen', 'is_banned': 0,
+             'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': 1624982400000, 'cash': 5, 'info': '',
+             'tags': ['animal', 'plant', 'space'], 'received': ''}]})
+        self.interest_pos_case = str({'ret': 2, 'total': 2, 'question_list': [
+            {'id': 2, 'name': 'task_test2', 'user': 'test_wang', 'questionNum': 3, 'questionForm': 'chosen', 'is_banned': 0,
+             'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': 1624982400000, 'cash': 5, 'info': '',
+             'tags': ['animal', 'plant', 'space'], 'received': 'F'},
+            {'id': 1, 'name': 'task_test', 'user': 'test', 'questionNum': 2, 'questionForm': 'chosen', 'is_banned': 0,
+             'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': 1624982400000, 'cash': 5, 'info': '',
+             'tags': ['sports', 'game', 'lifestyle'], 'received': 'F'}]})
         self.mission_my_pos_case = str(
             {'mission_name': 'task_test', 'question_form': 'chosen', 'question_num': 2, 'total': 5, 'now_num': 0,
              'is_banned': 0, 'question_list': [{'word': 'title1', 'pre_ans': 'A', 'ans': 'A', 'ans_weight': 1.0},
                                                {'word': 'title2', 'pre_ans': 'C', 'ans': 'B', 'ans_weight': 1.0}]})
-        self.power_user_show = str({'num': 3, 'total': 3, 'user_list':
-            [{'id': 2, 'name': 'test_wang', 'power': 1, 'is_banned': 0, 'coin': 1000, 'weight': 50, 'fin_num': 0,
-              'tags': []},
-             {'id': 3, 'name': 'test3', 'power': 0, 'is_banned': 1, 'coin': 1000, 'weight': 50, 'fin_num': 0,
-              'tags': []},
-             {'id': 4, 'name': 'test4', 'power': 0, 'is_banned': 0, 'coin': 1000, 'weight': 50, 'fin_num': 0,
-              'tags': []}]})
+        self.power_user_show = str({'num': 3, 'total': 3, 'user_list': [
+            {'id': 2, 'name': 'test_wang', 'power': 1, 'is_banned': 0, 'coin': 1000, 'weight': 50, 'fin_num': 0, 'tags': []},
+            {'id': 3, 'name': 'test3', 'power': 0, 'is_banned': 1, 'coin': 1000, 'weight': 50, 'fin_num': 0, 'tags': []},
+            {'id': 4, 'name': 'test4', 'power': 0, 'is_banned': 0, 'coin': 1000, 'weight': 50, 'fin_num': 0, 'tags': ['Sports', 'Plant', 'Animal']}]})
         self.about_pos_case = str({'total_num': 1, 'mission_list':
             [{'id': 1, 'name': 'task_test', 'user': 'test', 'question_num': 2, 'question_form': 'chosen',
               'reward': 5, 'info': '', 'ret_time': self.default_timestamp}]})
@@ -491,12 +495,24 @@ class UnitTest(TestCase):
         self.assertEqual(res.status_code, 400)
         self.assertEqual(res.json()['data'], 'User Show Error')
 
-    def test_squrae_search_get_sk2(self):
+    def test_square_search_get_sk2(self):
         self.mock_login()
         param = "?num=0&kw=est2"
         res = self.client.get('/absanno/square' + param)
         self.assertEqual(res.status_code, 201)
         self.assertEqual(res.json()['data'], self.square_pos_case2)
+
+    def test_login_interest_square_pos(self):
+        self.mock_no_power_login()
+        res = self.client.get('/absanno/interest')
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.json()['data'], self.interest_pos_case)
+
+    def test_visitor_interest_square_neg(self):
+        self.mock_invalid_token()
+        res = self.client.get('/absanno/interest')
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.json()['data'], self.square_pos_case_all)
 
     def test_mission_pos(self):
         self.mock_login()
@@ -832,14 +848,21 @@ class UnitTest(TestCase):
 
     def test_power_upgrade_success(self):
         self.mock_login()  # admin login
-        body = {"p_id": "2"}  # userid of the applicant
+        body = {"p_id": "2", 'method': 'Accept'}  # userid of the applicant
         res = self.client.post('/absanno/powerup', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 201)
         self.assertEqual(res.json()['data'], "Upgrade Success")
 
+    def test_power_upgrade_rejected(self):
+        self.mock_login()  # admin login
+        body = {"p_id": "2", 'method': 'Rejected'}  # userid of the applicant
+        res = self.client.post('/absanno/powerup', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], "Upgrade Rejected")
+
     def test_power_upgrade_cannot_more(self):
         self.mock_login()
-        body = {"p_id": "1"}  # userid
+        body = {"p_id": "1", 'method': 'Accept'}  # userid
         res = self.client.post('/absanno/powerup', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 400)
         self.assertEqual(res.json()['data'], "Are You Kidding Me?")
@@ -1044,3 +1067,33 @@ class UnitTest(TestCase):
         res = self.client.get('/absanno/repshow')
         self.assertEqual(res.status_code, 201)
         self.assertTrue(res.json()['data'].find('[{') >= 0)
+
+    def test_check_result_neg_no_power(self):
+        self.mock_no_power_login()
+        body = {'mission_id': '1'}
+        res = self.client.get('/absanno/check', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'Dont Have Power')
+
+    def test_check_result_neg_wrong_method(self):
+        self.mock_login()
+        body = {'mission_id': '1'}
+        res = self.client.post('/absanno/check', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'Check Mission Error, Use GET Instead')
+
+    def test_check_result_neg_wrong_user(self):
+        self.mock_login2()
+        body = {'mission_id': '1'}
+        res = self.client.get('/absanno/check', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'Mission Not Published by You')
+
+    def test_check_result_pos(self):
+        self.mock_login()
+        body = {'mission_id': '1'}
+        res = self.client.get('/absanno/check', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.json()['data'], str({'question_list': [
+            {'word': 'title1', 'pre_ans': 'A', 'ans': 'NULL', 'ans_weight': 0.0},
+            {'word': 'title2', 'pre_ans': 'C', 'ans': 'NULL', 'ans_weight': 0.0}]}))
