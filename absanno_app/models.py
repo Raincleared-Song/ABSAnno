@@ -70,7 +70,7 @@ class Question(models.Model):  # 判断题和选择题均使用 Question 存储
 
     def picture_url(self):
         if self.picture:
-            return '/'.join(('', 'backend', 'media', self.picture.name))
+            return '/'.join(('', 'backend', 'media', self.mission.name, self.picture.name.split('/').pop()))
         else:
             return '/backend/media/logo/app.png'
 
