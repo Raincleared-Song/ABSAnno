@@ -848,14 +848,21 @@ class UnitTest(TestCase):
 
     def test_power_upgrade_success(self):
         self.mock_login()  # admin login
-        body = {"p_id": "2", 'method': 'Accept'}  # userid of the applicant
+        body = {"p_id": "4", 'method': 'Accept'}  # userid of the applicant
         res = self.client.post('/absanno/powerup', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 201)
         self.assertEqual(res.json()['data'], "Upgrade Success")
 
+    def test_power_upgrade_already_publisher(self):
+        self.mock_login()  # admin login
+        body = {"p_id": "2", 'method': 'Accept'}  # userid of the applicant
+        res = self.client.post('/absanno/powerup', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], "You are already publisher!")
+
     def test_power_upgrade_rejected(self):
         self.mock_login()  # admin login
-        body = {"p_id": "2", 'method': 'Rejected'}  # userid of the applicant
+        body = {"p_id": "4", 'method': 'Rejected'}  # userid of the applicant
         res = self.client.post('/absanno/powerup', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 400)
         self.assertEqual(res.json()['data'], "Upgrade Rejected")

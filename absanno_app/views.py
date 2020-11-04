@@ -874,6 +874,7 @@ def apply_show(request):
             [
                 {
                     'id': ret.user.id,
+                    'app_id': ret.id,
                     'user_name': ret.user.name,
                     'pub_time': int(ret.pub_time.timestamp() * 1000),
                     'type': ret.type,
@@ -890,7 +891,9 @@ def apply_show(request):
 
 
 # # 操作apply
-# def admin_apply(request):
+# @Deprecated
+def admin_apply(request):
+    pass
 #     if request.method == 'POST':
 #
 #         code, data = check_token(request)
@@ -1001,13 +1004,23 @@ def power_upgrade(request):
             return gen_response(400, "Are You Kidding Me?")
         obj = Users.objects.get(id=user_id)
 
+        if Users.objects.get(id=user_id).power == 1:
+            return gen_response(400, "You are already publisher!")
+
         if method_.lower() == "accept":
             obj.power = 1
             obj.save()
-            Apply.objects.get(user=obj).accept = 1
+            apply = Apply.objects.filter(user=obj)
+
+            for app in apply:
+                app.accept = 1
+                app.save()
             return gen_response(201, "Upgrade Success")
         else:
-            Apply.objects.get(user=obj).accept = 2
+            apply = Apply.objects.filter(user=obj)
+            for app in apply:
+                app.accept = 1
+                app.save()
             return gen_response(400, "Upgrade Rejected")
 
     return gen_response(400, "Upgrade Failed")
