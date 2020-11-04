@@ -986,13 +986,19 @@ def power_upgrade(request):
         if user_id < 1 or user_id > len(Users.objects.all()):
             return gen_response(400, "User_ID Error")
 
+        method_ = js['method'] if 'method' in js else 'Reject'
+
         # 目前仅限获取发题权限，无法进一步上升为管理员
         if Users.objects.get(id=user_id).power == 2:
             return gen_response(400, "Are You Kidding Me?")
         obj = Users.objects.get(id=user_id)
-        obj.power = 1
-        obj.save()
-        return gen_response(201, "Upgrade Success")
+
+        if method_.lower() == "accept":
+            obj.power = 1
+            obj.save()
+            return gen_response(201, "Upgrade Success")
+        else:
+            return gen_response(400, "Upgrade Rejected")
 
     return gen_response(400, "Upgrade Failed")
 
