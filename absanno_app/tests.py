@@ -584,14 +584,14 @@ class UnitTest(TestCase):
         self.assertEqual(res.json()['data'], 'Runtime Error')
 
     def test_mission_p_pos(self):
-        self.mock_login()
+        self.mock_login2()
         body = {'mission_id': '1', 'ans': 'A||C'}
         res = self.client.post('/absanno/mission', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 201)
         self.assertEqual(res.json()['data'], 'Answer Pushed')
 
     def test_mission_p_neg(self):
-        self.mock_login()
+        self.mock_login2()
         body = {'mission_id': '1', 'ans': 'A||B'}
         res = self.client.post('/absanno/mission', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 201)
@@ -632,7 +632,7 @@ class UnitTest(TestCase):
         self.assertEqual(res.json()['data'], 'Not Digit Or Not List Error')
 
     def test_mission_p_neg_ans_illegal(self):
-        self.mock_login()
+        self.mock_login2()
         body = {'mission_id': '1', 'ans': 'A'}
         res = self.client.post('/absanno/mission', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 400)
@@ -646,7 +646,7 @@ class UnitTest(TestCase):
         self.assertEqual(res.json()['data'], 'Mission ID Error')
 
     def test_mission_p_neg_ans_len(self):
-        self.mock_login()
+        self.mock_login2()
         body = {'mission_id': '1', 'ans': 'A||B||C'}
         res = self.client.post('/absanno/mission', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 400)

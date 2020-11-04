@@ -385,6 +385,10 @@ def mission_show(request):
         user = find_user_by_token(request)
         mission = Mission.objects.get(id=mission_id)
 
+        rec = Reception.objects.filter(user__id=user.id, mission__id=mission_id).first()
+        if rec is None:
+            return gen_response(400, 'Have Not Received Yet')
+
         flag = 1
         tot, g = 0, 0
 
@@ -398,7 +402,6 @@ def mission_show(request):
                     tot += 1
                     if q_list[i].pre_ans == ans_list[i]:
                         g += 1
-            print(g, tot)
             if tot != 0:
                 if g * 100 / tot < 60:
                     flag = 0
@@ -413,6 +416,8 @@ def mission_show(request):
                 if mission.now_num == mission.total:
                     mission.to_ans = 0
                 mission.save()
+                rec.can_do = False  # 接单不可做
+                rec.save()
                 history = History(user=user, mission=mission, ans=ans, ans_weight=user.weight)
                 history.save()
                 return gen_response(201, "Answer Pushed")
@@ -548,7 +553,6 @@ def upload(request):
 
         cost = reward * total
         if user.coin < cost:
-            print(user.coin, cost)
             return gen_response(400, "You Dont Have Enough Coin")
 
         if file is None and 'question_list' in js:
@@ -1281,6 +1285,8 @@ try:
             if rec.can_do and timezone.now() > rec.deadline:
                 rec.can_do = False
                 rec.save()
+                rec.mission.reception_num -= 1
+                rec.mission.save()  # 接单过期，原任务接单数减一
     scheduler.start()
 except Exception as e:
     print(e)
