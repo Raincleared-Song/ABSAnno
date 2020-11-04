@@ -723,24 +723,23 @@ def integrate_mission(mission):
             return gen_response(400, 'No Answer History Yet')
 
         for i in range(len(question_list)):
-            if mission.father_mission.all()[i].ans == "NULL":
-                weight_list = []
-                ans, tot_weight = 0, 0
-                q = question_list[i]
-                c_lst = get_lst(q.choices)
-                c_num = len(c_lst)
-                for j in range(c_num):
-                    weight_list.append(0)
-                for his in history_list:
-                    a_lst = get_lst(his.ans)
-                    weight_list[abc_to_int(a_lst[i])] += his.ans_weight
-                    tot_weight += his.ans_weight
-                for j in range(c_num):
-                    if weight_list[j] > weight_list[ans]:
-                        ans = j
-                q.ans = int_to_abc(ans)
-                q.ans_weight = weight_list[ans] / tot_weight
-                q.save()
+            weight_list = []
+            ans, tot_weight = 0, 0
+            q = question_list[i]
+            c_lst = get_lst(q.choices)
+            c_num = len(c_lst)
+            for j in range(c_num):
+                weight_list.append(0)
+            for his in history_list:
+                a_lst = get_lst(his.ans)
+                weight_list[abc_to_int(a_lst[i])] += his.ans_weight
+                tot_weight += his.ans_weight
+            for j in range(c_num):
+                if weight_list[j] > weight_list[ans]:
+                    ans = j
+            q.ans = int_to_abc(ans)
+            q.ans_weight = weight_list[ans] / tot_weight
+            q.save()
 
         return gen_response(201, {
             'mission_name': mission.name,
@@ -1210,26 +1209,26 @@ def check_result(request):
         if mission.user.id != user_id:
             return gen_response(400, "Mission Not Published by You")
 
-        if mission.question_form == "chosen":
+        if mission.question_form.endswith("chosen"):
 
             for i in range(len(mission.father_mission.all())):
-                if mission.father_mission.all()[i].ans == "NULL":
-                    weight_list = []
-                    ans, tot_weight = 0, 0
-                    q = mission.father_mission.all()[i]
-                    c_lst = get_lst(q.choices)
-                    c_num = len(c_lst)
-                    for j in range(c_num):
-                        weight_list.append(0)
-                    for his in mission.ans_history.all():
-                        a_lst = get_lst(his.ans)
-                        weight_list[abc_to_int(a_lst[i])] += his.ans_weight
-                        tot_weight += his.ans_weight
-                    for j in range(c_num):
-                        if weight_list[j] > weight_list[ans]:
-                            ans = j
-                    q.ans = int_to_abc(ans)
-                    q.ans_weight = weight_list[ans] / tot_weight
+                weight_list = []
+                ans, tot_weight = 0, 0
+                q = mission.father_mission.all()[i]
+                c_lst = get_lst(q.choices)
+                c_num = len(c_lst)
+                for j in range(c_num):
+                    weight_list.append(0)
+                for his in mission.ans_history.all():
+                    a_lst = get_lst(his.ans)
+                    weight_list[abc_to_int(a_lst[i])] += his.ans_weight
+                    tot_weight += his.ans_weight
+                for j in range(c_num):
+                    if weight_list[j] > weight_list[ans]:
+                        ans = j
+                q.ans = int_to_abc(ans)
+                q.ans_weight = weight_list[ans] / tot_weight
+                q.save()
 
             return gen_response(201, {
                 'question_list':
@@ -1249,11 +1248,11 @@ def check_result(request):
 
 def sort_mission_list_by_interest(mission_list, user):
     if not user:
-        print("not login, sort by tag numbers")
+        # print("not login, sort by tag numbers")
         mission_list.sort(key=lambda x: len(x.tags.split('||')))
         return mission_list
     else:
-        print("logged in, sort by same tag numbers")
+        # print("logged in, sort by same tag numbers")
         user_tag = user.tags.split('||')
         user_tag = [s.lower() for s in user_tag]
         # print(user_tag)
