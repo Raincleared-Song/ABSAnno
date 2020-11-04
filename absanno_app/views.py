@@ -554,6 +554,8 @@ def upload(request):
         cost = reward * total
         if user.coin < cost:
             return gen_response(400, "You Dont Have Enough Coin")
+        user.coin -= cost
+        user.save()
 
         if file is None and 'question_list' in js:
             question_list = js['question_list']
