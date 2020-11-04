@@ -486,7 +486,7 @@ class UnitTest(TestCase):
         param = "?num=%d" % (len(Mission.objects.all()))
         res = self.client.get('/absanno/square' + param)
         self.assertEqual(res.status_code, 400)
-        self.assertEqual(res.json()['data'], 'Num Error')
+        self.assertEqual(res.json()['data'], 'Num Error in Square')
 
     def test_square_request_method_err(self):
         self.mock_login()
@@ -575,7 +575,7 @@ class UnitTest(TestCase):
         param = "?id=1&num=%d&step=1" % self.mission_num
         res = self.client.get('/absanno/mission' + param)
         self.assertEqual(res.status_code, 400)
-        self.assertEqual(res.json()['data'], 'Num Error')
+        self.assertEqual(res.json()['data'], 'Num Error in Mission Show')
 
     def test_mission_neg_step_illegal(self):
         self.mock_login()
