@@ -33,9 +33,9 @@ unit-test:
     - ls
     - coverage run --source '.' manage.py test
     - BACKEND_RET=$?
-    - coverage xml -o coverage-reports/coverage.xml
-    - coverage report
-    - coverage html -d coverage-reports
+    - coverage xml --omit=absanno/asgi.py,absanno/wsgi.py,absanno_app/interval_task.py -o coverage-reports/coverage.xml
+    - coverage report --omit=absanno/asgi.py,absanno/wsgi.py,absanno_app/interval_task.py
+    - coverage html --omit=absanno/asgi.py,absanno/wsgi.py,absanno_app/interval_task.py -d coverage-reports
     - exit $BACKEND_RET
 
   after_script:

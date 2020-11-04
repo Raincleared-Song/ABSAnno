@@ -1,1 +1,1 @@
-{"name": "test_zip", "question_form": "judgement", "question_num": "2", "total": "5", "mission_tags": [], "question_path": "questions.json"}
+{"name": "test_zip", "question_form": "chosen-image", "question_num": "2", "total": "5", "mission_tags": "Sports||Math||Lifestyle", "question_path": "questions.json", "image_path": "res"}
