@@ -141,10 +141,6 @@ def sign_in(request):
             return gen_response(400, "User Name Has Existed")
 
         user = Users(name=name, password=password, tags=tags)
-        if name == "luojingjia":
-            user.coin = 20201104
-        else:
-            user.coin = 1000
 
         try:
             user.full_clean()
