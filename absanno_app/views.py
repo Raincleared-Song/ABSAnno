@@ -555,10 +555,6 @@ def upload(request):
 
         cost = reward * total
         if user.coin < cost:
-<<<<<<< HEAD
-=======
-            # print(user.coin, cost)
->>>>>>> dev-zyz
             return gen_response(400, "You Dont Have Enough Coin")
 
         if file is None and 'question_list' in js:
@@ -875,7 +871,6 @@ def apply_show(request):
         return gen_response(201, {
             'apply_num': len(apply_list),
             'apply_list':
-<<<<<<< HEAD
             [
                 {
                     'id': ret.id,
@@ -889,18 +884,6 @@ def apply_show(request):
                 }
                 for ret in apply_list
             ]
-=======
-                [
-                    {
-                        'id': ret.id,
-                        'user': ret.user,
-                        'pub_time': int(ret.pub_time.timestamp() * 1000),
-                        'type': ret.type,
-                        'accept': ret.accept
-                    }
-                    for ret in apply_list
-                ]
->>>>>>> dev-zyz
         })
 
     return gen_response(400, "Apply Show Failed")
