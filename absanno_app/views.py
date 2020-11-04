@@ -1209,7 +1209,7 @@ def check_result(request):
         if mission.user.id != user_id:
             return gen_response(400, "Mission Not Published by You")
 
-        if mission.question_form.endswith("chosen"):
+        if mission.question_form.startswith("chosen"):
 
             for i in range(len(mission.father_mission.all())):
                 weight_list = []
