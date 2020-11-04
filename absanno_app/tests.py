@@ -1102,5 +1102,5 @@ class UnitTest(TestCase):
         res = self.client.get('/absanno/check', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 201)
         self.assertEqual(res.json()['data'], str({'question_list': [
-            {'word': 'title1', 'pre_ans': 'A', 'ans': 'NULL', 'ans_weight': 0.0},
-            {'word': 'title2', 'pre_ans': 'C', 'ans': 'NULL', 'ans_weight': 0.0}]}))
+            {'word': 'title1', 'pre_ans': 'A', 'ans': 'A', 'ans_weight': 1.0},
+            {'word': 'title2', 'pre_ans': 'C', 'ans': 'B', 'ans_weight': 1.0}]}))

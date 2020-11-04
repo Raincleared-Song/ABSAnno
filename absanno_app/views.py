@@ -1248,11 +1248,11 @@ def check_result(request):
 
 def sort_mission_list_by_interest(mission_list, user):
     if not user:
-        print("not login, sort by tag numbers")
+        # print("not login, sort by tag numbers")
         mission_list.sort(key=lambda x: len(x.tags.split('||')))
         return mission_list
     else:
-        print("logged in, sort by same tag numbers")
+        # print("logged in, sort by same tag numbers")
         user_tag = user.tags.split('||')
         user_tag = [s.lower() for s in user_tag]
         # print(user_tag)
