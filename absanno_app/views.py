@@ -864,7 +864,7 @@ def apply_show(request):
         user = Users.objects.get(id=user_id)
 
         if user.power == 2:
-            apply_list = Apply.objects.all().order_by('pub_time')
+            apply_list = Apply.objects.filter(accept=0).order_by('pub_time')
         else:
             apply_list = Apply.objects.filter(user=user).order_by('pub_time')
 
@@ -889,45 +889,45 @@ def apply_show(request):
     return gen_response(400, "Apply Show Failed")
 
 
-# 操作apply
-def admin_apply(request):
-    if request.method == 'POST':
-
-        code, data = check_token(request)
-        if code == 400:
-            return gen_response(code, data)
-
-        try:
-            js = json.loads(request.body)
-        except json.decoder.JSONDecodeError:
-            return gen_response(400, "Json Error")
-
-        method = js['method'] if 'method' in js else ''
-        apply_id_ = js['apply_id'] if 'apply_id' in js else '0'
-
-        if not apply_id_.isdigit():
-            return gen_response(400, "Apply ID Is Not Digit")
-
-        apply_id = int(apply_id_)
-        if apply_id < 1 or apply_id > len(Apply.objects.all()):
-            return gen_response(400, "Apply ID Error")
-        apply = Apply.objects.get(id=apply_id)
-
-        user_id = request.session['user_id']
-        if user_id < 1 or user_id > len(Users.objects.all()):
-            return gen_response(400, "User ID Error")
-        user = Users.objects.get(id=user_id)
-        if user.power != 2:
-            return gen_response(400, "Dont Have Power")
-
-        if method == 'Accept':
-            apply.accept = 1
-        else:
-            apply.accept = 2
-        apply.save()
-        return gen_response(400, "Admin Success")
-
-    return gen_response(400, "Admin Error")
+# # 操作apply
+# def admin_apply(request):
+#     if request.method == 'POST':
+#
+#         code, data = check_token(request)
+#         if code == 400:
+#             return gen_response(code, data)
+#
+#         try:
+#             js = json.loads(request.body)
+#         except json.decoder.JSONDecodeError:
+#             return gen_response(400, "Json Error")
+#
+#         method = js['method'] if 'method' in js else ''
+#         apply_id_ = js['apply_id'] if 'apply_id' in js else '0'
+#
+#         if not apply_id_.isdigit():
+#             return gen_response(400, "Apply ID Is Not Digit")
+#
+#         apply_id = int(apply_id_)
+#         if apply_id < 1 or apply_id > len(Apply.objects.all()):
+#             return gen_response(400, "Apply ID Error")
+#         apply = Apply.objects.get(id=apply_id)
+#
+#         user_id = request.session['user_id']
+#         if user_id < 1 or user_id > len(Users.objects.all()):
+#             return gen_response(400, "User ID Error")
+#         user = Users.objects.get(id=user_id)
+#         if user.power != 2:
+#             return gen_response(400, "Dont Have Power")
+#
+#         if method == 'Accept':
+#             apply.accept = 1
+#         else:
+#             apply.accept = 2
+#         apply.save()
+#         return gen_response(400, "Admin Success")
+#
+#     return gen_response(400, "Admin Error")
 
 
 # 展示我的接单内容
@@ -1004,8 +1004,10 @@ def power_upgrade(request):
         if method_.lower() == "accept":
             obj.power = 1
             obj.save()
+            Apply.objects.get(user=obj).accept = 1
             return gen_response(201, "Upgrade Success")
         else:
+            Apply.objects.get(user=obj).accept = 2
             return gen_response(400, "Upgrade Rejected")
 
     return gen_response(400, "Upgrade Failed")
