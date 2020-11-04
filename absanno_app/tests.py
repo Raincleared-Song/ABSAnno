@@ -864,7 +864,7 @@ class UnitTest(TestCase):
         self.mock_login()  # admin login
         body = {"p_id": "4", 'method': 'Rejected'}  # userid of the applicant
         res = self.client.post('/absanno/powerup', data=body, content_type='application/json')
-        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.status_code, 201)
         self.assertEqual(res.json()['data'], "Upgrade Rejected")
 
     def test_power_upgrade_cannot_more(self):

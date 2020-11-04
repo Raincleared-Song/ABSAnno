@@ -1019,9 +1019,9 @@ def power_upgrade(request):
         else:
             apply = Apply.objects.filter(user=obj)
             for app in apply:
-                app.accept = 1
+                app.accept = 2
                 app.save()
-            return gen_response(400, "Upgrade Rejected")
+            return gen_response(201, "Upgrade Rejected")
 
     return gen_response(400, "Upgrade Failed")
 
