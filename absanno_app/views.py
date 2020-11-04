@@ -873,7 +873,7 @@ def apply_show(request):
             'apply_list':
             [
                 {
-                    'id': ret.id,
+                    'id': ret.user.id,
                     'user_name': ret.user.name,
                     'pub_time': int(ret.pub_time.timestamp() * 1000),
                     'type': ret.type,
