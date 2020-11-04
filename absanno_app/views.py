@@ -535,6 +535,7 @@ def upload(request):
         check_way = js['check_way'] if 'check_way' in js else 'auto'
         info = js['info'] if 'info' in js else ''
         tags = js['mission_tags'] if 'mission_tags' in js else ''
+        tags = tags.lower()
         if not question_num_.isdigit() or name == '' or question_form == '' or \
                 not total_.isdigit() or not reward_.isdigit() or not retrieve_time_.isdigit():
             return gen_response(400, "Upload Contains Error")
@@ -548,7 +549,7 @@ def upload(request):
 
         cost = reward * total
         if user.coin < cost:
-            print(user.coin, cost)
+            # print(user.coin, cost)
             return gen_response(400, "You Dont Have Enough Coin")
 
         if file is None and 'question_list' in js:
@@ -1178,7 +1179,7 @@ def check_result(request):
             return gen_response(400, "Mission ID Error")
 
         mission = Mission.objects.get(id=mission_id)
-        print(mission.user.id, user_id)
+        # print(mission.user.id, user_id)
         if mission.user.id != user_id:
             return gen_response(400, "Mission Not Published by You")
 
@@ -1227,6 +1228,7 @@ def sort_mission_list_by_interest(mission_list, user):
     else:
         print("logged in, sort by same tag numbers")
         user_tag = user.tags.split('||')
+        user_tag = [s.lower() for s in user_tag]
         # print(user_tag)
         mission_list.sort(key=lambda x: len(set(user_tag) & set(x.tags.split('||'))), reverse=True)
         # print(mission_list)
@@ -1240,21 +1242,10 @@ def interests(request):
         # TODO
         user_id = request.session['user_id'] if check_token(request)[0] == 201 else 0
 
-        num_ = request.GET.get('num')
-        type__ = request.GET.get('type') if 'type' in request.GET else ""
-        theme__ = request.GET.get('theme') if 'theme' in request.GET else ""
-        kw = request.GET.get('kw') if 'kw' in request.GET else ""
+        num_ = request.GET.get('page')
 
         if not num_:
             num_ = "0"
-        if type__ != "":
-            type_ = get_lst(type__)
-        else:
-            type_ = []
-        if theme__ != "":
-            theme_ = get_lst(theme__)
-        else:
-            theme_ = []
 
         if not num_.isdigit():
             return gen_response(400, "Num Is Not Digit")
@@ -1279,7 +1270,7 @@ def interests(request):
 
         mission_list = sort_mission_list_by_interest(list(mission_list_base), user)
 
-        show_num = 12  # 设计一次更新获得的任务数
+        show_num = 5  # 设计一次更新获得的任务数
         get_num = min(num + show_num, len(mission_list))  # 本次更新获得的任务数
 
         return gen_response(201, {'ret': get_num,
@@ -1307,10 +1298,12 @@ def interests(request):
                             )
     return gen_response(400, "User Show Error")
 
+
 def modify_personal_info(request):
     if request.method == "POST":
         pass
     return gen_response(400, "Please Use Post Method")
+
 
 # 开启检查线程
 scheduler = BackgroundScheduler()

@@ -22,12 +22,12 @@ class UnitTest(TestCase):
         self.user_num = 4
 
         self.mission = Mission.objects.create(name='task_test', question_form='chosen', question_num=2,
-                                              user=self.song, total=5, reception_num=1, tags="Sports||Game||Lifestyle")
+                                              user=self.song, total=5, reception_num=1, tags="Sports||Game||Lifestyle".lower())
         Question.objects.create(mission=self.mission, word='title1', pre_ans='A', choices='A||B||C||D')
         Question.objects.create(mission=self.mission, word='title2', pre_ans='C', choices='D||E||F||G')
         History.objects.create(user=self.song, mission=self.mission, ans='A||B', pub_time=datetime.date(2021, 6, 30))
         self.mission2 = Mission.objects.create(name='task_test2', question_form='chosen',
-                                               question_num=3, user=self.wang, total=5, tags="Animal||Plant||Space")
+                                               question_num=3, user=self.wang, total=5, tags="Animal||Plant||Space".lower())
         Reception.objects.create(user=self.wang, mission=self.mission)
         self.mission_num = 2
         self.maxDiff = None
@@ -65,10 +65,10 @@ class UnitTest(TestCase):
         self.interest_pos_case = str({'ret': 2, 'total': 2, 'question_list': [
             {'id': 2, 'name': 'task_test2', 'user': 'test_wang', 'questionNum': 3, 'questionForm': 'chosen', 'is_banned': 0,
              'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': 1624982400000, 'cash': 5, 'info': '',
-             'tags': ['Animal', 'Plant', 'Space'], 'received': 'F'},
+             'tags': ['animal', 'plant', 'space'], 'received': 'F'},
             {'id': 1, 'name': 'task_test', 'user': 'test', 'questionNum': 2, 'questionForm': 'chosen', 'is_banned': 0,
              'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': 1624982400000, 'cash': 5, 'info': '',
-             'tags': ['Sports', 'Game', 'Lifestyle'], 'received': 'F'}]})
+             'tags': ['sports', 'game', 'lifestyle'], 'received': 'F'}]})
         self.mission_my_pos_case = str(
             {'mission_name': 'task_test', 'question_form': 'chosen', 'question_num': 2, 'total': 5, 'now_num': 0,
              'is_banned': 0, 'question_list': [{'word': 'title1', 'pre_ans': 'A', 'ans': 'A', 'ans_weight': 1.0},
