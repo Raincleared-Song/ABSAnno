@@ -486,7 +486,7 @@ class UnitTest(TestCase):
         param = "?num=%d" % (len(Mission.objects.all()))
         res = self.client.get('/absanno/square' + param)
         self.assertEqual(res.status_code, 400)
-        self.assertEqual(res.json()['data'], 'Num Error')
+        self.assertEqual(res.json()['data'], 'Num Error in Square')
 
     def test_square_request_method_err(self):
         self.mock_login()
@@ -575,7 +575,7 @@ class UnitTest(TestCase):
         param = "?id=1&num=%d&step=1" % self.mission_num
         res = self.client.get('/absanno/mission' + param)
         self.assertEqual(res.status_code, 400)
-        self.assertEqual(res.json()['data'], 'Num Error')
+        self.assertEqual(res.json()['data'], 'Num Error in Mission Show')
 
     def test_mission_neg_step_illegal(self):
         self.mock_login()
@@ -848,16 +848,23 @@ class UnitTest(TestCase):
 
     def test_power_upgrade_success(self):
         self.mock_login()  # admin login
-        body = {"p_id": "2", 'method': 'Accept'}  # userid of the applicant
+        body = {"p_id": "4", 'method': 'Accept'}  # userid of the applicant
         res = self.client.post('/absanno/powerup', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 201)
         self.assertEqual(res.json()['data'], "Upgrade Success")
 
-    def test_power_upgrade_rejected(self):
+    def test_power_upgrade_already_publisher(self):
         self.mock_login()  # admin login
-        body = {"p_id": "2", 'method': 'Rejected'}  # userid of the applicant
+        body = {"p_id": "2", 'method': 'Accept'}  # userid of the applicant
         res = self.client.post('/absanno/powerup', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], "You are already publisher!")
+
+    def test_power_upgrade_rejected(self):
+        self.mock_login()  # admin login
+        body = {"p_id": "4", 'method': 'Rejected'}  # userid of the applicant
+        res = self.client.post('/absanno/powerup', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 201)
         self.assertEqual(res.json()['data'], "Upgrade Rejected")
 
     def test_power_upgrade_cannot_more(self):

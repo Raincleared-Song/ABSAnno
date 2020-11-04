@@ -215,7 +215,7 @@ def user_show(request):
             return gen_response(400, "Num Is Not Digit")
         num = int(num_)
         if num < 0 or num >= len(Mission.objects.filter(to_ans=1)):
-            return gen_response(400, "Num Error")
+            return gen_response(400, "Num Error in Square")
 
         # 参考id获取用户画像，进而实现分发算法，目前使用id来进行排序
         # TODO
@@ -261,9 +261,8 @@ def user_show(request):
                         for qs in mis.father_mission.all():
                             if kw in qs.word:
                                 kw_flag = 1
-                    if kw_flag == 1:
-                        if (mis.reception_num < mis.total) and (mis.deadline > timezone.now()):
-                            mission_list.append(mis)
+                    if kw_flag == 1 and (mis.reception_num < mis.total) and (mis.deadline > timezone.now()):
+                        mission_list.append(mis)
 
         show_num = 12  # 设计一次更新获得的任务数
         get_num = min(num + show_num, len(mission_list))  # 本次更新获得的任务数
@@ -331,7 +330,7 @@ def mission_show(request):
         if mission_id <= 0 or mission_id > len(Mission.objects.all()):
             return gen_response(400, "ID Error")
         if num < 0 or num >= len(Mission.objects.get(id=mission_id).father_mission.all()):
-            return gen_response(400, "Num Error")
+            return gen_response(400, "Num Error in Mission Show")
         if step != -1 and step != 1 and step != 0:
             return gen_response(400, "Step Error")
         mission = Mission.objects.get(id=mission_id)
@@ -403,9 +402,8 @@ def mission_show(request):
                     tot += 1
                     if q_list[i].pre_ans == ans_list[i]:
                         g += 1
-            if tot != 0:
-                if g * 100 / tot < 60:
-                    flag = 0
+            if tot != 0 and (g * 100 / tot < 60):
+                flag = 0
             if flag == 1:
                 user.weight += 5
                 if user.weight > 100:
@@ -873,6 +871,7 @@ def apply_show(request):
             [
                 {
                     'id': ret.user.id,
+                    'app_id': ret.id,
                     'user_name': ret.user.name,
                     'pub_time': int(ret.pub_time.timestamp() * 1000),
                     'type': ret.type,
@@ -889,7 +888,9 @@ def apply_show(request):
 
 
 # # 操作apply
-# def admin_apply(request):
+# @Deprecated
+def admin_apply(request):
+    pass
 #     if request.method == 'POST':
 #
 #         code, data = check_token(request)
@@ -1000,14 +1001,24 @@ def power_upgrade(request):
             return gen_response(400, "Are You Kidding Me?")
         obj = Users.objects.get(id=user_id)
 
+        if Users.objects.get(id=user_id).power == 1:
+            return gen_response(400, "You are already publisher!")
+
         if method_.lower() == "accept":
             obj.power = 1
             obj.save()
-            Apply.objects.get(user=obj).accept = 1
+            apply = Apply.objects.filter(user=obj)
+
+            for app in apply:
+                app.accept = 1
+                app.save()
             return gen_response(201, "Upgrade Success")
         else:
-            Apply.objects.get(user=obj).accept = 2
-            return gen_response(400, "Upgrade Rejected")
+            apply = Apply.objects.filter(user=obj)
+            for app in apply:
+                app.accept = 2
+                app.save()
+            return gen_response(201, "Upgrade Rejected")
 
     return gen_response(400, "Upgrade Failed")
 
@@ -1266,12 +1277,17 @@ def interests(request):
             return gen_response(400, "Num Is Not Digit")
         num = int(num_)
         if num < 0 or num >= len(Mission.objects.filter(to_ans=1)):
-            return gen_response(400, "Num Error")
+            return gen_response(400, "Num Error in Interest")
 
         user = Users.objects.filter(id=user_id).first()
         receive_set = None
         if user:
-            mission_list_base = Mission.objects.filter(Q(to_ans=1) & Q(is_banned=0)).order_by('id')
+            mission_list_temp = Mission.objects.filter(Q(to_ans=1) & Q(is_banned=0)).order_by('id')
+            mission_list_base = []
+            for mission in mission_list_temp:
+                if user.history.filter(mission__id=mission.id).first() is None \
+                        and mission.reception_num < mission.total:
+                    mission_list_base.append(mission)
             rec_list = user.user_reception.all()
             receive_set = set([r.mission.id for r in rec_list])
         else:
@@ -1314,10 +1330,10 @@ def interests(request):
     return gen_response(400, "User Show Error")
 
 
-def modify_personal_info(request):
-    if request.method == "POST":
-        pass
-    return gen_response(400, "Please Use Post Method")
+# def modify_personal_info(request):
+#     if request.method == "POST":
+#         pass
+#     return gen_response(400, "Please Use Post Method")
 
 
 # 用户修改密码
