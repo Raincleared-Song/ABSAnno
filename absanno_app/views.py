@@ -538,7 +538,14 @@ def upload(request):
         retrieve_time_ = js['retrieve_time'] if 'retrieve_time' in js else ''
         check_way = js['check_way'] if 'check_way' in js else 'auto'
         info = js['info'] if 'info' in js else ''
-        tags_ = js['mission_tags'] if 'mission_tags' in js else []
+
+        if 'mission_tags' not in js:
+            tags_ = []
+        else:
+            tags_ = js['mission_tags']
+            if isinstance(tags_, str):
+                tags_ = get_lst(tags_)
+
         spl_str = '||'
         tags = spl_str.join(tags_)
         tags = tags.lower()
