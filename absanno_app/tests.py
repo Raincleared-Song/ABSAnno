@@ -45,23 +45,23 @@ class UnitTest(TestCase):
                                 '"choices": "A||B||C||D", "ans": ""}, {"contains": "title4", "choices": "E||F||G||H",' \
                                 ' "ans": ""}]}'
         self.square_pos_case1 = str({'ret': 2, 'total': 2, 'question_list': [
-            {'id': 1, 'name': 'task_test', 'user': 'test', 'questionNum': 2, 'questionForm': 'chosen', 'is_banned': 0,
-             'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': 1624982400000, 'cash': 5, 'info': '',
-             'tags': ['sports', 'game', 'lifestyle'], 'received': 'T'},
             {'id': 2, 'name': 'task_test2', 'user': 'test_wang', 'questionNum': 3, 'questionForm': 'chosen', 'is_banned': 0,
              'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': 1624982400000, 'cash': 5, 'info': '',
-             'tags': ['animal', 'plant', 'space'], 'received': 'F'}]})
+             'tags': ['animal', 'plant', 'space'], 'received': 'F'},
+            {'id': 1, 'name': 'task_test', 'user': 'test', 'questionNum': 2, 'questionForm': 'chosen', 'is_banned': 0,
+             'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': 1624982400000, 'cash': 5, 'info': '',
+             'tags': ['sports', 'game', 'lifestyle'], 'received': 'T'}]})
         self.square_pos_case2 = str({'ret': 1, 'total': 1, 'question_list': [
             {'id': 2, 'name': 'task_test2', 'user': 'test_wang', 'questionNum': 3, 'questionForm': 'chosen', 'is_banned': 0,
              'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': 1624982400000, 'cash': 5, 'info': '',
              'tags': ['animal', 'plant', 'space'], 'received': 'F'}]})
         self.square_pos_case_all = str({'ret': 2, 'total': 2, 'question_list': [
-            {'id': 1, 'name': 'task_test', 'user': 'test', 'questionNum': 2, 'questionForm': 'chosen', 'is_banned': 0,
-             'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': 1624982400000, 'cash': 5, 'info': '',
-             'tags': ['sports', 'game', 'lifestyle'], 'received': ''},
             {'id': 2, 'name': 'task_test2', 'user': 'test_wang', 'questionNum': 3, 'questionForm': 'chosen', 'is_banned': 0,
              'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': 1624982400000, 'cash': 5, 'info': '',
-             'tags': ['animal', 'plant', 'space'], 'received': ''}]})
+             'tags': ['animal', 'plant', 'space'], 'received': ''},
+            {'id': 1, 'name': 'task_test', 'user': 'test', 'questionNum': 2, 'questionForm': 'chosen', 'is_banned': 0,
+             'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': 1624982400000, 'cash': 5, 'info': '',
+             'tags': ['sports', 'game', 'lifestyle'], 'received': ''}]})
         self.interest_pos_case = str({'ret': 2, 'total': 2, 'question_list': [
             {'id': 2, 'name': 'task_test2', 'user': 'test_wang', 'questionNum': 3, 'questionForm': 'chosen', 'is_banned': 0,
              'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': 1624982400000, 'cash': 5, 'info': '',
