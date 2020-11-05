@@ -224,7 +224,7 @@ def user_show(request):
 
         receive_set = None
         if user:
-            mission_list_temp = Mission.objects.filter(Q(to_ans=1) & Q(is_banned=0)).order_by('id')
+            mission_list_temp = Mission.objects.filter(Q(to_ans=1) & Q(is_banned=0)).order_by('-id')
             mission_list_base = []
             for mission in mission_list_temp:
                 # 做过的和已经接完的单不显示
@@ -234,7 +234,7 @@ def user_show(request):
             rec_list = user.user_reception.all()
             receive_set = set([r.mission.id for r in rec_list])
         else:
-            mission_list_base = Mission.objects.all().order_by('id')
+            mission_list_base = Mission.objects.filter(Q(is_banned=0) & Q(to_ans=1)).order_by('-id')
 
         def get_mission_rec_status(m):
             if receive_set is None:
@@ -538,7 +538,9 @@ def upload(request):
         retrieve_time_ = js['retrieve_time'] if 'retrieve_time' in js else ''
         check_way = js['check_way'] if 'check_way' in js else 'auto'
         info = js['info'] if 'info' in js else ''
-        tags = js['mission_tags'] if 'mission_tags' in js else ''
+        tags_ = js['mission_tags'] if 'mission_tags' in js else []
+        spl_str = '||'
+        tags = spl_str.join(tags_)
         tags = tags.lower()
         if not question_num_.isdigit() or name == '' or question_form == '' or \
                 not total_.isdigit() or not reward_.isdigit() or not retrieve_time_.isdigit():
@@ -645,7 +647,7 @@ def about_me(request):
                             'check_way': mission_ret.check_way,
                             'is_banned': mission_ret.is_banned
                         }
-                        for mission_ret in ret.promulgator.all().order_by('id')
+                        for mission_ret in ret.promulgator.all().order_by('-id')
                     ]
             })
         elif method == 'history':
@@ -663,7 +665,7 @@ def about_me(request):
                             'info': mission_ret.mission.info,
                             'ret_time': int(mission_ret.pub_time.timestamp() * 1000)
                         }
-                        for mission_ret in ret.history.all().order_by('pub_time')
+                        for mission_ret in ret.history.all().order_by('-pub_time')
                     ]
             })
         elif method == 'apply':
@@ -1284,7 +1286,7 @@ def interests(request):
         user = Users.objects.filter(id=user_id).first()
         receive_set = None
         if user:
-            mission_list_temp = Mission.objects.filter(Q(to_ans=1) & Q(is_banned=0)).order_by('id')
+            mission_list_temp = Mission.objects.filter(Q(to_ans=1) & Q(is_banned=0)).order_by('-id')
             mission_list_base = []
             for mission in mission_list_temp:
                 if user.history.filter(mission__id=mission.id).first() is None \
@@ -1293,7 +1295,7 @@ def interests(request):
             rec_list = user.user_reception.all()
             receive_set = set([r.mission.id for r in rec_list])
         else:
-            mission_list_base = Mission.objects.all().order_by('id')
+            mission_list_base = Mission.objects.filter(Q(is_banned=0) & Q(to_ans=1)).order_by('-id')
 
         def get_mission_rec_status(m):
             if receive_set is None:
