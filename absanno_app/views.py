@@ -538,7 +538,9 @@ def upload(request):
         retrieve_time_ = js['retrieve_time'] if 'retrieve_time' in js else ''
         check_way = js['check_way'] if 'check_way' in js else 'auto'
         info = js['info'] if 'info' in js else ''
-        tags = js['mission_tags'] if 'mission_tags' in js else ''
+        tags_ = js['mission_tags'] if 'mission_tags' in js else []
+        spl_str = '||'
+        tags = spl_str.join(tags_)
         tags = tags.lower()
         if not question_num_.isdigit() or name == '' or question_form == '' or \
                 not total_.isdigit() or not reward_.isdigit() or not retrieve_time_.isdigit():
