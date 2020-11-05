@@ -234,7 +234,7 @@ def user_show(request):
             rec_list = user.user_reception.all()
             receive_set = set([r.mission.id for r in rec_list])
         else:
-            mission_list_base = Mission.objects.all().order_by('-id')
+            mission_list_base = Mission.objects.filter(Q(is_banned=0) & Q(to_ans=1)).order_by('-id')
 
         def get_mission_rec_status(m):
             if receive_set is None:
@@ -1295,7 +1295,7 @@ def interests(request):
             rec_list = user.user_reception.all()
             receive_set = set([r.mission.id for r in rec_list])
         else:
-            mission_list_base = Mission.objects.all().order_by('-id')
+            mission_list_base = Mission.objects.filter(Q(is_banned=0) & Q(to_ans=1)).order_by('-id')
 
         def get_mission_rec_status(m):
             if receive_set is None:
