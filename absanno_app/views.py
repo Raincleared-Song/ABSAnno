@@ -1,4 +1,3 @@
-import functools
 from django.http import JsonResponse, HttpResponse, FileResponse
 import json
 from .models import Users, Mission, Question, History, Apply, Reception
@@ -337,6 +336,13 @@ def mission_show(request):
         if mission.is_banned == 1:
             return gen_response(400, "This Mission Is Banned")
 
+        user = find_user_by_token(request)
+        rec = Reception.objects.filter(user__id=user.id, mission__id=mission_id).first()
+        if rec is None:
+            return gen_response(400, 'Have Not Received Yet')
+        if not rec.can_do:
+            return gen_response(400, 'Cannot Do Reception')
+
         get_num = num + step
         if get_num < 0 or get_num >= len(mission.father_mission.all()):
             return gen_response(400, "Runtime Error")
@@ -388,6 +394,8 @@ def mission_show(request):
         rec = Reception.objects.filter(user__id=user.id, mission__id=mission_id).first()
         if rec is None:
             return gen_response(400, 'Have Not Received Yet')
+        if not rec.can_do:
+            return gen_response(400, 'Cannot Do Reception')
 
         flag = 1
         tot, g = 0, 0
@@ -560,12 +568,6 @@ def upload(request):
         deadline = datetime.date(y, m, d)
         retrieve_time = int(retrieve_time_)
 
-        cost = reward * total
-        if user.coin < cost:
-            return gen_response(400, "You Dont Have Enough Coin")
-        user.coin -= cost
-        user.save()
-
         if file is None and 'question_list' in js:
             question_list = js['question_list']
         if not isinstance(question_list, list):
@@ -604,6 +606,12 @@ def upload(request):
 
         if file is not None:
             file.close()
+
+        cost = reward * total
+        if user.coin < cost:
+            return gen_response(400, "You Dont Have Enough Coin")
+        user.coin -= cost
+        user.save()
 
         return gen_response(201, "Chosen Upload Success")
 
@@ -1396,6 +1404,11 @@ try:
         for mission in mission_list:
             if mission.to_ans == 1 and timezone.now() > mission.deadline:
                 mission.to_ans = 0
+                # 答题人数不足时，返还扣除的金币
+                if mission.now_num < mission.total:
+                    user = mission.user
+                    user.coin += mission.reward * (mission.total - mission.now_num)
+                    user.save()
                 for rec in mission.mission_reception.all():
                     rec.can_do = False
                     rec.save()

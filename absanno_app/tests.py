@@ -515,7 +515,7 @@ class UnitTest(TestCase):
         self.assertEqual(res.json()['data'], self.square_pos_case_all)
 
     def test_mission_pos(self):
-        self.mock_login()
+        self.mock_login2()
         param = "?id=1&num=0&step=1"
         res = self.client.get('/absanno/mission' + param)
         self.assertEqual(res.status_code, 201)
@@ -593,7 +593,7 @@ class UnitTest(TestCase):
         self.assertEqual(res.json()['data'], 'This Mission Is Banned')
 
     def test_mission_neg_out_of_bound(self):
-        self.mock_login()
+        self.mock_login2()
         param = "?id=1&num=%d&step=1" % (self.mission_num - 1)
         res = self.client.get('/absanno/mission' + param)
         self.assertEqual(res.status_code, 400)
