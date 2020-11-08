@@ -1,1 +1,1 @@
-{"name": "test_zip", "question_form": "chosen-image", "question_num": "2", "total": "5", "mission_tags": "Sports||Math||Lifestyle", "question_path": "questions.json", "image_path": "res"}
+{"name": "test_image_zip", "question_form": "chosen-image", "question_num": "2", "total": "5", "retrieve_time": "1", "mission_tags": "Sports||Math||Lifestyle", "question_path": "questions.json", "image_path": "res", "mission_image_path": "res/6.jpg"}

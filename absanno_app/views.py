@@ -7,6 +7,8 @@ from django.middleware.csrf import get_token
 from zipfile import ZipFile, BadZipFile
 from django.utils import timezone
 import datetime
+import random
+from .groundPic import generate_pic
 
 from django.core.files.base import File
 from io import BytesIO
@@ -284,7 +286,8 @@ def user_show(request):
                                               'cash': ret.reward,
                                               'info': ret.info,
                                               'tags': get_lst(ret.tags),
-                                              'received': get_mission_rec_status(ret)
+                                              'received': get_mission_rec_status(ret),
+                                              'image_url': ret.mission_image_url()
                                           }
                                           for ret in mission_list[num: get_num]
                                       ]}
@@ -460,6 +463,7 @@ def upload(request):
         file = request.FILES.get('zip', None)
         image_list = request.FILES.getlist('img_list', None)
         question_list = []
+        has_bg = False
         if file is not None:
             # upload a zip file
             try:
@@ -503,6 +507,15 @@ def upload(request):
             if len(question_list) != question_num:
                 return gen_response(400, "Question_list Length Error")
 
+            image_path = js['mission_image_path'] if 'mission_image_path' in js else ''
+            if len(image_path) > 0:
+                has_bg = True
+                bg_img = file.open(image_path)
+                save_img = open(os.path.join('image', '_mission_bg', name + '_bg.png'), 'wb')
+                save_img.write(bg_img.read())
+                bg_img.close()
+                save_img.close()
+
             if question_form.endswith('-image'):
                 # 上传的是图片题
                 image_path = js['image_path'] if 'image_path' in js else ''
@@ -526,12 +539,20 @@ def upload(request):
                 js = json.loads(request.POST.get('info'))
             except json.JSONDecodeError:
                 return gen_response(400, "Request Json Error")
+            name = js['name'] if 'name' in js else ''
             question_num_ = js['question_num'] if 'question_num' in js else ''
-            if not question_num_.isdigit():
+            if not question_num_.isdigit() or name == '':
                 return gen_response(400, "Upload Contains Error")
             question_num = int(question_num_)
             if question_num != len(image_list):
                 return gen_response(400, "ImageList Length Error")
+            img_bg = request.FILES.get('mission_image', None)
+            if img_bg is not None:
+                has_bg = True
+                save_img = open(os.path.join('image', '_mission_bg', name + '_bg.png'), 'wb')
+                save_img.write(img_bg.read())
+                img_bg.close()
+                save_img.close()
 
         # normal POST
         else:
@@ -578,6 +599,19 @@ def upload(request):
         if len(question_list) != question_num:
             return gen_response(400, "Question_list Length Error")
 
+        if len(Mission.objects.filter(name=name)) > 0:
+            return gen_response(400, 'Mission Name Already Used')
+
+        path_base = 'image/_mission_bg' if has_bg else 'pics'
+        image_base = f'{name}_bg.png' if has_bg else f'{random.randint(1, 7)}.jpg'
+        generate_pic(path_base, image_base, name, question_num, reward, deadline.strftime('%Y-%m-%d'))
+
+        def clean_image_when_fail():
+            if os.path.exists(os.path.join('image', '_mission_bg', name + '_bg.png')):
+                os.remove(os.path.join('image', '_mission_bg', name + '_bg.png'))
+            if os.path.exists(os.path.join('image', '_mission_bg', name + '.png')):
+                os.remove(os.path.join('image', '_mission_bg', name + '.png'))
+
         try:
             mission = Mission(name=name, question_form=question_form, question_num=question_num, total=total,
                               user=user, tags=tags, reward=reward, check_way=check_way,
@@ -585,6 +619,7 @@ def upload(request):
             mission.full_clean()
             mission.save()
         except ValidationError:
+            clean_image_when_fail()
             return gen_response(400, "Upload Form Error")
 
         for k, i in enumerate(question_list):
@@ -592,8 +627,10 @@ def upload(request):
             ans = i['ans'] if 'ans' in i else ''
             choices = i['choices'] if 'choices' in i else ''
             if contains == '':
+                clean_image_when_fail()
                 return gen_response(400, "Question Contains is Null")
             if choices == '':
+                clean_image_when_fail()
                 return gen_response(400, "There Is No Choice")
             try:
                 question = Question(word=contains, mission=mission, choices=choices, pre_ans=ans)
@@ -605,6 +642,7 @@ def upload(request):
                 question.full_clean()
                 question.save()
             except ValidationError:
+                clean_image_when_fail()
                 return gen_response(400, "Question Form Error")
 
         if file is not None:
@@ -612,6 +650,7 @@ def upload(request):
 
         cost = reward * total
         if user.coin < cost:
+            clean_image_when_fail()
             return gen_response(400, "You Dont Have Enough Coin")
         user.coin -= cost
         user.save()
@@ -1344,7 +1383,8 @@ def interests(request):
                                               'cash': ret.reward,
                                               'info': ret.info,
                                               'tags': get_lst(ret.tags),
-                                              'received': get_mission_rec_status(ret)
+                                              'received': get_mission_rec_status(ret),
+                                              'image_url': ret.mission_image_url()
                                           }
                                           for ret in mission_list[num: get_num]
                                       ]}

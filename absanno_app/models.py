@@ -28,7 +28,7 @@ class Users(models.Model):
 class Mission(models.Model):
     # 任务的id使用默认的主键
 
-    name = models.CharField(max_length=30)  # 发布的任务的名字，不是唯一，因此在显示时可能要显示小的编号
+    name = models.CharField(max_length=30, unique=True)  # 发布的任务的名字，必须唯一，因此在显示时可能要显示小的编号
     user = models.ForeignKey(Users, on_delete=models.DO_NOTHING, related_name="promulgator")  # 关联任务的发布用户
     total = models.IntegerField()  # 任务需要完成的次数
     now_num = models.IntegerField(default=0)  # 目前已经完成的次数
@@ -43,6 +43,10 @@ class Mission(models.Model):
     check_way = models.CharField(default="auto", max_length=10)  # 验收方式，目前为自动验收
     info = models.CharField(default="", max_length=200, blank=True)  # 任务简介
     reception_num = models.IntegerField(default=0)  # 目前接单数
+
+    def mission_image_url(self):
+        default_path = '/'.join(('', 'backend', 'media', '_mission_bg', self.name + '.png'))
+        return default_path if os.path.exists(default_path) else '/backend/media/logo/app.png'
 
 
 def question_image_path(instance, filename):
