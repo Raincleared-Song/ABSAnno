@@ -84,6 +84,8 @@ class UnitTest(TestCase):
             [{'id': 1, 'name': 'task_test', 'user': 'test', 'question_num': 2, 'question_form': 'chosen',
               'reward': 5, 'info': '', 'ret_time': self.default_timestamp}]})
 
+        if not os.path.exists('image'):
+            os.mkdir('image')
         if not os.path.exists(os.path.join('image', '_mission_bg')):
             os.mkdir(os.path.join('image', '_mission_bg'))
 
