@@ -3,6 +3,7 @@ from django.test import TestCase
 from .models import Users, Mission, Question, Reception, History
 from django.http import HttpResponse
 from .views import int_to_abc, abc_to_int
+import time
 
 
 def cookie_test_view(request):
@@ -602,6 +603,7 @@ class UnitTest(TestCase):
     def test_mission_p_pos(self):
         self.mock_login2()
         body = {'mission_id': '1', 'ans': 'A||C'}
+        time.sleep(2.5)
         res = self.client.post('/absanno/mission', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 201)
         self.assertEqual(res.json()['data'], 'Answer Pushed')
@@ -1104,3 +1106,38 @@ class UnitTest(TestCase):
         self.assertEqual(res.json()['data'], str({'question_list': [
             {'word': 'title1', 'pre_ans': 'A', 'ans': 'A', 'ans_weight': 1.0},
             {'word': 'title2', 'pre_ans': 'C', 'ans': 'B', 'ans_weight': 1.0}]}))
+
+    def test_end_mission_pos(self):
+        self.mock_login()
+        body = {'mission_id': '1'}
+        res = self.client.post('/absanno/endmission', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.json()['data'], 'Mission End Success')
+
+    def test_end_mission_neg_id_not_digit(self):
+        self.mock_login()
+        body = {'mission_id': 'a'}
+        res = self.client.post('/absanno/endmission', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'mission_id Is Not Digit')
+
+    def test_end_mission_neg_id_error(self):
+        self.mock_login()
+        body = {'mission_id': '3'}
+        res = self.client.post('/absanno/endmission', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'Mission ID Error')
+
+    def test_end_mission_neg_user_error(self):
+        self.mock_login()
+        body = {'mission_id': '2'}
+        res = self.client.post('/absanno/endmission', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'Mission Not Published by You')
+
+    def test_end_mission_neg_method_error(self):
+        self.mock_login()
+        body = {'mission_id': '1'}
+        res = self.client.get('/absanno/endmission', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'End Mission Error')

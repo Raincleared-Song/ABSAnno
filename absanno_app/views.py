@@ -412,6 +412,9 @@ def mission_show(request):
                         g += 1
             if tot != 0 and (g * 100 / tot < 60):
                 flag = 0
+            # 基于做题时间的反作弊
+            if timezone.now() - rec.pub_time < datetime.timedelta(seconds=mission.question_num):
+                flag = 0
             if flag == 1:
                 user.weight += 5
                 if user.weight > 100:
@@ -1355,6 +1358,54 @@ def interests(request):
 #     return gen_response(400, "Please Use Post Method")
 
 
+def end_mission(request):
+    if request.method == 'POST':
+
+        code, data = check_token(request)
+        if code == 400:
+            return gen_response(400, data)
+
+        user_id = request.session['user_id']
+        if Users.objects.get(id=user_id).power < 1:
+            return gen_response(400, "Dont Have Power")
+        if user_id < 1 or user_id > len(Users.objects.all()):
+            return gen_response(400, "User ID Error")
+
+        try:
+            js = json.loads(request.body)
+        except json.JSONDecodeError:
+            return gen_response(400, 'Request Json Error')
+
+        mission_id = js["mission_id"] if 'mission_id' in js else '0'
+        if not mission_id.isdigit():
+            return gen_response(400, "mission_id Is Not Digit")
+        mission_id = int(mission_id)
+        if mission_id < 1 or mission_id > len(Mission.objects.all()):
+            return gen_response(400, "Mission ID Error")
+
+        mission = Mission.objects.get(id=mission_id)
+        if mission.user.id != user_id:
+            return gen_response(400, "Mission Not Published by You")
+
+        if mission.to_ans == 1:
+            invalidate_mission(mission)
+        return gen_response(201, 'Mission End Success')
+
+    return gen_response(400, 'End Mission Error')
+
+
+def invalidate_mission(mission: Mission):
+    mission.to_ans = 0
+    if mission.now_num < mission.total:
+        user = mission.user
+        user.coin += mission.reward * (mission.total - mission.now_num)
+        user.save()
+    for rec in mission.mission_reception.all():
+        rec.can_do = False
+        rec.save()
+    mission.save()
+
+
 # 用户修改密码
 def change_password(request):
     if request.method == "POST":
@@ -1403,16 +1454,7 @@ try:
         mission_list = Mission.objects.all()
         for mission in mission_list:
             if mission.to_ans == 1 and timezone.now() > mission.deadline:
-                mission.to_ans = 0
-                # 答题人数不足时，返还扣除的金币
-                if mission.now_num < mission.total:
-                    user = mission.user
-                    user.coin += mission.reward * (mission.total - mission.now_num)
-                    user.save()
-                for rec in mission.mission_reception.all():
-                    rec.can_do = False
-                    rec.save()
-                mission.save()
+                invalidate_mission(mission)
         rec_list = Reception.objects.all()
         for rec in rec_list:
             if rec.can_do and timezone.now() > rec.deadline:
