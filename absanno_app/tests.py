@@ -2,7 +2,8 @@ import datetime
 from django.test import TestCase
 from .models import Users, Mission, Question, Reception, History
 from django.http import HttpResponse
-from .views import int_to_abc, abc_to_int
+from .views import int_to_abc, abc_to_int, \
+    all_tags, tags_by_age, tags_by_content, tags_by_profession, tags_by_target
 import time
 import os
 import shutil
@@ -1180,3 +1181,11 @@ class UnitTest(TestCase):
         res = self.client.get('/absanno/endmission', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 400)
         self.assertEqual(res.json()['data'], 'End Mission Error')
+
+    def test_change_user_tags_pos(self):
+        self.mock_login()
+        # body = {'tags': '中年,文字识别,运动'} # 中间无空格，逗号为英文逗号
+        body = {'tags': tags_by_age[1]+','+tags_by_target[2]+','+tags_by_content[3]}
+        res = self.client.post('/absanno/info', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.json()['data'], "{'tags': ['中年', '文字识别', '运动']}")
