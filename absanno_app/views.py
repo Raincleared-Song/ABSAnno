@@ -462,6 +462,7 @@ def upload(request):
 
         file = request.FILES.get('zip', None)
         image_list = request.FILES.getlist('img_list', None)
+        img_bg = request.FILES.get('mission_image', None)
         question_list = []
         has_bg = False
         if file is not None:
@@ -534,7 +535,7 @@ def upload(request):
                         return gen_response(400, 'File %s Do Not Exist' % image_file_path)
 
         # image post
-        elif image_list is not None and len(image_list) > 0:
+        elif (image_list is not None and len(image_list) > 0) or img_bg is not None:
             try:
                 js = json.loads(request.POST.get('info'))
             except json.JSONDecodeError:
@@ -544,9 +545,8 @@ def upload(request):
             if not question_num_.isdigit() or name == '':
                 return gen_response(400, "Upload Contains Error")
             question_num = int(question_num_)
-            if question_num != len(image_list):
+            if image_list is not None and 0 < len(image_list) != question_num:
                 return gen_response(400, "ImageList Length Error")
-            img_bg = request.FILES.get('mission_image', None)
             if img_bg is not None:
                 has_bg = True
                 save_img = open(os.path.join('image', '_mission_bg', name + '_bg.png'), 'wb')
@@ -635,6 +635,8 @@ def upload(request):
             try:
                 question = Question(word=contains, mission=mission, choices=choices, pre_ans=ans)
                 if question_form.endswith('-image'):
+                    if image_list is None or len(image_list) == 0:
+                        return gen_response(400, 'Images Expected')
                     image_file = image_list[k]
                     file_name = image_file.name.split('/').pop()
                     question.picture.save(file_name, File(BytesIO(image_file.read())))
