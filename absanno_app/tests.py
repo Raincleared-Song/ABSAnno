@@ -1182,10 +1182,23 @@ class UnitTest(TestCase):
         self.assertEqual(res.status_code, 400)
         self.assertEqual(res.json()['data'], 'End Mission Error')
 
-    def test_change_user_tags_pos(self):
+    def test_post_change_user_tags_pos(self):
         self.mock_login()
         # body = {'tags': '中年,文字识别,运动'} # 中间无空格，逗号为英文逗号
         body = {'tags': tags_by_age[1]+','+tags_by_target[2]+','+tags_by_content[3]}
         res = self.client.post('/absanno/info', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 201)
         self.assertEqual(res.json()['data'], "{'tags': ['中年', '文字识别', '运动']}")
+
+    def test_get_change_user_tags_pos(self):
+        self.mock_no_power_login()
+        res = self.client.get('/absanno/info')
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.json()['data'], "{'tags': 'Sports,Plant,Animal'}")
+
+    def test_change_password_pos(self):
+        self.mock_login()
+        body = {'old_password': 'test_pw', 'new_password_1': 'new_password', 'new_password_2': 'new_password'}
+        res = self.client.post('/absanno/changepw', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.json()['data'], "You successfully changed your password!")

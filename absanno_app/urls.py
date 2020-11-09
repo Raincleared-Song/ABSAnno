@@ -30,6 +30,7 @@ urlpatterns = [
     path('interest', views.interests, name='personal_interest'),
     path('endmission', views.end_mission, name='end_mission'),
     path('info', views.change_info, name='change_info'),
-    path('changepw', views.change_password, name='change_password')
+    path('changepw', views.change_password, name='change_password'),
+    path('changeavatar', views.change_avatar, name='change_avatar'),
 
 ]

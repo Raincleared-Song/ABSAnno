@@ -1498,11 +1498,13 @@ def change_password(request):
 
         user.password = new_password_1
         user.save()
+        print(user.password)
+        return gen_response(201, "You successfully changed your password!")
 
     return gen_response(400, "You Change Your Password Failed")
 
 
-# 用户修改个人信息
+# 用户修改个人信息：TAG
 def change_info(request):
     if request.method == "POST":
         code, data = check_token(request)
@@ -1534,8 +1536,25 @@ def change_info(request):
             'tags': get_lst(user.tags),
         })
 
+    elif request.method == "GET":
+        code, data = check_token(request)
+        if code == 400:
+            return gen_response(400, data)
+        user_id = request.session['user_id']
+        user = Users.objects.get(id=user_id)
+        tag = ''
+        for t in get_lst(user.tags):
+            tag += t + ','
+        tag = tag[:-1]
+        return gen_response(201, {
+            'tags': tag
+        })
+
     return gen_response(400, "You Change Your Info Failed")
 
+
+def change_avatar(request):
+    pass
 
 # 开启检查线程
 scheduler = BackgroundScheduler()
