@@ -17,6 +17,23 @@ import os
 from apscheduler.schedulers.background import BackgroundScheduler
 from django_apscheduler.jobstores import DjangoJobStore, register_job
 
+all_tags = ['青年', '中年', '老年',
+            '学生', '教师', '上班族', '研究者',
+            '人脸识别', '图片识别', '文字识别', 'AI写作', '翻译', '文本分析',
+            '生活场景', '工作场景', '购物', '运动', '旅游', '动物', '道德准则', '地理', '科学', '心理学']
+
+tags_by_age = all_tags[0:3]
+tags_by_profession = all_tags[3:7]
+tags_by_target = all_tags[7:13]
+tags_by_content = all_tags[13:]
+
+
+#
+# 按用户年龄分：青年，中年，老年
+# 按用户职业分：学生，教师，上班族，研究者？？？
+# 按项目目的分：人脸识别，图片识别，文字识别，AI写作，翻译，文本分析
+# 按题目内容分：生活场景，工作场景，购物，运动，旅游，动物，道德准则，地理，科学，心理学
+
 
 def hello_world(request):
     return HttpResponse("Hello Absanno!")
@@ -682,7 +699,8 @@ def about_me(request):
                 'weight': ret.weight,
                 'num': ret.fin_num,
                 'tags': get_lst(ret.tags),
-                'power': ret.power
+                'power': ret.power,
+                'avatar': ret.user_avatar_url()
             })
 
         elif method == 'mission':
@@ -931,20 +949,21 @@ def apply_show(request):
         return gen_response(201, {
             'apply_num': len(apply_list),
             'apply_list':
-            [
-                {
-                    'id': ret.user.id,
-                    'app_id': ret.id,
-                    'user_name': ret.user.name,
-                    'pub_time': int(ret.pub_time.timestamp() * 1000),
-                    'type': ret.type,
-                    'accept': ret.accept,
-                    'user_weight': ret.user.weight,
-                    'user_coin': ret.user.coin,
-                    'user_fin_num': ret.user.fin_num
-                }
-                for ret in apply_list
-            ]
+                [
+                    {
+                        'id': ret.user.id,
+                        'app_id': ret.id,
+                        'user_name': ret.user.name,
+                        'pub_time': int(ret.pub_time.timestamp() * 1000),
+                        'type': ret.type,
+                        'accept': ret.accept,
+                        'user_weight': ret.user.weight,
+                        'user_coin': ret.user.coin,
+                        'user_fin_num': ret.user.fin_num,
+                        'user_avatar': ret.user.user_avatar_url()
+                    }
+                    for ret in apply_list
+                ]
         })
 
     return gen_response(400, "Apply Show Failed")
@@ -954,6 +973,8 @@ def apply_show(request):
 # @Deprecated
 def admin_apply(request):
     pass
+
+
 #     if request.method == 'POST':
 #
 #         code, data = check_token(request)
@@ -1176,7 +1197,8 @@ def power_user_show_user(request):
                                       'coin': ret.coin,
                                       'weight': ret.weight,
                                       'fin_num': ret.fin_num,
-                                      'tags': get_lst(ret.tags)
+                                      'tags': get_lst(ret.tags),
+                                      'avatar': ret.user_avatar_url()
                                   } for ret in Users.objects.filter(Q(power=0) | Q(power=1))[now_num: num]
                                   ]})
 
@@ -1315,13 +1337,17 @@ def sort_mission_list_by_interest(mission_list, user):
         mission_list.sort(key=lambda x: len(x.tags.split('||')))
         return mission_list
     else:
+        if user.tags == '':
+            mission_list.sort(key=lambda x: len(x.tags.split('||')))
+            return mission_list
         # print("logged in, sort by same tag numbers")
-        user_tag = user.tags.split('||')
-        user_tag = [s.lower() for s in user_tag]
-        # print(user_tag)
-        mission_list.sort(key=lambda x: len(set(user_tag) & set(x.tags.split('||'))), reverse=True)
-        # print(mission_list)
-        return mission_list
+        else:
+            user_tag = user.tags.split('||')
+            user_tag = [s.lower() for s in user_tag]
+            # print(user_tag)
+            mission_list.sort(key=lambda x: len(set(user_tag) & set(x.tags.split('||'))), reverse=True)
+            # print(mission_list)
+            return mission_list
 
 
 def interests(request):
@@ -1477,13 +1503,86 @@ def change_password(request):
 
         user.password = new_password_1
         user.save()
+        # print(user.password)
+        return gen_response(201, "You successfully changed your password!")
 
     return gen_response(400, "You Change Your Password Failed")
 
 
-# 用户修改个人信息
+# 用户修改个人信息：TAG
 def change_info(request):
+    if request.method == "POST":
+        code, data = check_token(request)
+        if code == 400:
+            return gen_response(400, data)
+
+        try:
+            js = json.loads(request.body)
+        except json.decoder.JSONDecodeError:
+            return gen_response(400, "Json Error")
+
+        user_id = request.session['user_id']
+        user = Users.objects.get(id=user_id)
+
+        new_tag_str = js['tags'] if 'tags' in js else ''
+        new_tag_str = new_tag_str.replace(' ', '')
+        new_tags = new_tag_str.split(',')
+        while '' in new_tags:
+            new_tags.remove('')
+
+        tag = ''
+        for t in new_tags:
+            tag += t + '||'
+        tag = tag[:-2]
+        user.tags = tag
+        user.save()
+
+        return gen_response(201, {
+            'tags': get_lst(user.tags),
+        })
+
+    elif request.method == "GET":
+        code, data = check_token(request)
+        if code == 400:
+            return gen_response(400, data)
+        user_id = request.session['user_id']
+        user = Users.objects.get(id=user_id)
+        tag = ''
+        for t in get_lst(user.tags):
+            tag += t + ','
+        tag = tag[:-1]
+        return gen_response(201, {
+            'tags': tag
+        })
+
     return gen_response(400, "You Change Your Info Failed")
+
+
+def change_avatar(request):
+    if request.method == "POST":
+        code, data = check_token(request)
+        if code == 400:
+            return gen_response(400, data)
+
+        user_id = request.session['user_id']
+        user = Users.objects.get(id=user_id)
+
+        file = request.FILES.get('avatar', None)
+        if file is None:
+            user.avatar = ""
+            user.save()
+            return gen_response(201, "Successfully changed avatar (to blank)")
+
+        file_name = file.name.split('/').pop()
+        user.avatar.save(file_name, File(BytesIO(file.read())))
+        file.close()
+        user.save()
+        # print(user.avatar.name)
+        return gen_response(201, "Successfully changed avatar")
+
+
+    return gen_response(400, "Failed to change Avatar")
+
 
 
 # 开启检查线程
@@ -1504,6 +1603,7 @@ try:
                 rec.save()
                 rec.mission.reception_num -= 1
                 rec.mission.save()  # 接单过期，原任务接单数减一
+
 
     scheduler.start()
 except Exception as e:
