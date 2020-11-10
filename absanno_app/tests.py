@@ -146,7 +146,7 @@ class UnitTest(TestCase):
         body = {"name": "test", "password": "test_pw"}
         res = self.client.post('/absanno/login', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 201)
-        self.assertEqual(res.json()['data'], str({'name': 'test', 'power': 2}))
+        self.assertEqual(res.json()['data'], str({'name': 'test', 'power': 2, 'avatar': ''}))
 
     def test_login_neg_json_err(self):
         body = '{"name": "test", password: "test_pw"}'
@@ -188,7 +188,7 @@ class UnitTest(TestCase):
         body = {"name": "tests", "password": "test_pws"}
         res = self.client.post('/absanno/signin', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 201)
-        self.assertEqual(res.json()['data'], str({'name': 'tests', 'power': 0}))
+        self.assertEqual(res.json()['data'], str({'name': 'tests', 'power': 0, 'avatar': ''}))
         find = Users.objects.filter(name='tests').first()
         self.assertIsNotNone(find)
         self.assertEqual(find.name, 'tests')
