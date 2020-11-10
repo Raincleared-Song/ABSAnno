@@ -78,9 +78,9 @@ class UnitTest(TestCase):
              'is_banned': 0, 'question_list': [{'word': 'title1', 'pre_ans': 'A', 'ans': 'A', 'ans_weight': 1.0},
                                                {'word': 'title2', 'pre_ans': 'C', 'ans': 'B', 'ans_weight': 1.0}]})
         self.power_user_show = str({'num': 3, 'total': 3, 'user_list': [
-            {'id': 2, 'name': 'test_wang', 'power': 1, 'is_banned': 0, 'coin': 1000, 'weight': 50, 'fin_num': 0, 'tags': []},
-            {'id': 3, 'name': 'test3', 'power': 0, 'is_banned': 1, 'coin': 1000, 'weight': 50, 'fin_num': 0, 'tags': []},
-            {'id': 4, 'name': 'test4', 'power': 0, 'is_banned': 0, 'coin': 1000, 'weight': 50, 'fin_num': 0, 'tags': ['Sports', 'Plant', 'Animal']}]})
+            {'id': 2, 'name': 'test_wang', 'power': 1, 'is_banned': 0, 'coin': 1000, 'weight': 50, 'fin_num': 0, 'tags': [], 'avatar': ''},
+            {'id': 3, 'name': 'test3', 'power': 0, 'is_banned': 1, 'coin': 1000, 'weight': 50, 'fin_num': 0, 'tags': [], 'avatar': ''},
+            {'id': 4, 'name': 'test4', 'power': 0, 'is_banned': 0, 'coin': 1000, 'weight': 50, 'fin_num': 0, 'tags': ['Sports', 'Plant', 'Animal'], 'avatar': ''}]})
         self.about_pos_case = str({'total_num': 1, 'mission_list':
             [{'id': 1, 'name': 'task_test', 'user': 'test', 'question_num': 2, 'question_form': 'chosen',
               'reward': 5, 'info': '', 'ret_time': self.default_timestamp}]})
@@ -716,7 +716,7 @@ class UnitTest(TestCase):
         res = self.client.get('/absanno/user' + param)
         self.assertEqual(res.status_code, 201)
         self.assertEqual(res.json()['data'], str({'name': 'test', 'coin': 1000, 'weight': 50, 'num': 0, 'tags': [],
-                                                  'power': 2}))
+                                                  'power': 2, 'avatar': ''}))
 
     def test_about_pos_mission(self):
         self.mock_login()
@@ -1202,3 +1202,17 @@ class UnitTest(TestCase):
         res = self.client.post('/absanno/changepw', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 201)
         self.assertEqual(res.json()['data'], "You successfully changed your password!")
+
+    def test_upload_avatar_pos(self):
+        self.mock_login()
+        file = open('test_data/avatar.jpg', 'rb')
+        res = self.client.post('/absanno/changeavatar', data={'avatar': file})
+        file.close()
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.json()['data'], 'Successfully changed avatar')
+        param = "?method=user"
+        res = self.client.get('/absanno/user' + param)
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.json()['data'], str({'name': 'test', 'coin': 1000, 'weight': 50, 'num': 0,
+                                                  'tags': [], 'power': 2,
+                                                  'avatar': '/backend/media/Users/1/avatar.jpg'}))

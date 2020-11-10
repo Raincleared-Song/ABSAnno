@@ -697,7 +697,8 @@ def about_me(request):
                 'weight': ret.weight,
                 'num': ret.fin_num,
                 'tags': get_lst(ret.tags),
-                'power': ret.power
+                'power': ret.power,
+                'avatar': ret.user_avatar_url()
             })
 
         elif method == 'mission':
@@ -956,7 +957,8 @@ def apply_show(request):
                         'accept': ret.accept,
                         'user_weight': ret.user.weight,
                         'user_coin': ret.user.coin,
-                        'user_fin_num': ret.user.fin_num
+                        'user_fin_num': ret.user.fin_num,
+                        'user_avatar': ret.user.user_avatar_url()
                     }
                     for ret in apply_list
                 ]
@@ -1193,7 +1195,8 @@ def power_user_show_user(request):
                                       'coin': ret.coin,
                                       'weight': ret.weight,
                                       'fin_num': ret.fin_num,
-                                      'tags': get_lst(ret.tags)
+                                      'tags': get_lst(ret.tags),
+                                      'avatar': ret.user_avatar_url()
                                   } for ret in Users.objects.filter(Q(power=0) | Q(power=1))[now_num: num]
                                   ]})
 
@@ -1498,7 +1501,7 @@ def change_password(request):
 
         user.password = new_password_1
         user.save()
-        print(user.password)
+        # print(user.password)
         return gen_response(201, "You successfully changed your password!")
 
     return gen_response(400, "You Change Your Password Failed")
@@ -1554,7 +1557,31 @@ def change_info(request):
 
 
 def change_avatar(request):
-    pass
+    if request.method == "POST":
+        code, data = check_token(request)
+        if code == 400:
+            return gen_response(400, data)
+
+        user_id = request.session['user_id']
+        user = Users.objects.get(id=user_id)
+
+        file = request.FILES.get('avatar', None)
+        if file is None:
+            user.avatar = ""
+            user.save()
+            return gen_response(201, "Successfully changed avatar (to blank)")
+
+        file_name = file.name.split('/').pop()
+        user.avatar.save(file_name, File(BytesIO(file.read())))
+        file.close()
+        user.save()
+        # print(user.avatar.name)
+        return gen_response(201, "Successfully changed avatar")
+
+
+    return gen_response(400, "Failed to change Avatar")
+
+
 
 # 开启检查线程
 scheduler = BackgroundScheduler()
