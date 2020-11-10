@@ -125,7 +125,8 @@ def log_in(request):
 
         return gen_response(201, {
             'name': user.name,
-            'power': user.power
+            'power': user.power,
+            'avatar': user.user_avatar_url()
         })
 
     return gen_response(400, "Log In Error")
@@ -173,7 +174,8 @@ def sign_in(request):
 
         return gen_response(201, {
             'name': user.name,
-            'power': user.power
+            'power': user.power,
+            'avatar': user.user_avatar_url()
         })
 
     return gen_response(400, "Sign In Error")
