@@ -1,6 +1,6 @@
 from django.http import JsonResponse, HttpResponse, FileResponse
 import json
-from .models import Users, Mission, Question, History, Apply, Reception
+from .models import Users, Mission, Question, History, Apply, Reception, Message
 from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.middleware.csrf import get_token
@@ -84,6 +84,21 @@ def gen_response(code: int, data: object):  # 是否成功，成功为201，失�
         'data': str(data)
     }, status=code)
 
+
+def gen_message(_title, _content, _sender, _receiver):
+    message = Message(title=_title, content=_content,
+                      sender=_sender, receiver=_receiver,
+                      pub_time=timezone.now())
+    try:
+        message.full_clean()
+        message.save()
+    except ValidationError:
+        return 400
+    return 0
+
+
+def print_msg_error(m, r):
+    print(f"error when sending content: {m} to {r}")
 
 # 有关用户的登录与注册
 # request.body为json
@@ -1584,6 +1599,73 @@ def change_avatar(request):
 
 
     return gen_response(400, "Failed to change Avatar")
+
+
+def message_page(request):
+    if request.method == "POST":
+        code, data = check_token(request)
+        if code == 400:
+            return gen_response(400, data)
+
+        user_id = request.session['user_id']
+        user = Users.objects.get(id=user_id)
+
+        if user.power < 2:
+            return gen_response(400, "You dont have power to send message")
+
+        try:
+            js = json.loads(request.body)
+        except json.decoder.JSONDecodeError:
+            return gen_response(400, "Json Error")
+
+        msg = js['msg'] if 'msg' in js else ''
+        if msg == '':
+            return gen_response(400, 'Message is blank?!')
+
+        user_list = js['user'] if 'user' in js else '[]'
+        if len(user_list) == 0:
+            return gen_response(400, "You didnt specify receivers")
+
+        for i in range(len(user_list)):
+            user_list[i] = user_list[i].lower()
+        user_list = set(user_list)
+
+        if 'all' in user_list:
+            receivers = Users.objects.all()
+            for receiver in receivers:
+                m = gen_message("Message from Admin", msg, user, receiver)
+
+            return gen_response(201, "Successfully send message to all users")
+
+
+
+        for target_user in user_list:
+            if target_user == 'admin':
+                receivers = Users.objects.filter(Q(power=2))
+                for receiver in receivers:
+                    m = gen_message("Message from Admin", msg, user, receiver)
+                    if m == 400:
+                        print_msg_error(msg, receiver)
+            if target_user == 'vip':
+                receivers = Users.objects.filter(Q(power=1))
+                for receiver in receivers:
+                    m = gen_message("Message from Admin", msg, user, receiver)
+                    if m == 400:
+                        print_msg_error(msg, receiver)
+            if target_user == 'normal':
+                receivers = Users.objects.filter(Q(power=0))
+                for receiver in receivers:
+                    m = gen_message("Message from Admin", msg, user, receiver)
+                    if m == 400:
+                        print_msg_error(msg, receiver)
+
+        return gen_response(201, "Successfully send message to target users")
+
+    if request.method == "GET":
+        pass
+    return gen_response(400, "Use POST or GET, other methods not supported")
+
+
 
 
 

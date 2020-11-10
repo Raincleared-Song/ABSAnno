@@ -32,5 +32,6 @@ urlpatterns = [
     path('info', views.change_info, name='change_info'),
     path('changepw', views.change_password, name='change_password'),
     path('changeavatar', views.change_avatar, name='change_avatar'),
+    path('message', views.)
 
 ]
