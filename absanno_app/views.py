@@ -1622,13 +1622,14 @@ def message_page(request):
         if msg == '':
             return gen_response(400, 'Message is blank?!')
 
-        user_list = js['user'] if 'user' in js else '[]'
-        if len(user_list) == 0:
+        user_list = js['user'] if 'user' in js else ''
+        if len(user_list) == 0 or user_list[0] == '':
             return gen_response(400, "You didnt specify receivers")
 
+        user_list_tmp = []
         for i in range(len(user_list)):
-            user_list[i] = user_list[i].lower()
-        user_list = set(user_list)
+            user_list_tmp.append(user_list[i].lower())
+        user_list = set(user_list_tmp)
 
         if 'all' in user_list:
             receivers = Users.objects.all()
@@ -1636,7 +1637,6 @@ def message_page(request):
                 m = gen_message("Message from Admin", msg, user, receiver)
 
             return gen_response(201, "Successfully send message to all users")
-
 
 
         for target_user in user_list:
@@ -1659,7 +1659,8 @@ def message_page(request):
                     if m == 400:
                         print_msg_error(msg, receiver)
 
-        return gen_response(201, "Successfully send message to target users")
+
+        return gen_response(201, f"Successfully send message to target users: {sorted(list(user_list))}")
 
     if request.method == "GET":
         pass

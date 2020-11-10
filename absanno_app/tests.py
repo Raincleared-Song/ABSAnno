@@ -1216,3 +1216,47 @@ class UnitTest(TestCase):
         self.assertEqual(res.json()['data'], str({'name': 'test', 'coin': 1000, 'weight': 50, 'num': 0,
                                                   'tags': [], 'power': 2,
                                                   'avatar': '/backend/media/Users/1/avatar.jpg'}))
+
+
+    def test_admin_post_msg_to_all_pos(self):
+        self.mock_login()
+        body = {'msg': 'Test Message', 'user': ['all', 'admin']}
+        res = self.client.post('/absanno/message', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.json()['data'], 'Successfully send message to all users')
+
+
+    def test_admin_post_msg_no_msg_neg(self):
+        self.mock_login()
+        body = {'user': ['all', 'admin']}
+        res = self.client.post('/absanno/message', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'Message is blank?!')
+
+
+    def test_admin_post_msg_no_target_neg(self):
+        self.mock_login()
+        body = {'msg': 'Test Message', 'user': ['']}
+        res = self.client.post('/absanno/message', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'You didnt specify receivers')
+        body = {'msg': 'Test Message'}
+        res = self.client.post('/absanno/message', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'You didnt specify receivers')
+
+
+    def test_admin_post_msg_to_part_pos(self):
+        self.mock_login()
+        body = {'msg': 'Test Message', 'user': ['admin', 'vip']}
+        res = self.client.post('/absanno/message', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.json()['data'], "Successfully send message to target users: ['admin', 'vip']")
+
+
+    def test_normal_post_msg_to_all_neg(self):
+        self.mock_no_power_login()
+        body = {'msg': 'Test Message', 'user': ['all', 'admin']}
+        res = self.client.post('/absanno/message', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'You dont have power to send message')
