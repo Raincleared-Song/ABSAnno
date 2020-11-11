@@ -7,6 +7,7 @@ from .views import int_to_abc, abc_to_int, \
 import time
 import os
 import shutil
+import json
 
 
 def cookie_test_view(request):
@@ -1260,3 +1261,20 @@ class UnitTest(TestCase):
         res = self.client.post('/absanno/message', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 400)
         self.assertEqual(res.json()['data'], 'You dont have power to send message')
+
+
+    def test_admin_check_all_msg_pos(self):
+        self.mock_login()
+        body1 = {'msg': 'Test Message 1', 'user': ['all', 'admin']}
+        res = self.client.post('/absanno/message', data=body1, content_type='application/json')
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.json()['data'], 'Successfully send message to all users')
+        time.sleep(2)
+        body2 = {'msg': 'Test Message 2', 'user': ['all', 'vip']}
+        res = self.client.post('/absanno/message', data=body2, content_type='application/json')
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.json()['data'], 'Successfully send message to all users')
+        res = self.client.get('/absanno/message')
+        self.assertEqual(res.status_code, 201)
+
+

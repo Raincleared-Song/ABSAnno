@@ -1663,7 +1663,30 @@ def message_page(request):
         return gen_response(201, f"Successfully send message to target users: {sorted(list(user_list))}")
 
     if request.method == "GET":
-        pass
+        code, data = check_token(request)
+        if code == 400:
+            return gen_response(400, data)
+
+        user_id = request.session['user_id']
+        user = Users.objects.get(id=user_id)
+
+        message_list = list(Message.objects.filter(receiver=user))
+        message_list.sort(key=lambda x: x.pub_time, reverse=True)
+        length = min(10, len(message_list))
+        if length == 0:
+            return gen_response(201, "No message to show!")
+        return gen_response(201, {
+            'message_num': length,
+            'message_list': [
+                {
+                    'title': message.title,
+                    'content': message.content,
+                    'time': int(message.pub_time.timestamp() * 1000),
+                    'sender': message.sender.name
+                }
+                for message in message_list
+            ]
+        })
     return gen_response(400, "Use POST or GET, other methods not supported")
 
 
