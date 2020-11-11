@@ -703,13 +703,6 @@ def upload(request):
         user.coin -= cost
         user.save()
 
-        # mission = Mission(name=name, question_form=question_form, question_num=question_num, total=total,
-        #                   user=user, tags=tags, reward=reward, check_way=check_way, info=info,
-        #                   deadline=deadline, retrieve_time=retrieve_time,
-        #                   sub_mission_num=sub_mission_num, sub_mission_scale=sub_mission_scale)
-        # mission.full_clean()
-        # mission.save()
-
         try:
             mission = Mission(name=name, question_form=question_form, question_num=question_num, total=total,
                               user=user, tags=tags, reward=reward, check_way=check_way, info=info,
