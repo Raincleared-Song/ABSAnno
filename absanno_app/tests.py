@@ -2,10 +2,12 @@ import datetime
 from django.test import TestCase
 from .models import Users, Mission, Question, Reception, History
 from django.http import HttpResponse
-from .views import int_to_abc, abc_to_int
+from .views import int_to_abc, abc_to_int, \
+    all_tags, tags_by_age, tags_by_content, tags_by_profession, tags_by_target
 import time
 import os
 import shutil
+import json
 
 
 def cookie_test_view(request):
@@ -77,9 +79,9 @@ class UnitTest(TestCase):
              'is_banned': 0, 'question_list': [{'word': 'title1', 'pre_ans': 'A', 'ans': 'A', 'ans_weight': 1.0},
                                                {'word': 'title2', 'pre_ans': 'C', 'ans': 'B', 'ans_weight': 1.0}]})
         self.power_user_show = str({'num': 3, 'total': 3, 'user_list': [
-            {'id': 2, 'name': 'test_wang', 'power': 1, 'is_banned': 0, 'coin': 1000, 'weight': 50, 'fin_num': 0, 'tags': []},
-            {'id': 3, 'name': 'test3', 'power': 0, 'is_banned': 1, 'coin': 1000, 'weight': 50, 'fin_num': 0, 'tags': []},
-            {'id': 4, 'name': 'test4', 'power': 0, 'is_banned': 0, 'coin': 1000, 'weight': 50, 'fin_num': 0, 'tags': ['Sports', 'Plant', 'Animal']}]})
+            {'id': 2, 'name': 'test_wang', 'power': 1, 'is_banned': 0, 'coin': 1000, 'weight': 50, 'fin_num': 0, 'tags': [], 'avatar': ''},
+            {'id': 3, 'name': 'test3', 'power': 0, 'is_banned': 1, 'coin': 1000, 'weight': 50, 'fin_num': 0, 'tags': [], 'avatar': ''},
+            {'id': 4, 'name': 'test4', 'power': 0, 'is_banned': 0, 'coin': 1000, 'weight': 50, 'fin_num': 0, 'tags': ['Sports', 'Plant', 'Animal'], 'avatar': ''}]})
         self.about_pos_case = str({'total_num': 1, 'mission_list':
             [{'id': 1, 'name': 'task_test', 'user': 'test', 'question_num': 2, 'question_form': 'chosen',
               'reward': 5, 'info': '', 'ret_time': self.default_timestamp}]})
@@ -145,7 +147,7 @@ class UnitTest(TestCase):
         body = {"name": "test", "password": "test_pw"}
         res = self.client.post('/absanno/login', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 201)
-        self.assertEqual(res.json()['data'], str({'name': 'test', 'power': 2}))
+        self.assertEqual(res.json()['data'], str({'name': 'test', 'power': 2, 'avatar': ''}))
 
     def test_login_neg_json_err(self):
         body = '{"name": "test", password: "test_pw"}'
@@ -187,7 +189,7 @@ class UnitTest(TestCase):
         body = {"name": "tests", "password": "test_pws"}
         res = self.client.post('/absanno/signin', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 201)
-        self.assertEqual(res.json()['data'], str({'name': 'tests', 'power': 0}))
+        self.assertEqual(res.json()['data'], str({'name': 'tests', 'power': 0, 'avatar': ''}))
         find = Users.objects.filter(name='tests').first()
         self.assertIsNotNone(find)
         self.assertEqual(find.name, 'tests')
@@ -715,7 +717,7 @@ class UnitTest(TestCase):
         res = self.client.get('/absanno/user' + param)
         self.assertEqual(res.status_code, 201)
         self.assertEqual(res.json()['data'], str({'name': 'test', 'coin': 1000, 'weight': 50, 'num': 0, 'tags': [],
-                                                  'power': 2}))
+                                                  'power': 2, 'avatar': ''}))
 
     def test_about_pos_mission(self):
         self.mock_login()
@@ -1180,3 +1182,99 @@ class UnitTest(TestCase):
         res = self.client.get('/absanno/endmission', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 400)
         self.assertEqual(res.json()['data'], 'End Mission Error')
+
+    def test_post_change_user_tags_pos(self):
+        self.mock_login()
+        # body = {'tags': '中年,文字识别,运动'} # 中间无空格，逗号为英文逗号
+        body = {'tags': tags_by_age[1]+','+tags_by_target[2]+','+tags_by_content[3]}
+        res = self.client.post('/absanno/info', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.json()['data'], "{'tags': ['中年', '文字识别', '运动']}")
+
+    def test_get_change_user_tags_pos(self):
+        self.mock_no_power_login()
+        res = self.client.get('/absanno/info')
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.json()['data'], "{'tags': 'Sports,Plant,Animal'}")
+
+    def test_change_password_pos(self):
+        self.mock_login()
+        body = {'old_password': 'test_pw', 'new_password_1': 'new_password', 'new_password_2': 'new_password'}
+        res = self.client.post('/absanno/changepw', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.json()['data'], "You successfully changed your password!")
+
+    def test_upload_avatar_pos(self):
+        self.mock_login()
+        file = open('test_data/avatar.jpg', 'rb')
+        res = self.client.post('/absanno/changeavatar', data={'avatar': file})
+        file.close()
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.json()['data'], 'Successfully changed avatar')
+        param = "?method=user"
+        res = self.client.get('/absanno/user' + param)
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.json()['data'], str({'name': 'test', 'coin': 1000, 'weight': 50, 'num': 0,
+                                                  'tags': [], 'power': 2,
+                                                  'avatar': '/backend/media/Users/1/avatar.jpg'}))
+
+
+    def test_admin_post_msg_to_all_pos(self):
+        self.mock_login()
+        body = {'msg': 'Test Message', 'user': ['all', 'admin']}
+        res = self.client.post('/absanno/message', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.json()['data'], 'Successfully send message to all users')
+
+
+    def test_admin_post_msg_no_msg_neg(self):
+        self.mock_login()
+        body = {'user': ['all', 'admin']}
+        res = self.client.post('/absanno/message', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'Message is blank?!')
+
+
+    def test_admin_post_msg_no_target_neg(self):
+        self.mock_login()
+        body = {'msg': 'Test Message', 'user': ['']}
+        res = self.client.post('/absanno/message', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'You didnt specify receivers')
+        body = {'msg': 'Test Message'}
+        res = self.client.post('/absanno/message', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'You didnt specify receivers')
+
+
+    def test_admin_post_msg_to_part_pos(self):
+        self.mock_login()
+        body = {'msg': 'Test Message', 'user': ['admin', 'vip']}
+        res = self.client.post('/absanno/message', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.json()['data'], "Successfully send message to target users: ['admin', 'vip']")
+
+
+    def test_normal_post_msg_to_all_neg(self):
+        self.mock_no_power_login()
+        body = {'msg': 'Test Message', 'user': ['all', 'admin']}
+        res = self.client.post('/absanno/message', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'You dont have power to send message')
+
+
+    def test_admin_check_all_msg_pos(self):
+        self.mock_login()
+        body1 = {'msg': 'Test Message 1', 'user': ['all', 'admin']}
+        res = self.client.post('/absanno/message', data=body1, content_type='application/json')
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.json()['data'], 'Successfully send message to all users')
+        time.sleep(2)
+        body2 = {'msg': 'Test Message 2', 'user': ['all', 'vip']}
+        res = self.client.post('/absanno/message', data=body2, content_type='application/json')
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.json()['data'], 'Successfully send message to all users')
+        res = self.client.get('/absanno/message')
+        self.assertEqual(res.status_code, 201)
+
+

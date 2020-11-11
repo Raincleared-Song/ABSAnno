@@ -1,6 +1,6 @@
 from django.http import JsonResponse, HttpResponse, FileResponse
 import json
-from .models import Users, Mission, Question, History, Apply, Reception
+from .models import Users, Mission, Question, History, Apply, Reception, Message
 from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.middleware.csrf import get_token
@@ -16,6 +16,23 @@ import os
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from django_apscheduler.jobstores import DjangoJobStore, register_job
+
+all_tags = ['青年', '中年', '老年',
+            '学生', '教师', '上班族', '研究者',
+            '人脸识别', '图片识别', '文字识别', 'AI写作', '翻译', '文本分析',
+            '生活场景', '工作场景', '购物', '运动', '旅游', '动物', '道德准则', '地理', '科学', '心理学']
+
+tags_by_age = all_tags[0:3]
+tags_by_profession = all_tags[3:7]
+tags_by_target = all_tags[7:13]
+tags_by_content = all_tags[13:]
+
+
+#
+# 按用户年龄分：青年，中年，老年
+# 按用户职业分：学生，教师，上班族，研究者？？？
+# 按项目目的分：人脸识别，图片识别，文字识别，AI写作，翻译，文本分析
+# 按题目内容分：生活场景，工作场景，购物，运动，旅游，动物，道德准则，地理，科学，心理学
 
 
 def hello_world(request):
@@ -68,6 +85,21 @@ def gen_response(code: int, data: object):  # 是否成功，成功为201，失�
     }, status=code)
 
 
+def gen_message(_title, _content, _sender, _receiver):
+    message = Message(title=_title, content=_content,
+                      sender=_sender, receiver=_receiver,
+                      pub_time=timezone.now())
+    try:
+        message.full_clean()
+        message.save()
+    except ValidationError:
+        return 400
+    return 0
+
+
+def print_msg_error(m, r):
+    print(f"error when sending content: {m} to {r}")
+
 # 有关用户的登录与注册
 # request.body为json
 # 其中内容为：
@@ -108,7 +140,8 @@ def log_in(request):
 
         return gen_response(201, {
             'name': user.name,
-            'power': user.power
+            'power': user.power,
+            'avatar': user.user_avatar_url()
         })
 
     return gen_response(400, "Log In Error")
@@ -156,7 +189,8 @@ def sign_in(request):
 
         return gen_response(201, {
             'name': user.name,
-            'power': user.power
+            'power': user.power,
+            'avatar': user.user_avatar_url()
         })
 
     return gen_response(400, "Sign In Error")
@@ -762,7 +796,8 @@ def about_me(request):
                 'weight': ret.weight,
                 'num': ret.fin_num,
                 'tags': get_lst(ret.tags),
-                'power': ret.power
+                'power': ret.power,
+                'avatar': ret.user_avatar_url()
             })
 
         elif method == 'mission':
@@ -1043,7 +1078,12 @@ def apply_show(request):
                         'accept': ret.accept,
                         'user_weight': ret.user.weight,
                         'user_coin': ret.user.coin,
+<<<<<<< HEAD
                         'user_fin_num': ret.user.fin_num
+=======
+                        'user_fin_num': ret.user.fin_num,
+                        'user_avatar': ret.user.user_avatar_url()
+>>>>>>> dbed0d109d01d86d8b96a38a6ed92a96ed42868a
                     }
                     for ret in apply_list
                 ]
@@ -1280,7 +1320,8 @@ def power_user_show_user(request):
                                       'coin': ret.coin,
                                       'weight': ret.weight,
                                       'fin_num': ret.fin_num,
-                                      'tags': get_lst(ret.tags)
+                                      'tags': get_lst(ret.tags),
+                                      'avatar': ret.user_avatar_url()
                                   } for ret in Users.objects.filter(Q(power=0) | Q(power=1))[now_num: num]
                                   ]})
 
@@ -1429,13 +1470,17 @@ def sort_mission_list_by_interest(mission_list, user):
         mission_list.sort(key=lambda x: len(x.tags.split('||')))
         return mission_list
     else:
+        if user.tags == '':
+            mission_list.sort(key=lambda x: len(x.tags.split('||')))
+            return mission_list
         # print("logged in, sort by same tag numbers")
-        user_tag = user.tags.split('||')
-        user_tag = [s.lower() for s in user_tag]
-        # print(user_tag)
-        mission_list.sort(key=lambda x: len(set(user_tag) & set(x.tags.split('||'))), reverse=True)
-        # print(mission_list)
-        return mission_list
+        else:
+            user_tag = user.tags.split('||')
+            user_tag = [s.lower() for s in user_tag]
+            # print(user_tag)
+            mission_list.sort(key=lambda x: len(set(user_tag) & set(x.tags.split('||'))), reverse=True)
+            # print(mission_list)
+            return mission_list
 
 
 def interests(request):
@@ -1593,13 +1638,177 @@ def change_password(request):
 
         user.password = new_password_1
         user.save()
+        # print(user.password)
+        return gen_response(201, "You successfully changed your password!")
 
     return gen_response(400, "You Change Your Password Failed")
 
 
-# 用户修改个人信息
+# 用户修改个人信息：TAG
 def change_info(request):
+    if request.method == "POST":
+        code, data = check_token(request)
+        if code == 400:
+            return gen_response(400, data)
+
+        try:
+            js = json.loads(request.body)
+        except json.decoder.JSONDecodeError:
+            return gen_response(400, "Json Error")
+
+        user_id = request.session['user_id']
+        user = Users.objects.get(id=user_id)
+
+        new_tag_str = js['tags'] if 'tags' in js else ''
+        new_tag_str = new_tag_str.replace(' ', '')
+        new_tags = new_tag_str.split(',')
+        while '' in new_tags:
+            new_tags.remove('')
+
+        tag = ''
+        for t in new_tags:
+            tag += t + '||'
+        tag = tag[:-2]
+        user.tags = tag
+        user.save()
+
+        return gen_response(201, {
+            'tags': get_lst(user.tags),
+        })
+
+    elif request.method == "GET":
+        code, data = check_token(request)
+        if code == 400:
+            return gen_response(400, data)
+        user_id = request.session['user_id']
+        user = Users.objects.get(id=user_id)
+        tag = ''
+        for t in get_lst(user.tags):
+            tag += t + ','
+        tag = tag[:-1]
+        return gen_response(201, {
+            'tags': tag
+        })
+
     return gen_response(400, "You Change Your Info Failed")
+
+
+def change_avatar(request):
+    if request.method == "POST":
+        code, data = check_token(request)
+        if code == 400:
+            return gen_response(400, data)
+
+        user_id = request.session['user_id']
+        user = Users.objects.get(id=user_id)
+
+        file = request.FILES.get('avatar', None)
+        if file is None:
+            user.avatar = ""
+            user.save()
+            return gen_response(201, "Successfully changed avatar (to blank)")
+
+        file_name = file.name.split('/').pop()
+        user.avatar.save(file_name, File(BytesIO(file.read())))
+        file.close()
+        user.save()
+        # print(user.avatar.name)
+        return gen_response(201, "Successfully changed avatar")
+
+
+    return gen_response(400, "Failed to change Avatar")
+
+
+def message_page(request):
+    if request.method == "POST":
+        code, data = check_token(request)
+        if code == 400:
+            return gen_response(400, data)
+
+        user_id = request.session['user_id']
+        user = Users.objects.get(id=user_id)
+
+        if user.power < 2:
+            return gen_response(400, "You dont have power to send message")
+
+        try:
+            js = json.loads(request.body)
+        except json.decoder.JSONDecodeError:
+            return gen_response(400, "Json Error")
+
+        msg = js['msg'] if 'msg' in js else ''
+        if msg == '':
+            return gen_response(400, 'Message is blank?!')
+
+        user_list = js['user'] if 'user' in js else ''
+        if len(user_list) == 0 or user_list[0] == '':
+            return gen_response(400, "You didnt specify receivers")
+
+        user_list_tmp = []
+        for i in range(len(user_list)):
+            user_list_tmp.append(user_list[i].lower())
+        user_list = set(user_list_tmp)
+
+        if 'all' in user_list:
+            receivers = Users.objects.all()
+            for receiver in receivers:
+                m = gen_message("Message from Admin", msg, user, receiver)
+
+            return gen_response(201, "Successfully send message to all users")
+
+
+        for target_user in user_list:
+            if target_user == 'admin':
+                receivers = Users.objects.filter(Q(power=2))
+                for receiver in receivers:
+                    m = gen_message("Message from Admin", msg, user, receiver)
+                    if m == 400:
+                        print_msg_error(msg, receiver)
+            if target_user == 'vip':
+                receivers = Users.objects.filter(Q(power=1))
+                for receiver in receivers:
+                    m = gen_message("Message from Admin", msg, user, receiver)
+                    if m == 400:
+                        print_msg_error(msg, receiver)
+            if target_user == 'normal':
+                receivers = Users.objects.filter(Q(power=0))
+                for receiver in receivers:
+                    m = gen_message("Message from Admin", msg, user, receiver)
+                    if m == 400:
+                        print_msg_error(msg, receiver)
+
+
+        return gen_response(201, f"Successfully send message to target users: {sorted(list(user_list))}")
+
+    if request.method == "GET":
+        code, data = check_token(request)
+        if code == 400:
+            return gen_response(400, data)
+
+        user_id = request.session['user_id']
+        user = Users.objects.get(id=user_id)
+
+        message_list = list(Message.objects.filter(receiver=user))
+        message_list.sort(key=lambda x: x.pub_time, reverse=True)
+        length = min(10, len(message_list))
+        if length == 0:
+            return gen_response(201, "No message to show!")
+        return gen_response(201, {
+            'message_num': length,
+            'message_list': [
+                {
+                    'title': message.title,
+                    'content': message.content,
+                    'time': int(message.pub_time.timestamp() * 1000),
+                    'sender': message.sender.name
+                }
+                for message in message_list
+            ]
+        })
+    return gen_response(400, "Use POST or GET, other methods not supported")
+
+
+
 
 
 # 开启检查线程

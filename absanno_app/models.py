@@ -6,6 +6,21 @@ import datetime
 import os
 
 
+
+class OverWriteStorage(FileSystemStorage):
+    """重写原本的存储类，实现重名覆盖"""
+    def get_available_name(self, name, max_length=None):
+        # if the filename already exists, remove it
+        if self.exists(name):
+            os.remove(os.path.join(settings.MEDIA_ROOT, name))
+        return name
+
+
+
+def user_avatar_path(instance, filename):
+    return os.path.join('Users', str(instance.id), filename)
+
+
 class Users(models.Model):
     # 用户的id使用默认的主键
 
@@ -16,13 +31,19 @@ class Users(models.Model):
     coin = models.IntegerField(default=1000)  # 用户积分，参与答题即可获得积分(金币)，作为答题奖励
     weight = models.IntegerField(default=50)  # 用户权重，有关用户答题质量的评定
     # 用户答题被判断乱答题时会扣除weight， weight被扣到0时用户可能被自动封禁
-    # photo = models.ImageField(default="")  # 用户头像，存储图片所在地址，""表示默认头像
+    avatar = models.ImageField(upload_to=user_avatar_path, storage=OverWriteStorage(), default="", blank=True)  # 用户头像，存储图片所在地址，""表示默认头像
     fin_num = models.IntegerField(default=0)  # 已完成任务数量
     is_banned = models.IntegerField(default=0)  # 用户是否被封禁，如为0表示正常运行，如为1表示已被封禁，无法正常登录，需要向管理员申请解封
     power = models.IntegerField(default=0)  # 用户权限，0 为普通用户，1 为发布者，2 为管理员
     # email = models.CharField(max_length=50)  # 用户邮箱，目前可能用不到，之后可以增加与用户邮箱的关联
     # 可以用于注册时对于用户的验证以及用户找回密码
     tags = models.CharField(default="", max_length=1000, blank=True)  # 存储tag，每个tag之间使用||分隔
+
+    def user_avatar_url(self):
+        if self.avatar:
+            return '/'.join(('', 'backend', 'media', 'Users', str(self.id), self.avatar.name.split('/').pop()))
+        else:
+            return ''
 
 
 class Mission(models.Model):
@@ -58,13 +79,6 @@ def question_image_path(instance, filename):
     return os.path.join(instance.mission.name, filename)
 
 
-class OverWriteStorage(FileSystemStorage):
-    """重写原本的存储类，实现重名覆盖"""
-    def get_available_name(self, name, max_length=None):
-        # if the filename already exists, remove it
-        if self.exists(name):
-            os.remove(os.path.join(settings.MEDIA_ROOT, name))
-        return name
 
 
 class Question(models.Model):
