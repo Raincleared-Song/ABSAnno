@@ -703,6 +703,13 @@ def upload(request):
         user.coin -= cost
         user.save()
 
+        # mission = Mission(name=name, question_form=question_form, question_num=question_num, total=total,
+        #                   user=user, tags=tags, reward=reward, check_way=check_way, info=info,
+        #                   deadline=deadline, retrieve_time=retrieve_time,
+        #                   sub_mission_num=sub_mission_num, sub_mission_scale=sub_mission_scale)
+        # mission.full_clean()
+        # mission.save()
+
         try:
             mission = Mission(name=name, question_form=question_form, question_num=question_num, total=total,
                               user=user, tags=tags, reward=reward, check_way=check_way, info=info,
@@ -751,7 +758,7 @@ def upload(request):
                     sub_mis.save()
                 except ValidationError:
                     clean_image_when_fail()
-                    return gen_response(400, "Upload Form Error")
+                    return gen_response(400, "Sub Mission Upload Form Error")
                 if i < sub_mission_num:
                     for j in range((i-1)*sub_mission_scale, i*sub_mission_scale):
                         sub_q = q_list[j]
@@ -1078,12 +1085,8 @@ def apply_show(request):
                         'accept': ret.accept,
                         'user_weight': ret.user.weight,
                         'user_coin': ret.user.coin,
-<<<<<<< HEAD
-                        'user_fin_num': ret.user.fin_num
-=======
                         'user_fin_num': ret.user.fin_num,
                         'user_avatar': ret.user.user_avatar_url()
->>>>>>> dbed0d109d01d86d8b96a38a6ed92a96ed42868a
                     }
                     for ret in apply_list
                 ]
@@ -1547,7 +1550,8 @@ def interests(request):
                                               'info': ret.info,
                                               'tags': get_lst(ret.tags),
                                               'received': get_mission_rec_status(ret),
-                                              'image_url': ret.mission_image_url()
+                                              'image_url': ret.mission_image_url(),
+                                              'is_sub': ret.is_sub
                                           }
                                           for ret in mission_list[num: get_num]
                                       ]}
@@ -1714,7 +1718,6 @@ def change_avatar(request):
         user.save()
         # print(user.avatar.name)
         return gen_response(201, "Successfully changed avatar")
-
 
     return gen_response(400, "Failed to change Avatar")
 

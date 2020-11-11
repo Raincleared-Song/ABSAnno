@@ -52,28 +52,28 @@ class UnitTest(TestCase):
         self.square_pos_case1 = str({'ret': 2, 'total': 2, 'question_list': [
             {'id': 2, 'name': 'task_test2', 'user': 'test_wang', 'questionNum': 3, 'questionForm': 'chosen', 'is_banned': 0,
              'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': 1624982400000, 'cash': 5, 'info': '',
-             'tags': ['animal', 'plant', 'space'], 'received': 'F', 'image_url': '/backend/media/logo/app.png'},
+             'tags': ['animal', 'plant', 'space'], 'received': 'F', 'image_url': '/backend/media/logo/app.png', 'is_sub': 0},
             {'id': 1, 'name': 'task_test', 'user': 'test', 'questionNum': 2, 'questionForm': 'chosen', 'is_banned': 0,
              'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': 1624982400000, 'cash': 5, 'info': '',
-             'tags': ['sports', 'game', 'lifestyle'], 'received': 'T', 'image_url': '/backend/media/logo/app.png'}]})
+             'tags': ['sports', 'game', 'lifestyle'], 'received': 'T', 'image_url': '/backend/media/logo/app.png', 'is_sub': 0}]})
         self.square_pos_case2 = str({'ret': 1, 'total': 1, 'question_list': [
             {'id': 2, 'name': 'task_test2', 'user': 'test_wang', 'questionNum': 3, 'questionForm': 'chosen', 'is_banned': 0,
              'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': 1624982400000, 'cash': 5, 'info': '',
-             'tags': ['animal', 'plant', 'space'], 'received': 'F', 'image_url': '/backend/media/logo/app.png'}]})
+             'tags': ['animal', 'plant', 'space'], 'received': 'F', 'image_url': '/backend/media/logo/app.png', 'is_sub': 0}]})
         self.square_pos_case_all = str({'ret': 2, 'total': 2, 'question_list': [
             {'id': 2, 'name': 'task_test2', 'user': 'test_wang', 'questionNum': 3, 'questionForm': 'chosen', 'is_banned': 0,
              'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': 1624982400000, 'cash': 5, 'info': '',
-             'tags': ['animal', 'plant', 'space'], 'received': '', 'image_url': '/backend/media/logo/app.png'},
+             'tags': ['animal', 'plant', 'space'], 'received': '', 'image_url': '/backend/media/logo/app.png', 'is_sub': 0},
             {'id': 1, 'name': 'task_test', 'user': 'test', 'questionNum': 2, 'questionForm': 'chosen', 'is_banned': 0,
              'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': 1624982400000, 'cash': 5, 'info': '',
-             'tags': ['sports', 'game', 'lifestyle'], 'received': '', 'image_url': '/backend/media/logo/app.png'}]})
+             'tags': ['sports', 'game', 'lifestyle'], 'received': '', 'image_url': '/backend/media/logo/app.png', 'is_sub': 0}]})
         self.interest_pos_case = str({'ret': 2, 'total': 2, 'question_list': [
             {'id': 2, 'name': 'task_test2', 'user': 'test_wang', 'questionNum': 3, 'questionForm': 'chosen', 'is_banned': 0,
              'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': 1624982400000, 'cash': 5, 'info': '',
-             'tags': ['animal', 'plant', 'space'], 'received': 'F', 'image_url': '/backend/media/logo/app.png'},
+             'tags': ['animal', 'plant', 'space'], 'received': 'F', 'image_url': '/backend/media/logo/app.png', 'is_sub': 0},
             {'id': 1, 'name': 'task_test', 'user': 'test', 'questionNum': 2, 'questionForm': 'chosen', 'is_banned': 0,
              'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': 1624982400000, 'cash': 5, 'info': '',
-             'tags': ['sports', 'game', 'lifestyle'], 'received': 'F', 'image_url': '/backend/media/logo/app.png'}]})
+             'tags': ['sports', 'game', 'lifestyle'], 'received': 'F', 'image_url': '/backend/media/logo/app.png', 'is_sub': 0}]})
         self.mission_my_pos_case = str(
             {'mission_name': 'task_test', 'question_form': 'chosen', 'question_num': 2, 'total': 5, 'now_num': 0,
              'is_banned': 0, 'question_list': [{'word': 'title1', 'pre_ans': 'A', 'ans': 'A', 'ans_weight': 1.0},
@@ -271,14 +271,14 @@ class UnitTest(TestCase):
         body = self.upload_pos_case
         res = self.client.post('/absanno/upload', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 201)
-        self.assertEqual(res.json()['data'], 'Chosen Upload Success')
+        self.assertEqual(res.json()['data'], 'Upload Success')
 
     def test_upload_pos2(self):
         self.mock_login2()
         body = self.upload_pos_case2
         res = self.client.post('/absanno/upload', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 201)
-        self.assertEqual(res.json()['data'], 'Chosen Upload Success')
+        self.assertEqual(res.json()['data'], 'Upload Success')
 
     def test_upload_pos_zip(self):
         self.mock_login()
@@ -286,7 +286,7 @@ class UnitTest(TestCase):
         res = self.client.post('/absanno/upload', data={'zip': file})
         file.close()
         self.assertEqual(res.status_code, 201)
-        self.assertEqual(res.json()['data'], 'Chosen Upload Success')
+        self.assertEqual(res.json()['data'], 'Upload Success')
 
     def test_upload_pos_zip_image(self):
         self.mock_login()
@@ -294,7 +294,7 @@ class UnitTest(TestCase):
         res = self.client.post('/absanno/upload', data={'zip': file})
         file.close()
         self.assertEqual(res.status_code, 201)
-        self.assertEqual(res.json()['data'], 'Chosen Upload Success')
+        self.assertEqual(res.json()['data'], 'Upload Success')
 
     def test_upload_pos_zip_mission_image(self):
         self.mock_login()
@@ -302,7 +302,7 @@ class UnitTest(TestCase):
         res = self.client.post('/absanno/upload', data={'zip': file})
         file.close()
         # self.assertEqual(res.status_code, 201)
-        self.assertEqual(res.json()['data'], 'Chosen Upload Success')
+        self.assertEqual(res.json()['data'], 'Upload Success')
 
     def test_upload_pos_image_list(self):
         self.mock_login()
@@ -311,7 +311,7 @@ class UnitTest(TestCase):
         files[0].close()
         files[1].close()
         self.assertEqual(res.status_code, 201)
-        self.assertEqual(res.json()['data'], 'Chosen Upload Success')
+        self.assertEqual(res.json()['data'], 'Upload Success')
 
     def test_upload_pos_mission_image_list(self):
         self.mock_login()
@@ -323,7 +323,7 @@ class UnitTest(TestCase):
         files[1].close()
         mission_pic.close()
         self.assertEqual(res.status_code, 201)
-        self.assertEqual(res.json()['data'], 'Chosen Upload Success')
+        self.assertEqual(res.json()['data'], 'Upload Success')
 
     def test_upload_neg_zip_not_zip(self):
         self.mock_login()
@@ -464,7 +464,7 @@ class UnitTest(TestCase):
                                   {"contains": "title4", "ans": "", "choices": "T||F"}]}
         res = self.client.post('/absanno/upload', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 201)
-        self.assertEqual(res.json()['data'], 'Chosen Upload Success')
+        self.assertEqual(res.json()['data'], 'Upload Success')
 
     def test_upload_neg_que_word_long(self):
         self.mock_login()

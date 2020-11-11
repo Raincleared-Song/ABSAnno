@@ -6,7 +6,6 @@ import datetime
 import os
 
 
-
 class OverWriteStorage(FileSystemStorage):
     """重写原本的存储类，实现重名覆盖"""
     def get_available_name(self, name, max_length=None):
@@ -14,7 +13,6 @@ class OverWriteStorage(FileSystemStorage):
         if self.exists(name):
             os.remove(os.path.join(settings.MEDIA_ROOT, name))
         return name
-
 
 
 def user_avatar_path(instance, filename):
@@ -31,7 +29,8 @@ class Users(models.Model):
     coin = models.IntegerField(default=1000)  # 用户积分，参与答题即可获得积分(金币)，作为答题奖励
     weight = models.IntegerField(default=50)  # 用户权重，有关用户答题质量的评定
     # 用户答题被判断乱答题时会扣除weight， weight被扣到0时用户可能被自动封禁
-    avatar = models.ImageField(upload_to=user_avatar_path, storage=OverWriteStorage(), default="", blank=True)  # 用户头像，存储图片所在地址，""表示默认头像
+    avatar = models.ImageField(upload_to=user_avatar_path, storage=OverWriteStorage(), default="", blank=True)
+    # 用户头像，存储图片所在地址，""表示默认头像
     fin_num = models.IntegerField(default=0)  # 已完成任务数量
     is_banned = models.IntegerField(default=0)  # 用户是否被封禁，如为0表示正常运行，如为1表示已被封禁，无法正常登录，需要向管理员申请解封
     power = models.IntegerField(default=0)  # 用户权限，0 为普通用户，1 为发布者，2 为管理员
@@ -51,8 +50,8 @@ class Mission(models.Model):
 
     name = models.CharField(max_length=30, unique=True)  # 发布的任务的名字，必须唯一，因此在显示时可能要显示小的编号
     user = models.ForeignKey(Users, on_delete=models.DO_NOTHING, related_name="promulgator")  # 关联任务的发布用户
-    f_mission = models.ForeignKey(to='self', null=True, on_delete=models.DO_NOTHING, related_name="sub_mission")
-    # 被分割的子任务
+    f_mission = models.ForeignKey(to='self', null=True, on_delete=models.DO_NOTHING, related_name="sub_mission",
+                                  blank=True)  # 被分割的子任务
     is_sub = models.IntegerField(default=0)  # 是否为子任务，0表示不是子任务，非0表示为第几个子任务
     total = models.IntegerField()  # 任务需要完成的次数
     now_num = models.IntegerField(default=0)  # 目前已经完成的次数
