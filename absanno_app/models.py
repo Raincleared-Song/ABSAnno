@@ -30,10 +30,13 @@ class Mission(models.Model):
 
     name = models.CharField(max_length=30, unique=True)  # 发布的任务的名字，必须唯一，因此在显示时可能要显示小的编号
     user = models.ForeignKey(Users, on_delete=models.DO_NOTHING, related_name="promulgator")  # 关联任务的发布用户
+    f_mission = models.ForeignKey(to='self', null=True, on_delete=models.DO_NOTHING, related_name="sub_mission")
+    # 被分割的子任务
+    is_sub = models.IntegerField(default=0)  # 是否为子任务，0表示不是子任务，非0表示为第几个子任务
     total = models.IntegerField()  # 任务需要完成的次数
     now_num = models.IntegerField(default=0)  # 目前已经完成的次数
     question_num = models.IntegerField(default=0)  # 任务中题目的数量，题目最多为20题
-    question_form = models.CharField(default="Chosen", max_length=20)
+    question_form = models.CharField(default="chosen", max_length=20)
     to_ans = models.IntegerField(default=1)  # 当前任务是否需要继续被标注，1表示需要，0表示不需要
     is_banned = models.IntegerField(default=0)  # 是否被封禁，0表示没有被封禁，1表示被封禁
     tags = models.CharField(default="", max_length=1000, blank=True)  # 存储tag，每个tag之间使用||分隔
@@ -43,6 +46,8 @@ class Mission(models.Model):
     check_way = models.CharField(default="auto", max_length=10)  # 验收方式，目前为自动验收
     info = models.CharField(default="", max_length=200, blank=True)  # 任务简介
     reception_num = models.IntegerField(default=0)  # 目前接单数
+    sub_mission_num = models.IntegerField(default=1)  # 被拆分子任务数
+    sub_mission_scale = models.IntegerField(default=0)  # 被拆分任务规模
 
     def mission_image_url(self):
         default_path = '/'.join(('', 'backend', 'media', '_mission_bg', self.name + '.png'))
@@ -62,7 +67,7 @@ class OverWriteStorage(FileSystemStorage):
         return name
 
 
-class Question(models.Model):  # 判断题和选择题均使用 Question 存储
+class Question(models.Model):
     mission = models.ForeignKey(Mission, on_delete=models.DO_NOTHING, related_name="father_mission")  # 关联题目来自的任务
     word = models.CharField(default="", max_length=200, blank=True)  # 文字描述，最多200字
     pre_ans = models.CharField(default="", max_length=10, blank=True)  # 预埋答案，使用 ABCD 表示
@@ -85,7 +90,7 @@ class History(models.Model):
     pub_time = models.DateTimeField(default=timezone.now)
     ans_time = models.IntegerField(default=0)  # 用户答题所花时间
     ans_weight = models.IntegerField(default=50)  # 答题时用户权重
-    ans = models.CharField(default="", max_length=100)  # 存储用户答案，不同题目间使用||分隔
+    ans = models.CharField(default="", max_length=1000)  # 存储用户答案，不同题目间使用||分隔
 
 
 class Apply(models.Model):
