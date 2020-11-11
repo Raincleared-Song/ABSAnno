@@ -245,25 +245,28 @@ def user_show(request):
 
         mission_list = []
         for mis in mission_list_base:
-            tag_flag, kw_flag = 0, 0
-            if ('total' in type_) or (type_ == []) or (mis.question_form in type_):
-                if ('total' in theme_) or (theme_ == []):
-                    tag_flag = 1
-                else:
-                    for t in theme_:
-                        if t in mis.tags:
-                            tag_flag = 1
-                if tag_flag == 1:
-                    if kw == "":
-                        kw_flag = 1
+            tag_flag, kw_flag, sub_flag = 0, 0, 1
+            if (len(mis.sub_mission.all()) != 0) and (mis.is_sub == 0):
+                sub_flag = 0
+            if sub_flag == 1:
+                if ('total' in type_) or (type_ == []) or (mis.question_form in type_):
+                    if ('total' in theme_) or (theme_ == []):
+                        tag_flag = 1
                     else:
-                        if (kw in mis.name) or (kw in mis.user.name) or (kw in mis.tags):
+                        for t in theme_:
+                            if t in mis.tags:
+                                tag_flag = 1
+                    if tag_flag == 1:
+                        if kw == "":
                             kw_flag = 1
-                        for qs in mis.father_mission.all():
-                            if kw in qs.word:
+                        else:
+                            if (kw in mis.name) or (kw in mis.user.name) or (kw in mis.tags):
                                 kw_flag = 1
-                    if kw_flag == 1 and (mis.reception_num < mis.total) and (mis.deadline > timezone.now()):
-                        mission_list.append(mis)
+                            for qs in mis.father_mission.all():
+                                if kw in qs.word:
+                                    kw_flag = 1
+                        if kw_flag == 1 and (mis.reception_num < mis.total) and (mis.deadline > timezone.now()):
+                            mission_list.append(mis)
 
         show_num = 12  # 设计一次更新获得的任务数
         get_num = min(num + show_num, len(mission_list))  # 本次更新获得的任务数
@@ -287,7 +290,8 @@ def user_show(request):
                                               'info': ret.info,
                                               'tags': get_lst(ret.tags),
                                               'received': get_mission_rec_status(ret),
-                                              'image_url': ret.mission_image_url()
+                                              'image_url': ret.mission_image_url(),
+                                              'is_sub': ret.is_sub
                                           }
                                           for ret in mission_list[num: get_num]
                                       ]}
@@ -354,14 +358,23 @@ def mission_show(request):
 
         ret = mission.father_mission.all().order_by('id')[get_num]
 
-        return gen_response(201, {
-            'total': len(mission.father_mission.all()),
-            'type': mission.question_form,
-            'ret': get_num,
-            'word': ret.word,
-            'choices': ret.choices,
-            'image_url': ret.picture_url() if mission.question_form.endswith('-image') else ""
-        })
+        if mission.question_form.startswith('chosen'):
+            return gen_response(201, {
+                'total': len(mission.father_mission.all()),
+                'type': mission.question_form,
+                'ret': get_num,
+                'word': ret.word,
+                'choices': ret.choices,
+                'image_url': ret.picture_url() if mission.question_form.endswith('-image') else ""
+            })
+        elif mission.question_form.startswith('fill'):
+            return gen_response(201, {
+                'total': len(mission.father_mission.all()),
+                'type': mission.question_form,
+                'ret': get_num,
+                'word': ret.word,
+                'image_url': ret.picture_url() if mission.question_form.endswith('-image') else ""
+            })
 
     elif request.method == 'POST':
 
@@ -429,6 +442,37 @@ def mission_show(request):
                 if mission.now_num == mission.total:
                     mission.to_ans = 0
                 mission.save()
+                rec.can_do = False  # 接单不可做
+                rec.save()
+                history = History(user=user, mission=mission, ans=ans, ans_weight=user.weight)
+                history.save()
+                return gen_response(201, "Answer Pushed")
+            else:
+                user.weight -= 5
+                if user.weight < 0:
+                    user.weight = 0
+                    user.is_banned = 1
+                user.save()
+                return gen_response(201, "Did Not Pass The Test")
+
+        if mission.question_form.startswith('fill'):
+            ans_list = get_lst(ans)
+            q_list = mission.father_mission.all()
+            if len(ans_list) != len(q_list):
+                return gen_response(400, 'Answer List Length Error')
+            if timezone.now() - rec.pub_time < datetime.timedelta(seconds=mission.question_num):
+                flag = 0
+            if flag == 1:
+                mission.now_num += 1
+                if mission.now_num == mission.total:
+                    mission.to_ans = 0
+                mission.save()
+                user.weight += 5
+                if user.weight > 100:
+                    user.weight = 100
+                user.coin += mission.reward
+                user.fin_num += 1
+                user.save()
                 rec.can_do = False  # 接单不可做
                 rec.save()
                 history = History(user=user, mission=mission, ans=ans, ans_weight=user.weight)
@@ -612,10 +656,24 @@ def upload(request):
             if os.path.exists(os.path.join('image', '_mission_bg', name + '.png')):
                 os.remove(os.path.join('image', '_mission_bg', name + '.png'))
 
+        sub_mission_num = 1
+        sub_mission_scale = question_num
+        if question_num > 10:
+            sub_mission_num = int(question_num / 10)
+            sub_mission_scale = int(question_num / sub_mission_num)
+
+        cost = reward * total * sub_mission_num
+        if user.coin < cost:
+            clean_image_when_fail()
+            return gen_response(400, "You Dont Have Enough Coin")
+        user.coin -= cost
+        user.save()
+
         try:
             mission = Mission(name=name, question_form=question_form, question_num=question_num, total=total,
-                              user=user, tags=tags, reward=reward, check_way=check_way,
-                              info=info, deadline=deadline, retrieve_time=retrieve_time)
+                              user=user, tags=tags, reward=reward, check_way=check_way, info=info,
+                              deadline=deadline, retrieve_time=retrieve_time,
+                              sub_mission_num=sub_mission_num, sub_mission_scale=sub_mission_scale)
             mission.full_clean()
             mission.save()
         except ValidationError:
@@ -626,12 +684,12 @@ def upload(request):
             contains = i['contains'] if 'contains' in i else ''
             ans = i['ans'] if 'ans' in i else ''
             choices = i['choices'] if 'choices' in i else ''
-            if contains == '':
+            if (contains == '') and (not mission.question_form.endswith('-image')):
                 clean_image_when_fail()
                 return gen_response(400, "Question Contains is Null")
-            if choices == '':
+            if (choices == '') and (mission.question_form.startswith('chosen')):
                 clean_image_when_fail()
-                return gen_response(400, "There Is No Choice")
+                return gen_response(400, "There Is No Choice In a Chosen-Mission")
             try:
                 question = Question(word=contains, mission=mission, choices=choices, pre_ans=ans)
                 if question_form.endswith('-image'):
@@ -646,18 +704,40 @@ def upload(request):
             except ValidationError:
                 clean_image_when_fail()
                 return gen_response(400, "Question Form Error")
+        if sub_mission_num > 1:
+            q_list = mission.father_mission.all().order_by('id')
+            for i in range(1, sub_mission_num + 1):
+                try:
+                    sub_mis = Mission(name=name, question_form=question_form, total=total, user=user, tags=tags,
+                                      reward=reward, check_way=check_way, info=info, deadline=deadline,
+                                      retrieve_time=retrieve_time, sub_mission_num=1)
+                    sub_mis.is_sub = i
+                    sub_mis.f_mission = mission
+                    sub_mis.full_clean()
+                    sub_mis.save()
+                except ValidationError:
+                    clean_image_when_fail()
+                    return gen_response(400, "Upload Form Error")
+                if i < sub_mission_num:
+                    for j in range((i-1)*sub_mission_scale, i*sub_mission_scale):
+                        sub_q = q_list[j]
+                        sub_q.pk = None
+                        sub_q.mission = sub_mis
+                        sub_q.save()
+                else:
+                    for j in range((i-1)*sub_mission_scale, len(q_list)):
+                        sub_q = q_list[j]
+                        sub_q.pk = None
+                        sub_q.mission = sub_mis
+                        sub_q.save()
+                sub_mis.question_num = len(sub_mis.father_mission.all())
+                sub_mis.sub_mission_scale = len(sub_mis.father_mission.all())
+                sub_mis.save()
 
         if file is not None:
             file.close()
 
-        cost = reward * total
-        if user.coin < cost:
-            clean_image_when_fail()
-            return gen_response(400, "You Dont Have Enough Coin")
-        user.coin -= cost
-        user.save()
-
-        return gen_response(201, "Chosen Upload Success")
+        return gen_response(201, "Upload Success")
 
     return gen_response(400, "Upload Error")
 
@@ -777,14 +857,45 @@ def show_my_mission(request):
 
 
 def integrate_mission(mission):
-    # 选择题模式
+
+    if len(mission.sub_mission.all()) == 0:
+        cal(mission)
+    else:
+        question_list = mission.father_mission.all().order_by('id')
+        for s in mission.sub_mission.all():
+            cal(s)
+            q_list = s.father_mission.all().order_by('id')
+            for i in range(0, len(s.father_mission.all().order_by('id'))):
+                ques = Question.objects.get(id=question_list[(s.is_sub-1)*mission.sub_mission_scale+i].id)
+                ques.ans = q_list[i].ans
+                ques.ans_weight = q_list[i].ans_weight
+                ques.save()
+
+    return gen_response(201, {
+        'mission_name': mission.name,
+        'question_form': mission.question_form,
+        'question_num': mission.question_num,
+        'total': mission.total,
+        'now_num': mission.now_num,
+        'is_banned': mission.is_banned,
+        'question_list':
+            [
+                {
+                    'word': ret.word,
+                    'pre_ans': ret.pre_ans,
+                    'ans': ret.ans,
+                    'ans_weight': ret.ans_weight,
+                }
+                for ret in mission.father_mission.all()
+            ]
+    })
+
+
+def cal(mission):
+    question_list = mission.father_mission.all()
+    history_list = mission.ans_history.all()
+
     if mission.question_form.startswith('chosen'):
-
-        question_list = mission.father_mission.all()
-        history_list = mission.ans_history.all()
-        if len(history_list) == 0:
-            return gen_response(400, 'No Answer History Yet')
-
         for i in range(len(question_list)):
             weight_list = []
             ans, tot_weight = 0, 0
@@ -800,29 +911,20 @@ def integrate_mission(mission):
             for j in range(c_num):
                 if weight_list[j] > weight_list[ans]:
                     ans = j
-            q.ans = int_to_abc(ans)
-            q.ans_weight = weight_list[ans] / tot_weight
+            if tot_weight != 0:
+                q.ans = int_to_abc(ans)
+                q.ans_weight = weight_list[ans] / tot_weight
             q.save()
-
-        return gen_response(201, {
-            'mission_name': mission.name,
-            'question_form': mission.question_form,
-            'question_num': mission.question_num,
-            'total': mission.total,
-            'now_num': mission.now_num,
-            'is_banned': mission.is_banned,
-            'question_list':
-                [
-                    {
-                        'word': ret.word,
-                        'pre_ans': ret.pre_ans,
-                        'ans': ret.ans,
-                        'ans_weight': ret.ans_weight,
-                    }
-                    for ret in mission.father_mission.all()
-                ]
-        })
-    return gen_response(400, "My Mission Error")
+    elif mission.question_form.startswith('fill'):
+        for i in range(len(mission.father_mission.all())):
+            q = mission.father_mission.all()[i]
+            ans_lst = []
+            for his in mission.ans_history.all():
+                a_lst = get_lst(his.ans)
+                ans_lst.append(a_lst[i])
+            spl_str = '||'
+            q.ans = spl_str.join(ans_lst)
+            q.save()
 
 
 # 申请
@@ -931,20 +1033,20 @@ def apply_show(request):
         return gen_response(201, {
             'apply_num': len(apply_list),
             'apply_list':
-            [
-                {
-                    'id': ret.user.id,
-                    'app_id': ret.id,
-                    'user_name': ret.user.name,
-                    'pub_time': int(ret.pub_time.timestamp() * 1000),
-                    'type': ret.type,
-                    'accept': ret.accept,
-                    'user_weight': ret.user.weight,
-                    'user_coin': ret.user.coin,
-                    'user_fin_num': ret.user.fin_num
-                }
-                for ret in apply_list
-            ]
+                [
+                    {
+                        'id': ret.user.id,
+                        'app_id': ret.id,
+                        'user_name': ret.user.name,
+                        'pub_time': int(ret.pub_time.timestamp() * 1000),
+                        'type': ret.type,
+                        'accept': ret.accept,
+                        'user_weight': ret.user.weight,
+                        'user_coin': ret.user.coin,
+                        'user_fin_num': ret.user.fin_num
+                    }
+                    for ret in apply_list
+                ]
         })
 
     return gen_response(400, "Apply Show Failed")
@@ -954,6 +1056,8 @@ def apply_show(request):
 # @Deprecated
 def admin_apply(request):
     pass
+
+
 #     if request.method == 'POST':
 #
 #         code, data = check_token(request)
@@ -1272,27 +1376,23 @@ def check_result(request):
         if mission.user.id != user_id:
             return gen_response(400, "Mission Not Published by You")
 
-        if mission.question_form.endswith("chosen"):
+        if mission.sub_mission_num == 1:
+            cal(mission)
+        else:
+            question_list = mission.father_mission.all().order_by('id')
+            sub_list = mission.sub_mission.all().order_by('id')
+            for i in range(0, mission.sub_mission_num):
+                s = sub_list[i]
+                cal(s)
+                q_list = s.father_mission.all().order_by('id')
+                for j in range(0, len(s.father_mission.all().order_by('id'))):
+                    num = (s.is_sub - 1) * mission.sub_mission_scale + j
+                    ques = Question.objects.get(id=question_list[num].id)
+                    ques.ans_weight = q_list[i].ans_weight
+                    ques.ans = q_list[i].ans
+                    ques.save()
 
-            for i in range(len(mission.father_mission.all())):
-                weight_list = []
-                ans, tot_weight = 0, 0
-                q = mission.father_mission.all()[i]
-                c_lst = get_lst(q.choices)
-                c_num = len(c_lst)
-                for j in range(c_num):
-                    weight_list.append(0)
-                for his in mission.ans_history.all():
-                    a_lst = get_lst(his.ans)
-                    weight_list[abc_to_int(a_lst[i])] += his.ans_weight
-                    tot_weight += his.ans_weight
-                for j in range(c_num):
-                    if weight_list[j] > weight_list[ans]:
-                        ans = j
-                q.ans = int_to_abc(ans)
-                q.ans_weight = weight_list[ans] / tot_weight
-                q.save()
-
+        if mission.question_form.startswith("chosen"):
             return gen_response(201, {
                 'question_list':
                     [
@@ -1305,7 +1405,21 @@ def check_result(request):
                         for ret in mission.father_mission.all()
                     ]
             })
-        return gen_response(400, "Check Mission Error, Chosen Expected")
+
+        elif mission.question_form.startswith('fill'):
+            return gen_response(201, {
+                'question_list':
+                    [
+                        {
+                            'word': ret.word,
+                            'ans': ret.ans,
+                        }
+                        for ret in mission.father_mission.all()
+                    ]
+            })
+
+        return gen_response(400, "No Such Question Form")
+
     return gen_response(400, "Check Mission Error, Use GET Instead")
 
 
@@ -1354,7 +1468,9 @@ def interests(request):
             rec_list = user.user_reception.all()
             receive_set = set([r.mission.id for r in rec_list])
         else:
-            mission_list_base = Mission.objects.filter(Q(is_banned=0) & Q(to_ans=1)).order_by('-id')
+            mission_list_base = Mission.objects.filter(Q(is_banned=0) & Q(to_ans=1) &
+                                                       ((Q(is_sub=0) & Q(sub_mission_num=1)) | ~Q(is_sub=0))
+                                                       ).order_by('-id')
 
         def get_mission_rec_status(m):
             if receive_set is None:
@@ -1504,6 +1620,7 @@ try:
                 rec.save()
                 rec.mission.reception_num -= 1
                 rec.mission.save()  # 接单过期，原任务接单数减一
+
 
     scheduler.start()
 except Exception as e:
