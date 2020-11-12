@@ -7,7 +7,6 @@ from absanno_app.models import Mission, Message, Users, Reception
 from apscheduler.schedulers.background import BackgroundScheduler
 from django_apscheduler.jobstores import DjangoJobStore, register_job
 
-
 all_tags = ['青年', '中年', '老年',
             '学生', '教师', '上班族', '研究者',
             '人脸识别', '图片识别', '文字识别', 'AI写作', '翻译', '文本分析',
@@ -18,8 +17,10 @@ tags_by_profession = all_tags[3:7]
 tags_by_target = all_tags[7:13]
 tags_by_content = all_tags[13:]
 
-
 JSON_ERROR = "Request Json Error"
+UPLOAD_ERROR = "Upload Contains Error"
+LACK_POWER_ERROR = "Dont Have Power"
+MESSAGE_FROM_ADMIN = "Message from Admin"
 
 # 开启检查线程
 scheduler = BackgroundScheduler()
@@ -200,19 +201,12 @@ def invalidate_mission(mission: Mission):
 
 
 def sort_mission_list_by_interest(mission_list, user):
-    if not user:
-        # print("not login, sort by tag numbers")
+    if not user or user.tags == '':
+        # not login, sort by tag numbers
         mission_list.sort(key=lambda x: len(x.tags.split('||')))
         return mission_list
     else:
-        if user.tags == '':
-            mission_list.sort(key=lambda x: len(x.tags.split('||')))
-            return mission_list
-        # print("logged in, sort by same tag numbers")
-        else:
-            user_tag = user.tags.split('||')
-            user_tag = [s.lower() for s in user_tag]
-            # print(user_tag)
-            mission_list.sort(key=lambda x: len(set(user_tag) & set(x.tags.split('||'))), reverse=True)
-            # print(mission_list)
-            return mission_list
+        user_tag = user.tags.split('||')
+        user_tag = [s.lower() for s in user_tag]
+        mission_list.sort(key=lambda x: len(set(user_tag) & set(x.tags.split('||'))), reverse=True)
+        return mission_list

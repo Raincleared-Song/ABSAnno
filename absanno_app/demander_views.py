@@ -10,7 +10,7 @@ from django.core.files.base import File
 from io import BytesIO
 from .models import Mission, Question, Users
 from .utils import check_token, gen_response, find_user_by_token, get_lst, get_answer_dict, abc_to_int, int_to_abc, \
-    integrate_mission, parse_json, JSON_ERROR, invalidate_mission
+    integrate_mission, parse_json, JSON_ERROR, invalidate_mission, UPLOAD_ERROR, LACK_POWER_ERROR
 
 
 def upload_mission(request):
@@ -65,7 +65,7 @@ def upload_mission(request):
             question_form = js['question_form'] if 'question_form' in js else ''
             question_num_ = js['question_num'] if 'question_num' in js else ''
             if not question_num_.isdigit() or question_form == '' or name == '':
-                return gen_response(400, "Upload Contains Error")
+                return gen_response(400, UPLOAD_ERROR)
             question_num = int(question_num_)
             if 'question_list' in js:
                 question_list = js['question_list']
@@ -87,7 +87,7 @@ def upload_mission(request):
                 # 上传的是图片题
                 image_path = js['image_path'] if 'image_path' in js else ''
                 if image_path == '':
-                    return gen_response(400, "Upload Contains Error")
+                    return gen_response(400, UPLOAD_ERROR)
                 image_list = []
                 for question in question_list:
                     if 'image_name' not in question:
@@ -102,14 +102,14 @@ def upload_mission(request):
 
         # image post
         elif (image_list is not None and len(image_list) > 0) or img_bg is not None:
-            try:
-                js = json.loads(request.POST.get('info'))
-            except json.JSONDecodeError:
-                return gen_response(400, "Request Json Error")
+            js = parse_json(request.POST.get('info'))
+            if js is None:
+                return gen_response(400, JSON_ERROR)
+
             name = js['name'] if 'name' in js else ''
             question_num_ = js['question_num'] if 'question_num' in js else ''
             if not question_num_.isdigit() or name == '':
-                return gen_response(400, "Upload Contains Error")
+                return gen_response(400, UPLOAD_ERROR)
             question_num = int(question_num_)
             if image_list is not None and 0 < len(image_list) != question_num:
                 return gen_response(400, "ImageList Length Error")
@@ -122,10 +122,9 @@ def upload_mission(request):
 
         # normal POST
         else:
-            try:
-                js = json.loads(request.body)
-            except json.JSONDecodeError:
-                return gen_response(400, "Request Json Error")
+            js = parse_json(request.body)
+            if js is None:
+                return gen_response(400, JSON_ERROR)
 
         name = js['name'] if 'name' in js else ''
         question_form = js['question_form'] if 'question_form' in js else ''
@@ -149,7 +148,7 @@ def upload_mission(request):
         tags = tags.lower()
         if not question_num_.isdigit() or name == '' or question_form == '' or \
                 not total_.isdigit() or not reward_.isdigit() or not retrieve_time_.isdigit():
-            return gen_response(400, "Upload Contains Error")
+            return gen_response(400, UPLOAD_ERROR)
         question_num = int(question_num_)
         total = int(total_)
         reward = int(reward_)
@@ -200,7 +199,7 @@ def upload_mission(request):
             mission.save()
         except ValidationError:
             clean_image_when_fail()
-            return gen_response(400, "Upload Form Error")
+            return gen_response(400, UPLOAD_ERROR)
 
         for k, i in enumerate(question_list):
             contains = i['contains'] if 'contains' in i else ''
@@ -261,7 +260,7 @@ def upload_mission(request):
 
         return gen_response(201, "Upload Success")
 
-    return gen_response(400, "Upload Error")
+    return gen_response(400, UPLOAD_ERROR)
 
 
 def download_result(request):
@@ -272,7 +271,7 @@ def download_result(request):
 
     user_id = request.session['user_id']
     if Users.objects.get(id=user_id).power < 1:
-        return gen_response(400, "Dont Have Power")
+        return gen_response(400, LACK_POWER_ERROR)
 
     mission_id_ = request.GET.get('mission_id') if 'mission_id' in request.GET else ''
 
@@ -320,7 +319,7 @@ def check_result(request):
 
         user_id = request.session['user_id']
         if Users.objects.get(id=user_id).power < 1:
-            return gen_response(400, "Dont Have Power")
+            return gen_response(400, LACK_POWER_ERROR)
 
         mission_id = request.GET.get("mission_id") if 'mission_id' in request.GET else '0'
         if not mission_id.isdigit():
@@ -415,7 +414,7 @@ def end_mission(request):
 
         user_id = request.session['user_id']
         if Users.objects.get(id=user_id).power < 1:
-            return gen_response(400, "Dont Have Power")
+            return gen_response(400, LACK_POWER_ERROR)
         if user_id < 1 or user_id > len(Users.objects.all()):
             return gen_response(400, "User ID Error")
 

@@ -66,25 +66,24 @@ def square_show(request):
             tag_flag, kw_flag, sub_flag = 0, 0, 1
             if (len(mis.sub_mission.all()) != 0) and (mis.is_sub == 0):
                 sub_flag = 0
-            if sub_flag == 1:
-                if ('total' in type_) or (type_ == []) or (mis.question_form in type_):
-                    if ('total' in theme_) or (theme_ == []):
-                        tag_flag = 1
+            if sub_flag == 1 and (('total' in type_) or (type_ == []) or (mis.question_form in type_)):
+                if ('total' in theme_) or (theme_ == []):
+                    tag_flag = 1
+                else:
+                    for t in theme_:
+                        if t in mis.tags:
+                            tag_flag = 1
+                if tag_flag == 1:
+                    if kw == "":
+                        kw_flag = 1
                     else:
-                        for t in theme_:
-                            if t in mis.tags:
-                                tag_flag = 1
-                    if tag_flag == 1:
-                        if kw == "":
+                        if (kw in mis.name) or (kw in mis.user.name) or (kw in mis.tags):
                             kw_flag = 1
-                        else:
-                            if (kw in mis.name) or (kw in mis.user.name) or (kw in mis.tags):
+                        for qs in mis.father_mission.all():
+                            if kw in qs.word:
                                 kw_flag = 1
-                            for qs in mis.father_mission.all():
-                                if kw in qs.word:
-                                    kw_flag = 1
-                        if kw_flag == 1 and (mis.reception_num < mis.total) and (mis.deadline > timezone.now()):
-                            mission_list.append(mis)
+                    if kw_flag == 1 and (mis.reception_num < mis.total) and (mis.deadline > timezone.now()):
+                        mission_list.append(mis)
 
         show_num = 12  # 设计一次更新获得的任务数
         get_num = min(num + show_num, len(mission_list))  # 本次更新获得的任务数
@@ -168,24 +167,24 @@ def interest_show(request):
                                   "question_list":
                                       [
                                           {
-                                              'id': ret.id,
-                                              'name': ret.name,
-                                              'user': ret.user.name,
-                                              'questionNum': ret.question_num,
-                                              'questionForm': ret.question_form,
-                                              'is_banned': ret.is_banned,
-                                              'full': ret.to_ans,
-                                              'total_ans': ret.total,
-                                              'ans_num': ret.now_num,
-                                              'deadline': int(ret.deadline.timestamp() * 1000),
-                                              'cash': ret.reward,
-                                              'info': ret.info,
-                                              'tags': get_lst(ret.tags),
-                                              'received': get_mission_rec_status(ret),
-                                              'image_url': ret.mission_image_url(),
-                                              'is_sub': ret.is_sub
+                                              'id': mission.id,
+                                              'name': mission.name,
+                                              'user': mission.user.name,
+                                              'questionNum': mission.question_num,
+                                              'questionForm': mission.question_form,
+                                              'is_banned': mission.is_banned,
+                                              'full': mission.to_ans,
+                                              'total_ans': mission.total,
+                                              'ans_num': mission.now_num,
+                                              'deadline': int(mission.deadline.timestamp() * 1000),
+                                              'cash': mission.reward,
+                                              'info': mission.info,
+                                              'tags': get_lst(mission.tags),
+                                              'received': get_mission_rec_status(mission),
+                                              'image_url': mission.mission_image_url(),
+                                              'is_sub': mission.is_sub
                                           }
-                                          for ret in mission_list[num: get_num]
+                                          for mission in mission_list[num: get_num]
                                       ]}
                             )
     return gen_response(400, "User Show Error")

@@ -6,7 +6,8 @@ import time
 import os
 import shutil
 import json
-from .utils import abc_to_int, int_to_abc, tags_by_age, tags_by_content, tags_by_target, JSON_ERROR
+from .utils import abc_to_int, int_to_abc, tags_by_age, tags_by_content, tags_by_target, JSON_ERROR, UPLOAD_ERROR, \
+    LACK_POWER_ERROR
 
 
 def cookie_test_view(request):
@@ -429,7 +430,7 @@ class UnitTest(TestCase):
                 "question_list": [{"contains": "title3", "ans": ""}, {"contains": "title4", "ans": ""}]}
         res = self.client.post('/absanno/upload', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 400)
-        self.assertEqual(res.json()['data'], 'Upload Form Error')
+        self.assertEqual(res.json()['data'], UPLOAD_ERROR)
 
     def test_upload_neg_list_type_err(self):
         self.mock_login()
@@ -480,7 +481,7 @@ class UnitTest(TestCase):
                 "question_list": [{"contains": "title3", "ans": ""}, {"contains": "title4", "ans": ""}]}
         res = self.client.get('/absanno/upload', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 400)
-        self.assertEqual(res.json()['data'], 'Upload Error')
+        self.assertEqual(res.json()['data'], UPLOAD_ERROR)
 
     def test_square_pos1(self):
         self.mock_login()
@@ -1259,7 +1260,7 @@ class UnitTest(TestCase):
         body = {'msg': 'Test Message', 'user': ['all', 'admin']}
         res = self.client.post('/absanno/message', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 400)
-        self.assertEqual(res.json()['data'], 'You dont have power to send message')
+        self.assertEqual(res.json()['data'], LACK_POWER_ERROR)
 
 
     def test_admin_check_all_msg_pos(self):

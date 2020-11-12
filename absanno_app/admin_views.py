@@ -1,6 +1,7 @@
 from django.db.models import Q
 from .models import Apply, Users, Message, Mission
-from .utils import check_token, gen_response, parse_json, JSON_ERROR, print_msg_error, gen_message, get_lst
+from .utils import check_token, gen_response, parse_json, JSON_ERROR, print_msg_error, gen_message, get_lst, \
+    MESSAGE_FROM_ADMIN, LACK_POWER_ERROR
 
 
 def apply_show(request):
@@ -53,7 +54,7 @@ def upgrade_examine(request):
 
         now_id = request.session['user_id']
         if Users.objects.get(id=now_id).power < 2:
-            return gen_response(400, "You Dont Have Power")
+            return gen_response(400, LACK_POWER_ERROR)
 
         js = parse_json(request.body)
         if js is None:
@@ -106,7 +107,7 @@ def ban_user(request):
 
         user_id = request.session['user_id']
         if Users.objects.get(id=user_id).power != 2:
-            return gen_response(400, "Dont Have Power")
+            return gen_response(400, LACK_POWER_ERROR)
 
         js = parse_json(request.body)
         if js is None:
@@ -163,7 +164,7 @@ def show_all_user(request):
 
         user_id = request.session['user_id']
         if Users.objects.get(id=user_id).power != 2:
-            return gen_response(400, "Dont Have Power")
+            return gen_response(400, LACK_POWER_ERROR)
 
         now_num_ = request.GET.get('now_num') if 'now_num' in request.GET else '0'
         if not now_num_.isdigit():
@@ -203,7 +204,7 @@ def message_page(request):
         user = Users.objects.get(id=user_id)
 
         if user.power < 2:
-            return gen_response(400, "You dont have power to send message")
+            return gen_response(400, LACK_POWER_ERROR)
 
         js = parse_json(request.body)
         if js is None:
@@ -224,7 +225,7 @@ def message_page(request):
         if 'all' in user_list:
             receivers = Users.objects.all()
             for receiver in receivers:
-                m = gen_message("Message from Admin", msg, user, receiver)
+                gen_message(MESSAGE_FROM_ADMIN, msg, user, receiver)
 
             return gen_response(201, "Successfully send message to all users")
 
@@ -233,19 +234,19 @@ def message_page(request):
             if target_user == 'admin':
                 receivers = Users.objects.filter(Q(power=2))
                 for receiver in receivers:
-                    m = gen_message("Message from Admin", msg, user, receiver)
+                    m = gen_message(MESSAGE_FROM_ADMIN, msg, user, receiver)
                     if m == 400:
                         print_msg_error(msg, receiver)
             if target_user == 'vip':
                 receivers = Users.objects.filter(Q(power=1))
                 for receiver in receivers:
-                    m = gen_message("Message from Admin", msg, user, receiver)
+                    m = gen_message(MESSAGE_FROM_ADMIN, msg, user, receiver)
                     if m == 400:
                         print_msg_error(msg, receiver)
             if target_user == 'normal':
                 receivers = Users.objects.filter(Q(power=0))
                 for receiver in receivers:
-                    m = gen_message("Message from Admin", msg, user, receiver)
+                    m = gen_message(MESSAGE_FROM_ADMIN, msg, user, receiver)
                     if m == 400:
                         print_msg_error(msg, receiver)
 
