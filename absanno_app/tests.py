@@ -2,11 +2,11 @@ import datetime
 from django.test import TestCase
 from .models import Users, Mission, Question, Reception, History
 from django.http import HttpResponse
-from .utils import *
 import time
 import os
 import shutil
 import json
+from .utils import abc_to_int, int_to_abc, tags_by_age, tags_by_content, tags_by_target, JSON_ERROR
 
 
 def cookie_test_view(request):

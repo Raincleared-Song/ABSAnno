@@ -1,8 +1,8 @@
 from django.db.models import Q
-from .utils import *
+from .models import Apply, Users, Message, Mission
+from .utils import check_token, gen_response, parse_json, JSON_ERROR, print_msg_error, gen_message, get_lst
 
 
-# 展示申请，对管理员
 def apply_show(request):
     if request.method == 'GET':
 
@@ -278,4 +278,3 @@ def message_page(request):
             ]
         })
     return gen_response(400, "Use POST or GET, other methods not supported")
-
