@@ -2,8 +2,7 @@ import datetime
 from django.test import TestCase
 from .models import Users, Mission, Question, Reception, History
 from django.http import HttpResponse
-from .views import int_to_abc, abc_to_int, \
-    all_tags, tags_by_age, tags_by_content, tags_by_profession, tags_by_target
+from .utils import *
 import time
 import os
 import shutil
@@ -969,7 +968,7 @@ class UnitTest(TestCase):
         body = {'id' '1' 'method' 'user_ban'}
         res = self.client.post('/absanno/usepower', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 400)
-        self.assertEqual(res.json()['data'], "Json Error")
+        self.assertEqual(res.json()['data'], JSON_ERROR)
 
     def test_power_use_id_error(self):
         self.mock_login()
@@ -1088,7 +1087,7 @@ class UnitTest(TestCase):
         body = "{'mission_id' '2'}"
         res = self.client.post('/absanno/receive', data=body, content_type='application/text')
         self.assertEqual(res.status_code, 400)
-        self.assertEqual(res.json()['data'], 'Json Error')
+        self.assertEqual(res.json()['data'], JSON_ERROR)
 
     def test_receive_neg_mission_id_not_digit(self):
         self.mock_login()
