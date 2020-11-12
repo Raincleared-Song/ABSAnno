@@ -78,13 +78,11 @@ def question_image_path(instance, filename):
     return os.path.join(instance.mission.name, filename)
 
 
-
-
 class Question(models.Model):
     mission = models.ForeignKey(Mission, on_delete=models.DO_NOTHING, related_name="father_mission")  # 关联题目来自的任务
     word = models.CharField(default="", max_length=200, blank=True)  # 文字描述，最多200字
     pre_ans = models.CharField(default="", max_length=10, blank=True)  # 预埋答案，使用 ABCD 表示
-    choices = models.CharField(max_length=500)  # 存储选项，不同选项间使用||分隔
+    choices = models.CharField(default="", max_length=500, blank=True)  # 存储选项，不同选项间使用||分隔
     ans = models.CharField(default="NULL", max_length=10, blank=True)  # 统合答案，读取答案利用history读取
     ans_weight = models.FloatField(default=0.0, blank=True)  # 答案的权重
 
