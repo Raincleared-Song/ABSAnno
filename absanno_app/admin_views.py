@@ -1,7 +1,8 @@
 from django.db.models import Q
 from .models import Apply, Users, Message, Mission
 from .utils import check_token, gen_response, parse_json, JSON_ERROR, print_msg_error, gen_message, get_lst, \
-    MESSAGE_FROM_ADMIN, LACK_POWER_ERROR, json_default, user_power_dict, illegal_user_list
+    MESSAGE_FROM_ADMIN, LACK_POWER_ERROR, json_default, user_power_dict, illegal_user_list, is_admin, illegal_user_id, \
+    illegal_mission_id
 
 
 def apply_show(request):
@@ -123,29 +124,29 @@ def ban_user(request):
             return gen_response(400, "No Method")
 
         if method == 'user_ban':
-            if power_id < 1 or power_id > len(Users.objects.all()):
+            if illegal_user_id(power_id):
                 return gen_response(400, "Ban User ID Error")
-            if Users.objects.get(id=power_id).power != 2:
+            if not is_admin(power_id):
                 obj = Users.objects.get(id=power_id)
                 obj.is_banned = 1
                 obj.save()
                 return gen_response(201, "Ban User Success")
         elif method == 'mission_ban':
-            if power_id < 1 or power_id > len(Mission.objects.all()):
+            if illegal_mission_id(power_id):
                 return gen_response(400, "Ban Mission ID Error")
             obj = Mission.objects.get(id=power_id)
             obj.is_banned = 1
             obj.save()
             return gen_response(201, "Ban Mission Success")
         elif method == 'user_free':
-            if power_id < 1 or power_id > len(Users.objects.all()):
+            if illegal_user_id(power_id):
                 return gen_response(400, "Free User ID Error")
             obj = Users.objects.get(id=power_id)
             obj.is_banned = 0
             obj.save()
             return gen_response(201, "Free User Success")
         elif method == 'mission_free':
-            if power_id < 1 or power_id > len(Mission.objects.all()):
+            if illegal_mission_id(power_id):
                 return gen_response(400, "Free Mission ID Error")
             obj = Mission.objects.get(id=power_id)
             obj.is_banned = 0
