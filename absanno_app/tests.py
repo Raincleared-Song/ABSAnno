@@ -1277,4 +1277,17 @@ class UnitTest(TestCase):
         res = self.client.get('/absanno/message')
         self.assertEqual(res.status_code, 201)
 
+    def test_send_apply_and_show_pos(self):
+        self.mock_no_power_login()
+        body = {'type': 'upgrade'}
+        res = self.client.post('/absanno/sendapply', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.json()['data'], 'Send Success')
+        res = self.client.get('/absanno/applyshow')
+        self.assertEqual(res.status_code, 201)
+        self.mock_login()
+        res = self.client.get('/absanno/applyshow')
+        self.assertEqual(res.status_code, 201)
+        res = self.client.post('/absanno/applyshow')
+        self.assertEqual(res.status_code, 400)
 
