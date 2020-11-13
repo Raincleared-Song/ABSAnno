@@ -1,6 +1,8 @@
 from django.db.models import Q
 from .models import Apply, Users, Message, Mission
-from .utils import check_token, gen_response, parse_json, JSON_ERROR, print_msg_error, gen_message, get_lst
+from .utils import check_token, gen_response, parse_json, JSON_ERROR, print_msg_error, gen_message, get_lst, \
+    MESSAGE_FROM_ADMIN, LACK_POWER_ERROR, json_default, user_power_dict, illegal_user_list, is_admin, illegal_user_id, \
+    illegal_mission_id
 
 
 def apply_show(request):
@@ -53,7 +55,7 @@ def upgrade_examine(request):
 
         now_id = request.session['user_id']
         if Users.objects.get(id=now_id).power < 2:
-            return gen_response(400, "You Dont Have Power")
+            return gen_response(400, LACK_POWER_ERROR)
 
         js = parse_json(request.body)
         if js is None:
@@ -106,14 +108,15 @@ def ban_user(request):
 
         user_id = request.session['user_id']
         if Users.objects.get(id=user_id).power != 2:
-            return gen_response(400, "Dont Have Power")
+            return gen_response(400, LACK_POWER_ERROR)
 
         js = parse_json(request.body)
         if js is None:
             return gen_response(400, JSON_ERROR)
 
-        id_ = js['id'] if 'id' in js else '*'
-        method = js['method'] if 'method' in js else 'null'
+        dic = {'id': '*', 'method': 'null'}
+        id_, method = json_default(js, dic)
+
         if not id_.isdigit():
             return gen_response(400, "ID Error")
         power_id = int(id_)
@@ -121,29 +124,29 @@ def ban_user(request):
             return gen_response(400, "No Method")
 
         if method == 'user_ban':
-            if power_id < 1 or power_id > len(Users.objects.all()):
+            if illegal_user_id(power_id):
                 return gen_response(400, "Ban User ID Error")
-            if Users.objects.get(id=power_id).power != 2:
+            if not is_admin(power_id):
                 obj = Users.objects.get(id=power_id)
                 obj.is_banned = 1
                 obj.save()
                 return gen_response(201, "Ban User Success")
         elif method == 'mission_ban':
-            if power_id < 1 or power_id > len(Mission.objects.all()):
+            if illegal_mission_id(power_id):
                 return gen_response(400, "Ban Mission ID Error")
             obj = Mission.objects.get(id=power_id)
             obj.is_banned = 1
             obj.save()
             return gen_response(201, "Ban Mission Success")
         elif method == 'user_free':
-            if power_id < 1 or power_id > len(Users.objects.all()):
+            if illegal_user_id(power_id):
                 return gen_response(400, "Free User ID Error")
             obj = Users.objects.get(id=power_id)
             obj.is_banned = 0
             obj.save()
             return gen_response(201, "Free User Success")
         elif method == 'mission_free':
-            if power_id < 1 or power_id > len(Mission.objects.all()):
+            if illegal_mission_id(power_id):
                 return gen_response(400, "Free Mission ID Error")
             obj = Mission.objects.get(id=power_id)
             obj.is_banned = 0
@@ -163,7 +166,7 @@ def show_all_user(request):
 
         user_id = request.session['user_id']
         if Users.objects.get(id=user_id).power != 2:
-            return gen_response(400, "Dont Have Power")
+            return gen_response(400, LACK_POWER_ERROR)
 
         now_num_ = request.GET.get('now_num') if 'now_num' in request.GET else '0'
         if not now_num_.isdigit():
@@ -203,14 +206,15 @@ def message_page(request):
         user = Users.objects.get(id=user_id)
 
         if user.power < 2:
-            return gen_response(400, "You dont have power to send message")
+            return gen_response(400, LACK_POWER_ERROR)
 
         js = parse_json(request.body)
         if js is None:
             return gen_response(400, JSON_ERROR)
 
-        msg = js['msg'] if 'msg' in js else ''
-        user_list = js['user'] if 'user' in js else ''
+        dic = {'msg': '', 'user': ''}
+        msg, user_list = json_default(js, dic)
+
         if msg == '':
             return gen_response(400, 'Message is blank?!')
         if len(user_list) == 0 or user_list[0] == '':
@@ -224,31 +228,19 @@ def message_page(request):
         if 'all' in user_list:
             receivers = Users.objects.all()
             for receiver in receivers:
-                m = gen_message("Message from Admin", msg, user, receiver)
+                gen_message(MESSAGE_FROM_ADMIN, msg, user, receiver)
 
             return gen_response(201, "Successfully send message to all users")
 
+        if illegal_user_list(user_list):
+            return gen_response(400, "Receivers not correct")
 
         for target_user in user_list:
-            if target_user == 'admin':
-                receivers = Users.objects.filter(Q(power=2))
-                for receiver in receivers:
-                    m = gen_message("Message from Admin", msg, user, receiver)
-                    if m == 400:
-                        print_msg_error(msg, receiver)
-            if target_user == 'vip':
-                receivers = Users.objects.filter(Q(power=1))
-                for receiver in receivers:
-                    m = gen_message("Message from Admin", msg, user, receiver)
-                    if m == 400:
-                        print_msg_error(msg, receiver)
-            if target_user == 'normal':
-                receivers = Users.objects.filter(Q(power=0))
-                for receiver in receivers:
-                    m = gen_message("Message from Admin", msg, user, receiver)
-                    if m == 400:
-                        print_msg_error(msg, receiver)
-
+            receivers = Users.objects.filter(Q(power=user_power_dict[target_user]))
+            for receiver in receivers:
+                m = gen_message(MESSAGE_FROM_ADMIN, msg, user, receiver)
+                if m == 400:
+                    print_msg_error(msg, receiver)
 
         return gen_response(201, f"Successfully send message to target users: {sorted(list(user_list))}")
 

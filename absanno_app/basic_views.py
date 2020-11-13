@@ -4,7 +4,8 @@ from django.core.files.base import File
 from io import BytesIO
 from django.utils import timezone
 from absanno_app.models import Users, Apply, Mission, Reception
-from absanno_app.utils import parse_json, gen_response, JSON_ERROR, check_token, find_user_by_token, get_lst
+from absanno_app.utils import parse_json, gen_response, JSON_ERROR, check_token, find_user_by_token, get_lst, \
+    json_default, illegal_name, illegal_password, illegal_mission_id
 
 
 def log_in(request):
@@ -14,11 +15,8 @@ def log_in(request):
         if js is None:
             return gen_response(400, JSON_ERROR)
 
-        name = js['name'] if 'name' in js else ''
-        password = js['password'] if 'password' in js else ''
-
-        # 安全性验证
-        # TODO
+        dic = {'name': '', 'password': ''}
+        name, password = json_default(js, dic)
 
         if not name or not password:
             return gen_response(400, "Request Body Error")
@@ -52,19 +50,15 @@ def sign_in(request):
         if js is None:
             return gen_response(400, JSON_ERROR)
 
-        name = js['name'] if 'name' in js else ''
-        password = js['password'] if 'password' in js else ''
-        tags = js['tags'] if 'tags' in js else ''
-
-        # 安全性验证
-        # TODO
+        dic = {'name': '', 'password': '', 'tags': ''}
+        name, password, tags = json_default(js, dic)
 
         if not name or not password:
             return gen_response(400, "Request Body Error")
 
-        if '\t' in name or '\n' in name or ' ' in name or ',' in name or '.' in name:  # 禁止名字中特定字符
+        if illegal_name(name):  # 禁止名字中特定字符
             return gen_response(400, "User Name Error")
-        if len(password) < 6 or len(password) > 20:
+        if illegal_password(password):
             return gen_response(400, "Password Length Error")
         gen_user = Users.objects.filter(name=name).first()
         if gen_user:
@@ -95,9 +89,6 @@ def sign_in(request):
 def log_out(request):
     if request.method == 'POST':
 
-        # 安全性验证
-        # TODO
-
         code, data = check_token(request)
         if code == 400:
             return gen_response(201, "Log Out Finish Without Token")
@@ -108,10 +99,6 @@ def log_out(request):
         return gen_response(201, "Log Out Finish With Token")
 
     return gen_response(400, "Log Out Error")
-
-
-
-
 
 
 # 个人信息界面
@@ -194,8 +181,7 @@ def about_me(request):
                         for apply_ret in ret.user_apply.all().order_by('pub_time')
                     ]
             })
-        else:
-            return gen_response(400, "Method Is Illegal")
+        return gen_response(400, "Method Is Illegal")
     return gen_response(400, "About Me Error")
 
 
@@ -246,13 +232,11 @@ def book_cancel_mission(request):
 
         mission_id_ = js['mission_id'] if 'mission_id' in js else '0'
         if not mission_id_.isdigit():
-            return gen_response(400, "Mission ID Is Not Digit")
+            mission_id_ = '0'
         mission_id = int(mission_id_)
 
-        if mission_id < 1 or mission_id > len(Mission.objects.all()):
+        if illegal_mission_id(mission_id):
             return gen_response(400, "Mission ID Error")
-        if user_id < 1 or user_id > len(Users.objects.all()):
-            return gen_response(400, "User ID Error")
         user = Users.objects.get(id=user_id)
         mission = Mission.objects.get(id=mission_id)
 
@@ -295,21 +279,18 @@ def change_password(request):
         if js is None:
             return gen_response(400, JSON_ERROR)
 
-        old_password = js['old_password'] if 'old_password' in js else ''
-        new_password_1 = js['new_password_1'] if 'new_password_1' in js else ''
-        new_password_2 = js['new_password_2'] if 'new_password_2' in js else ''
+        dic = {'old_password': '', 'new_password_1': '', 'new_password_2': ''}
+        old_password, new_password_1, new_password_2 = json_default(js, dic)
+
         if old_password != user.password:
             return gen_response(400, "Old Password Error")
-        if new_password_1 == '' or new_password_2 == '':
-            return gen_response(400, "Didnt Input New Password")
         if new_password_1 != new_password_2:
             return gen_response(400, "New Password Is Not Equal")
-        if len(new_password_1) < 6 or len(new_password_2) > 20:
+        if illegal_password(new_password_1):
             return gen_response(400, "Password Length Error")
 
         user.password = new_password_1
         user.save()
-        # print(user.password)
         return gen_response(201, "You successfully changed your password!")
 
     return gen_response(400, "You Change Your Password Failed")
@@ -383,6 +364,5 @@ def change_avatar(request):
         file.close()
         user.save()
         return gen_response(201, "Successfully changed avatar")
-
 
     return gen_response(400, "Failed to change Avatar")
