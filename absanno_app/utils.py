@@ -16,11 +16,15 @@ tags_by_age = all_tags[0:3]
 tags_by_profession = all_tags[3:7]
 tags_by_target = all_tags[7:13]
 tags_by_content = all_tags[13:]
+user_power_dict = {'admin': 2, 'vip': 1, 'normal': 0}
 
 JSON_ERROR = "Request Json Error"
 UPLOAD_ERROR = "Upload Contains Error"
 LACK_POWER_ERROR = "Dont Have Power"
+
 MESSAGE_FROM_ADMIN = "Message from Admin"
+CACHE_SLASH = "cache/"
+CACHE_DIR = "cache"
 
 # 开启检查线程
 scheduler = BackgroundScheduler()
@@ -70,6 +74,59 @@ def get_lst(ans: str):
     return ret
 
 
+def json_default(js, dic):
+    ret = []
+    for w in dic:
+        if w in js:
+            ret.append(js[w])
+        else:
+            ret.append(dic[w])
+    return ret
+
+
+def illegal_name(name):
+    a = '\t' in name or '\n' in name or ' ' in name or ',' in name or '.' in name
+    return a
+
+
+def illegal_password(password):
+    a = len(password) < 6 or len(password) > 20
+    return a
+
+
+def illegal_user_id(user_id):
+    a = user_id < 1 or user_id > len(Users.objects.all())
+    return a
+
+
+def illegal_mission_id(mission_id):
+    a = mission_id < 1 or mission_id > len(Mission.objects.all()) or not_digit([mission_id])
+    return a
+
+
+def illegal_user_list(user_list: list):
+    for target_user in user_list:
+        if target_user not in user_power_dict:
+            return True
+    return False
+
+
+def not_digit(li: list):
+    for i in li:
+        if type(i) is int:
+            continue
+        elif not i.isdigit():
+            return True
+    return False
+
+
+def is_blank(li: list):
+    for i in li:
+        if i == '':
+            return True
+    return False
+
+
 def get_csrf(request):
     return HttpResponse(get_token(request))
 
@@ -82,6 +139,18 @@ def check_is_banned(request):
     """return True iff user not exist or user is banned"""
     user = find_user_by_token(request)
     return user is None or user.is_banned == 1
+
+
+def is_normal_user(user_id):
+    return Users.objects.get(id=user_id).power == 0
+
+
+def is_demander(user_id):
+    return Users.objects.get(id=user_id).power > 0
+
+
+def is_admin(user_id):
+    return Users.objects.get(id=user_id).power > 1
 
 
 def parse_json(body):

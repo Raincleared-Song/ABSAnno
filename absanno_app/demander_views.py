@@ -10,7 +10,8 @@ from django.core.files.base import File
 from io import BytesIO
 from .models import Mission, Question, Users
 from .utils import check_token, gen_response, find_user_by_token, get_lst, get_answer_dict, abc_to_int, int_to_abc, \
-    integrate_mission, parse_json, JSON_ERROR, invalidate_mission, UPLOAD_ERROR, LACK_POWER_ERROR
+    integrate_mission, parse_json, JSON_ERROR, invalidate_mission, UPLOAD_ERROR, LACK_POWER_ERROR, CACHE_SLASH, \
+    CACHE_DIR, json_default, not_digit, is_blank, is_demander, illegal_mission_id
 
 
 def upload_mission(request):
@@ -126,28 +127,18 @@ def upload_mission(request):
             if js is None:
                 return gen_response(400, JSON_ERROR)
 
-        name = js['name'] if 'name' in js else ''
-        question_form = js['question_form'] if 'question_form' in js else ''
-        question_num_ = js['question_num'] if 'question_num' in js else ''
-        total_ = js['total'] if 'total' in js else ''
-        reward_ = js['reward'] if 'reward' in js else '100'
-        deadline_ = js['deadline'] if 'deadline' in js else '2022-6-30'
-        retrieve_time_ = js['retrieve_time'] if 'retrieve_time' in js else ''
-        check_way = js['check_way'] if 'check_way' in js else 'auto'
-        info = js['info'] if 'info' in js else ''
 
-        if 'mission_tags' not in js:
-            tags_ = []
-        else:
-            tags_ = js['mission_tags']
-            if isinstance(tags_, str):
-                tags_ = get_lst(tags_)
+        dic = {'name': '', 'question_form': '', 'question_num': '', 'total': '', 'reward': '100',
+               'deadline': '2022-6-30', 'retrieve_time': '', 'check_way': 'auto', 'info': '', 'mission_tags': []}
+        name, question_form, question_num_, total_, reward_, deadline_, retrieve_time_, check_way, info, tags_ = json_default(js, dic)
+
+        if isinstance(tags_, str):
+            tags_ = get_lst(tags_)
 
         spl_str = '||'
         tags = spl_str.join(tags_)
         tags = tags.lower()
-        if not question_num_.isdigit() or name == '' or question_form == '' or \
-                not total_.isdigit() or not reward_.isdigit() or not retrieve_time_.isdigit():
+        if not_digit([question_num_, total_, reward_, retrieve_time_]) or is_blank([name, question_form]):
             return gen_response(400, UPLOAD_ERROR)
         question_num = int(question_num_)
         total = int(total_)
@@ -270,17 +261,17 @@ def download_result(request):
         return gen_response(code, data)
 
     user_id = request.session['user_id']
-    if Users.objects.get(id=user_id).power < 1:
+    if not is_demander(user_id):
         return gen_response(400, LACK_POWER_ERROR)
 
     mission_id_ = request.GET.get('mission_id') if 'mission_id' in request.GET else ''
 
-    if not mission_id_.isdigit():
+    if not_digit([mission_id_]):
         return gen_response(400, 'Mission ID Is Not Digit')
 
     mission_id = int(mission_id_)
 
-    if mission_id <= 0 or mission_id > len(Mission.objects.all()):
+    if illegal_mission_id(mission_id):
         return gen_response(400, 'Mission ID Illegal')
 
     mission = Mission.objects.get(id=mission_id)
@@ -288,22 +279,22 @@ def download_result(request):
     if mission.user.id != user_id:
         return gen_response(400, 'User ID Is Wrong')
 
-    if not os.path.exists('cache'):
-        os.mkdir('cache')
+    if not os.path.exists(CACHE_DIR):
+        os.mkdir(CACHE_DIR)
     else:  # 文件数过多时清楚缓存
-        file_list = os.listdir('cache')
+        file_list = os.listdir(CACHE_DIR)
         if len(file_list) > 20:
-            file_list.sort(key=lambda x: os.path.getmtime('cache/' + x))
-            os.remove('cache/' + file_list[0])
+            file_list.sort(key=lambda x: os.path.getmtime(CACHE_SLASH + x))
+            os.remove(CACHE_SLASH + file_list[0])
 
     file_name = 'result-%d.json' % mission_id
-    file = open('cache/' + file_name, 'w')
+    file = open(CACHE_SLASH + file_name, 'w')
     ans_dict = get_answer_dict(mission)
     if 'name' not in ans_dict:
         return gen_response(400, ans_dict['data'])
     json.dump(get_answer_dict(mission), file)
     file.close()
-    file = open('cache/' + file_name, 'rb')
+    file = open(CACHE_SLASH + file_name, 'rb')
     response = FileResponse(file, status=201)
     response['Content-Type'] = 'application/octet-stream'
     response['Content-Disposition'] = 'attachment;filename="%s"' % file_name
@@ -318,7 +309,7 @@ def check_result(request):
             return gen_response(400, data)
 
         user_id = request.session['user_id']
-        if Users.objects.get(id=user_id).power < 1:
+        if not is_demander(user_id):
             return gen_response(400, LACK_POWER_ERROR)
 
         mission_id = request.GET.get("mission_id") if 'mission_id' in request.GET else '0'
@@ -326,13 +317,10 @@ def check_result(request):
             return gen_response(400, "mission_id Is Not Digit")
 
         mission_id = int(mission_id)
-        if user_id < 1 or user_id > len(Users.objects.all()):
-            return gen_response(400, "User ID Error")
-        if mission_id < 1 or mission_id > len(Mission.objects.all()):
+        if illegal_mission_id(mission_id):
             return gen_response(400, "Mission ID Error")
 
         mission = Mission.objects.get(id=mission_id)
-        # print(mission.user.id, user_id)
         if mission.user.id != user_id:
             return gen_response(400, "Mission Not Published by You")
 
@@ -384,7 +372,7 @@ def show_my_mission(request):
         user = Users.objects.get(id=user_id)
         if user.is_banned:
             return gen_response(400, 'User is Banned')
-        if user.power < 1:
+        if not is_demander(user_id):
             return gen_response(400, 'Lack of Permission')
 
         mission_id_ = request.GET.get('mission_id') if 'mission_id' in request.GET else '1'
@@ -393,7 +381,7 @@ def show_my_mission(request):
             return gen_response(400, "Mission_ID is not digit")
         mission_id = int(mission_id_)
 
-        if mission_id <= 0 or mission_id > len(Mission.objects.all()):
+        if illegal_mission_id(mission_id):
             return gen_response(400, "Mission_ID is Illegal")
         if user_id != Mission.objects.get(id=mission_id).user.id:
             return gen_response(400, "The ID Is Wrong")
@@ -413,10 +401,8 @@ def end_mission(request):
             return gen_response(400, data)
 
         user_id = request.session['user_id']
-        if Users.objects.get(id=user_id).power < 1:
+        if not is_demander(user_id):
             return gen_response(400, LACK_POWER_ERROR)
-        if user_id < 1 or user_id > len(Users.objects.all()):
-            return gen_response(400, "User ID Error")
 
         js = parse_json(request.body)
         if js is None:
@@ -426,7 +412,8 @@ def end_mission(request):
         if not mission_id.isdigit():
             return gen_response(400, "mission_id Is Not Digit")
         mission_id = int(mission_id)
-        if mission_id < 1 or mission_id > len(Mission.objects.all()):
+
+        if illegal_mission_id(mission_id):
             return gen_response(400, "Mission ID Error")
 
         mission = Mission.objects.get(id=mission_id)

@@ -3,7 +3,7 @@ from django.db.models import Q
 from django.utils import timezone
 from .models import History, Mission, Users, Reception
 from .utils import check_token, get_lst, gen_response, sort_mission_list_by_interest, check_is_banned, \
-    find_user_by_token, parse_json, JSON_ERROR
+    find_user_by_token, parse_json, JSON_ERROR, illegal_mission_id, json_default, illegal_user_id, not_digit
 
 
 def square_show(request):
@@ -260,14 +260,14 @@ def mission_show(request):
         if js is None:
             return gen_response(400, JSON_ERROR)
 
-        mission_id_ = js['mission_id'] if 'mission_id' in js else '-1'
-        ans = js['ans'] if 'ans' in js else ''
+        dic = {'mission_id': '-1', 'ans': ''}
 
-        if not mission_id_.isdigit():
+        mission_id_, ans = json_default(js, dic)
+        if not_digit([mission_id_]):
             return gen_response(400, "Not Digit Or Not List Error")
 
         mission_id = int(mission_id_)
-        if mission_id <= 0 or mission_id > len(Mission.objects.all()):
+        if illegal_mission_id(mission_id):
             return gen_response(400, "Mission ID Error")
 
         user = find_user_by_token(request)
@@ -333,7 +333,7 @@ def rep_show(request):
             return gen_response(code, data)
 
         user_id = request.session['user_id']
-        if user_id < 1 or user_id > len(Users.objects.all()):
+        if illegal_user_id(user_id):
             return gen_response(400, "User ID Error")
         user = Users.objects.get(id=user_id)
 

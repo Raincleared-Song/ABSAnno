@@ -1,7 +1,7 @@
 from django.db.models import Q
 from .models import Apply, Users, Message, Mission
 from .utils import check_token, gen_response, parse_json, JSON_ERROR, print_msg_error, gen_message, get_lst, \
-    MESSAGE_FROM_ADMIN, LACK_POWER_ERROR
+    MESSAGE_FROM_ADMIN, LACK_POWER_ERROR, json_default, user_power_dict, illegal_user_list
 
 
 def apply_show(request):
@@ -113,8 +113,9 @@ def ban_user(request):
         if js is None:
             return gen_response(400, JSON_ERROR)
 
-        id_ = js['id'] if 'id' in js else '*'
-        method = js['method'] if 'method' in js else 'null'
+        dic = {'id': '*', 'method': 'null'}
+        id_, method = json_default(js, dic)
+
         if not id_.isdigit():
             return gen_response(400, "ID Error")
         power_id = int(id_)
@@ -210,8 +211,9 @@ def message_page(request):
         if js is None:
             return gen_response(400, JSON_ERROR)
 
-        msg = js['msg'] if 'msg' in js else ''
-        user_list = js['user'] if 'user' in js else ''
+        dic = {'msg': '', 'user': ''}
+        msg, user_list = json_default(js, dic)
+
         if msg == '':
             return gen_response(400, 'Message is blank?!')
         if len(user_list) == 0 or user_list[0] == '':
@@ -229,27 +231,15 @@ def message_page(request):
 
             return gen_response(201, "Successfully send message to all users")
 
+        if illegal_user_list(user_list):
+            return gen_response(400, "Receivers not correct")
 
         for target_user in user_list:
-            if target_user == 'admin':
-                receivers = Users.objects.filter(Q(power=2))
-                for receiver in receivers:
-                    m = gen_message(MESSAGE_FROM_ADMIN, msg, user, receiver)
-                    if m == 400:
-                        print_msg_error(msg, receiver)
-            if target_user == 'vip':
-                receivers = Users.objects.filter(Q(power=1))
-                for receiver in receivers:
-                    m = gen_message(MESSAGE_FROM_ADMIN, msg, user, receiver)
-                    if m == 400:
-                        print_msg_error(msg, receiver)
-            if target_user == 'normal':
-                receivers = Users.objects.filter(Q(power=0))
-                for receiver in receivers:
-                    m = gen_message(MESSAGE_FROM_ADMIN, msg, user, receiver)
-                    if m == 400:
-                        print_msg_error(msg, receiver)
-
+            receivers = Users.objects.filter(Q(power=user_power_dict[target_user]))
+            for receiver in receivers:
+                m = gen_message(MESSAGE_FROM_ADMIN, msg, user, receiver)
+                if m == 400:
+                    print_msg_error(msg, receiver)
 
         return gen_response(201, f"Successfully send message to target users: {sorted(list(user_list))}")
 
