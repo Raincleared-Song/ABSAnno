@@ -94,7 +94,7 @@ def square_show(request):
                                       [
                                           {
                                               'id': ret.id,
-                                              'name': ret.name,
+                                              'name': ret.name if ret.is_sub == 0 else ret.name + '-' + str(ret.is_sub),
                                               'user': ret.user.name,
                                               'questionNum': ret.question_num,
                                               'questionForm': ret.question_form,
@@ -107,8 +107,7 @@ def square_show(request):
                                               'info': ret.info,
                                               'tags': get_lst(ret.tags),
                                               'received': get_mission_rec_status(ret),
-                                              'image_url': ret.mission_image_url(),
-                                              'is_sub': ret.is_sub
+                                              'image_url': ret.mission_image_url()
                                           }
                                           for ret in mission_list[num: get_num]
                                       ]}
@@ -168,7 +167,8 @@ def interest_show(request):
                                       [
                                           {
                                               'id': mission.id,
-                                              'name': mission.name,
+                                              'name': mission.name if mission.is_sub == 0 else
+                                              mission.name + '-' + str(mission.is_sub),
                                               'user': mission.user.name,
                                               'questionNum': mission.question_num,
                                               'questionForm': mission.question_form,
@@ -181,8 +181,7 @@ def interest_show(request):
                                               'info': mission.info,
                                               'tags': get_lst(mission.tags),
                                               'received': get_mission_rec_status(mission),
-                                              'image_url': mission.mission_image_url(),
-                                              'is_sub': mission.is_sub
+                                              'image_url': mission.mission_image_url()
                                           }
                                           for mission in mission_list[num: get_num]
                                       ]}
@@ -348,7 +347,8 @@ def rep_show(request):
                         'pub_time': int(ret.pub_time.timestamp() * 1000),
                         'deadline': int(ret.deadline.timestamp() * 1000),
                         'mission_id': ret.mission.id,
-                        'mission_name': ret.mission.name,
+                        'mission_name': ret.mission.name if ret.mission.is_sub == 0 else
+                        ret.mission + '-' + str(ret.mission.is_sub),
                         'mission_info': ret.mission.info,
                         'mission_deadline': int(ret.mission.deadline.timestamp() * 1000),
                         'mission_reward': ret.mission.reward,

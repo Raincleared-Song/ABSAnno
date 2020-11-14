@@ -130,7 +130,7 @@ def about_me(request):
             if ret.power < 1:
                 return gen_response(400, "Lack of Permission")
             return gen_response(201, {
-                'total_num': len(ret.promulgator.all()),
+                'total_num': len(ret.promulgator.filter(is_sub=0)),
                 'mission_list':
                     [
                         {
@@ -147,7 +147,7 @@ def about_me(request):
                             'check_way': mission_ret.check_way,
                             'is_banned': mission_ret.is_banned
                         }
-                        for mission_ret in ret.promulgator.all().order_by('-id')
+                        for mission_ret in ret.promulgator.filter(is_sub=0).order_by('-id')
                     ]
             })
         elif method == 'history':
@@ -157,7 +157,8 @@ def about_me(request):
                     [
                         {
                             'id': mission_ret.mission.id,
-                            'name': mission_ret.mission.name,
+                            'name': mission_ret.mission.name if mission_ret.mission.is_sub == 0
+                            else mission_ret.mission.name + '-' + str(mission_ret.mission.is_sub),
                             'user': mission_ret.mission.user.name,
                             'question_num': mission_ret.mission.question_num,
                             'question_form': mission_ret.mission.question_form,

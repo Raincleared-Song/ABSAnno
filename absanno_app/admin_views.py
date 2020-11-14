@@ -135,6 +135,10 @@ def ban_user(request):
             if illegal_mission_id(power_id):
                 return gen_response(400, "Ban Mission ID Error")
             obj = Mission.objects.get(id=power_id)
+            for o in obj.sub_mission.all():
+                ob = Mission.objects.get(id=o.id)
+                ob.is_banned = 1
+                ob.save()
             obj.is_banned = 1
             obj.save()
             return gen_response(201, "Ban Mission Success")
@@ -149,6 +153,10 @@ def ban_user(request):
             if illegal_mission_id(power_id):
                 return gen_response(400, "Free Mission ID Error")
             obj = Mission.objects.get(id=power_id)
+            for o in obj.sub_mission.all():
+                ob = Mission.objects.get(id=o.id)
+                ob.is_banned = 0
+                ob.save()
             obj.is_banned = 0
             obj.save()
             return gen_response(201, "Free Mission Success")

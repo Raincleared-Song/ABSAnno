@@ -52,28 +52,28 @@ class UnitTest(TestCase):
         self.square_pos_case1 = str({'ret': 2, 'total': 2, 'question_list': [
             {'id': 2, 'name': 'task_test2', 'user': 'test_wang', 'questionNum': 3, 'questionForm': 'chosen', 'is_banned': 0,
              'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': 1624982400000, 'cash': 5, 'info': '',
-             'tags': ['animal', 'plant', 'space'], 'received': 'F', 'image_url': '/backend/media/logo/app.png', 'is_sub': 0},
+             'tags': ['animal', 'plant', 'space'], 'received': 'F', 'image_url': '/backend/media/logo/app.png'},
             {'id': 1, 'name': 'task_test', 'user': 'test', 'questionNum': 2, 'questionForm': 'chosen', 'is_banned': 0,
              'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': 1624982400000, 'cash': 5, 'info': '',
-             'tags': ['sports', 'game', 'lifestyle'], 'received': 'T', 'image_url': '/backend/media/logo/app.png', 'is_sub': 0}]})
+             'tags': ['sports', 'game', 'lifestyle'], 'received': 'T', 'image_url': '/backend/media/logo/app.png'}]})
         self.square_pos_case2 = str({'ret': 1, 'total': 1, 'question_list': [
             {'id': 2, 'name': 'task_test2', 'user': 'test_wang', 'questionNum': 3, 'questionForm': 'chosen', 'is_banned': 0,
              'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': 1624982400000, 'cash': 5, 'info': '',
-             'tags': ['animal', 'plant', 'space'], 'received': 'F', 'image_url': '/backend/media/logo/app.png', 'is_sub': 0}]})
+             'tags': ['animal', 'plant', 'space'], 'received': 'F', 'image_url': '/backend/media/logo/app.png'}]})
         self.square_pos_case_all = str({'ret': 2, 'total': 2, 'question_list': [
             {'id': 2, 'name': 'task_test2', 'user': 'test_wang', 'questionNum': 3, 'questionForm': 'chosen', 'is_banned': 0,
              'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': 1624982400000, 'cash': 5, 'info': '',
-             'tags': ['animal', 'plant', 'space'], 'received': '', 'image_url': '/backend/media/logo/app.png', 'is_sub': 0},
+             'tags': ['animal', 'plant', 'space'], 'received': '', 'image_url': '/backend/media/logo/app.png'},
             {'id': 1, 'name': 'task_test', 'user': 'test', 'questionNum': 2, 'questionForm': 'chosen', 'is_banned': 0,
              'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': 1624982400000, 'cash': 5, 'info': '',
-             'tags': ['sports', 'game', 'lifestyle'], 'received': '', 'image_url': '/backend/media/logo/app.png', 'is_sub': 0}]})
+             'tags': ['sports', 'game', 'lifestyle'], 'received': '', 'image_url': '/backend/media/logo/app.png'}]})
         self.interest_pos_case = str({'ret': 2, 'total': 2, 'question_list': [
             {'id': 2, 'name': 'task_test2', 'user': 'test_wang', 'questionNum': 3, 'questionForm': 'chosen', 'is_banned': 0,
              'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': 1624982400000, 'cash': 5, 'info': '',
-             'tags': ['animal', 'plant', 'space'], 'received': 'F', 'image_url': '/backend/media/logo/app.png', 'is_sub': 0},
+             'tags': ['animal', 'plant', 'space'], 'received': 'F', 'image_url': '/backend/media/logo/app.png'},
             {'id': 1, 'name': 'task_test', 'user': 'test', 'questionNum': 2, 'questionForm': 'chosen', 'is_banned': 0,
              'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': 1624982400000, 'cash': 5, 'info': '',
-             'tags': ['sports', 'game', 'lifestyle'], 'received': 'F', 'image_url': '/backend/media/logo/app.png', 'is_sub': 0}]})
+             'tags': ['sports', 'game', 'lifestyle'], 'received': 'F', 'image_url': '/backend/media/logo/app.png'}]})
         self.mission_my_pos_case = str(
             {'mission_name': 'task_test', 'question_form': 'chosen', 'question_num': 2, 'total': 5, 'now_num': 0,
              'is_banned': 0, 'question_list': [{'word': 'title1', 'pre_ans': 'A', 'ans': 'A', 'ans_weight': 1.0},
