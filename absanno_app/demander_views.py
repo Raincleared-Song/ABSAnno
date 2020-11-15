@@ -1,6 +1,7 @@
 import datetime
 import json
 import os
+import csv
 from zipfile import ZipFile, BadZipFile
 import random
 from django.core.exceptions import ValidationError
@@ -9,7 +10,7 @@ from .groundPic import generate_pic
 from django.core.files.base import File
 from io import BytesIO
 from .models import Mission, Question, Users
-from .utils import check_token, gen_response, find_user_by_token, get_lst, get_answer_dict, abc_to_int, int_to_abc, \
+from .utils import check_token, gen_response, find_user_by_token, get_lst, get_csv_rows, abc_to_int, int_to_abc, \
     integrate_mission, parse_json, JSON_ERROR, invalidate_mission, UPLOAD_ERROR, LACK_POWER_ERROR, CACHE_SLASH, \
     CACHE_DIR, json_default, not_digit, is_blank, is_demander, illegal_mission_id
 
@@ -127,10 +128,10 @@ def upload_mission(request):
             if js is None:
                 return gen_response(400, JSON_ERROR)
 
-
         dic = {'name': '', 'question_form': '', 'question_num': '', 'total': '', 'reward': '100',
                'deadline': '2022-6-30', 'retrieve_time': '', 'check_way': 'auto', 'info': '', 'mission_tags': []}
-        name, question_form, question_num_, total_, reward_, deadline_, retrieve_time_, check_way, info, tags_ = json_default(js, dic)
+        name, question_form, question_num_, total_, reward_, deadline_, retrieve_time_, check_way, info, tags_ = \
+            json_default(js, dic)
 
         if isinstance(tags_, str):
             tags_ = get_lst(tags_)
@@ -203,7 +204,7 @@ def upload_mission(request):
                 clean_image_when_fail()
                 return gen_response(400, "There Is No Choice In a Chosen-Mission")
             try:
-                question = Question(word=contains, mission=mission, choices=choices, pre_ans=ans)
+                question = Question(word=contains, mission=mission, grand_mission=mission, choices=choices, pre_ans=ans)
                 if question_form.endswith('-image'):
                     if image_list is None or len(image_list) == 0:
                         return gen_response(400, 'Images Expected')
@@ -235,12 +236,14 @@ def upload_mission(request):
                         sub_q = q_list[j]
                         sub_q.pk = None
                         sub_q.mission = sub_mis
+                        sub_q.grand_mission = mission
                         sub_q.save()
                 else:
                     for j in range((i-1)*sub_mission_scale, len(q_list)):
                         sub_q = q_list[j]
                         sub_q.pk = None
                         sub_q.mission = sub_mis
+                        sub_q.grand_mission = mission
                         sub_q.save()
                 sub_mis.question_num = len(sub_mis.father_mission.all())
                 sub_mis.sub_mission_scale = len(sub_mis.father_mission.all())
@@ -287,12 +290,14 @@ def download_result(request):
             file_list.sort(key=lambda x: os.path.getmtime(CACHE_SLASH + x))
             os.remove(CACHE_SLASH + file_list[0])
 
-    file_name = 'result-%d.json' % mission_id
-    file = open(CACHE_SLASH + file_name, 'w')
-    ans_dict = get_answer_dict(mission)
-    if 'name' not in ans_dict:
-        return gen_response(400, ans_dict['data'])
-    json.dump(get_answer_dict(mission), file)
+    file_name = 'result-%d.csv' % mission_id
+    file = open(CACHE_SLASH + file_name, 'w', encoding='gbk', newline='')
+    response = get_csv_rows(mission)
+    if response['code'] != 201:
+        return gen_response(response['code'], response['data'])
+    rows = response['rows']
+    writer = csv.writer(file)
+    writer.writerows(rows)
     file.close()
     file = open(CACHE_SLASH + file_name, 'rb')
     response = FileResponse(file, status=201)
@@ -390,7 +395,6 @@ def show_my_mission(request):
         return integrate_mission(mission)
 
     return gen_response(400, "My Mission Error")
-
 
 
 def end_mission(request):

@@ -28,8 +28,10 @@ class UnitTest(TestCase):
 
         self.mission = Mission.objects.create(name='task_test', question_form='chosen', question_num=2,
                                               user=self.song, total=5, reception_num=1, tags="Sports||Game||Lifestyle".lower())
-        Question.objects.create(mission=self.mission, word='title1', pre_ans='A', choices='A||B||C||D')
-        Question.objects.create(mission=self.mission, word='title2', pre_ans='C', choices='D||E||F||G')
+        Question.objects.create(mission=self.mission, grand_mission=self.mission, word='title1',
+                                pre_ans='A', choices='A||B||C||D')
+        Question.objects.create(mission=self.mission, grand_mission=self.mission, word='title2',
+                                pre_ans='C', choices='D||E||F||G')
         History.objects.create(user=self.song, mission=self.mission, ans='A||B', pub_time=datetime.date(2021, 6, 30))
         self.mission2 = Mission.objects.create(name='task_test2', question_form='chosen',
                                                question_num=3, user=self.wang, total=5, tags="Animal||Plant||Space".lower())
@@ -75,9 +77,10 @@ class UnitTest(TestCase):
              'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': 1624982400000, 'cash': 5, 'info': '',
              'tags': ['sports', 'game', 'lifestyle'], 'received': 'F', 'image_url': '/backend/media/logo/app.png'}]})
         self.mission_my_pos_case = str(
-            {'mission_name': 'task_test', 'question_form': 'chosen', 'question_num': 2, 'total': 5, 'now_num': 0,
-             'is_banned': 0, 'question_list': [{'word': 'title1', 'pre_ans': 'A', 'ans': 'A', 'ans_weight': 1.0},
-                                               {'word': 'title2', 'pre_ans': 'C', 'ans': 'B', 'ans_weight': 1.0}]})
+            {'mission_name': 'task_test', 'question_form': 'chosen', 'question_num': 2, 'total': 5,
+             'is_banned': 0, 'question_list': [
+                {'word': 'title1', 'pre_ans': 'A', 'ans': 'A', 'ans_weight': 1.0, 'now_num': 0},
+                {'word': 'title2', 'pre_ans': 'F', 'ans': 'E', 'ans_weight': 1.0, 'now_num': 0}]})
         self.power_user_show = str({'num': 3, 'total': 3, 'user_list': [
             {'id': 2, 'name': 'test_wang', 'power': 1, 'is_banned': 0, 'coin': 1000, 'weight': 50, 'fin_num': 0, 'tags': [], 'avatar': ''},
             {'id': 3, 'name': 'test3', 'power': 0, 'is_banned': 1, 'coin': 1000, 'weight': 50, 'fin_num': 0, 'tags': [], 'avatar': ''},
@@ -99,9 +102,12 @@ class UnitTest(TestCase):
             for file in file_list:
                 if file.endswith('.png'):
                     os.remove(os.path.join(bg_path, file))
-        shutil.rmtree(os.path.join('image', 'test_image'))
-        shutil.rmtree(os.path.join('image', 'test_image_zip'))
-        shutil.rmtree(os.path.join('image', 'test_zip'))
+        if os.path.exists(os.path.join('image', 'test_image')):
+            shutil.rmtree(os.path.join('image', 'test_image'))
+        if os.path.exists(os.path.join('image', 'test_image_zip')):
+            shutil.rmtree(os.path.join('image', 'test_image_zip'))
+        if os.path.exists(os.path.join('image', 'test_zip')):
+            shutil.rmtree(os.path.join('image', 'test_zip'))
 
     def mock_login(self):
         self.client.post('/absanno/login', data={'name': 'test', 'password': 'test_pw'},
