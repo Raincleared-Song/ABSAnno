@@ -16,7 +16,7 @@ class OverWriteStorage(FileSystemStorage):
 
 
 def user_avatar_path(instance, filename):
-    return os.path.join('Users', str(instance.id), filename)
+    return os.path.join('_users', str(instance.id), filename)
 
 
 class Users(models.Model):
