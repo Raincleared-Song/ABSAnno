@@ -5,9 +5,8 @@ from django.http import HttpResponse
 import time
 import os
 import shutil
-import json
 from .utils import abc_to_int, int_to_abc, tags_by_age, tags_by_content, tags_by_target, JSON_ERROR, UPLOAD_ERROR, \
-    LACK_POWER_ERROR
+    LACK_POWER_ERROR, CACHE_DIR
 
 
 def cookie_test_view(request):
@@ -97,11 +96,25 @@ class UnitTest(TestCase):
     @classmethod
     def tearDownClass(cls):
         bg_path = os.path.join('image', '_mission_bg')
+        avatar_path = os.path.join('image', '_users')
         if os.path.exists(bg_path):
             file_list = os.listdir(bg_path)
             for file in file_list:
                 if file.endswith('.png'):
                     os.remove(os.path.join(bg_path, file))
+        if os.path.exists(CACHE_DIR):
+            file_list = os.listdir(CACHE_DIR)
+            for file in file_list:
+                if file.endswith('.csv'):
+                    os.remove(os.path.join(CACHE_DIR, file))
+        if os.path.exists(avatar_path):
+            file_list = os.listdir(avatar_path)
+            for file in file_list:
+                file_name = os.path.join(avatar_path, file)
+                if os.path.isdir(file_name):
+                    shutil.rmtree(file_name)
+                else:
+                    os.remove(file_name)
         if os.path.exists(os.path.join('image', 'test_image')):
             shutil.rmtree(os.path.join('image', 'test_image'))
         if os.path.exists(os.path.join('image', 'test_image_zip')):
@@ -1224,7 +1237,6 @@ class UnitTest(TestCase):
                                                   'tags': [], 'power': 2,
                                                   'avatar': '/backend/media/Users/1/avatar.jpg'}))
 
-
     def test_admin_post_msg_to_all_pos(self):
         self.mock_login()
         body = {'msg': 'Test Message', 'user': ['all', 'admin']}
@@ -1232,14 +1244,12 @@ class UnitTest(TestCase):
         self.assertEqual(res.status_code, 201)
         self.assertEqual(res.json()['data'], 'Successfully send message to all users')
 
-
     def test_admin_post_msg_no_msg_neg(self):
         self.mock_login()
         body = {'user': ['all', 'admin']}
         res = self.client.post('/absanno/message', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 400)
         self.assertEqual(res.json()['data'], 'Message is blank?!')
-
 
     def test_admin_post_msg_no_target_neg(self):
         self.mock_login()
@@ -1252,7 +1262,6 @@ class UnitTest(TestCase):
         self.assertEqual(res.status_code, 400)
         self.assertEqual(res.json()['data'], 'You didnt specify receivers')
 
-
     def test_admin_post_msg_to_part_pos(self):
         self.mock_login()
         body = {'msg': 'Test Message', 'user': ['admin', 'vip']}
@@ -1260,14 +1269,12 @@ class UnitTest(TestCase):
         self.assertEqual(res.status_code, 201)
         self.assertEqual(res.json()['data'], "Successfully send message to target users: ['admin', 'vip']")
 
-
     def test_normal_post_msg_to_all_neg(self):
         self.mock_no_power_login()
         body = {'msg': 'Test Message', 'user': ['all', 'admin']}
         res = self.client.post('/absanno/message', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 400)
         self.assertEqual(res.json()['data'], LACK_POWER_ERROR)
-
 
     def test_admin_check_all_msg_pos(self):
         self.mock_login()
@@ -1296,4 +1303,3 @@ class UnitTest(TestCase):
         self.assertEqual(res.status_code, 201)
         res = self.client.post('/absanno/applyshow')
         self.assertEqual(res.status_code, 400)
-
