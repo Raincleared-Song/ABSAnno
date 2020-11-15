@@ -3,7 +3,7 @@ from django.http import JsonResponse, HttpResponse
 from django.middleware.csrf import get_token
 from django.core.exceptions import ValidationError
 from django.utils import timezone
-from absanno_app.models import Mission, Message, Users, Reception
+from absanno_app.models import Mission, Message, Users, Reception, Question
 from apscheduler.schedulers.background import BackgroundScheduler
 from django_apscheduler.jobstores import DjangoJobStore, register_job
 
@@ -192,15 +192,11 @@ def print_msg_error(m, r):
     print(f"error when sending content: {m} to {r}")
 
 
-def integrate_mission(mission):
-    # 选择题模式
+def cal_sub(mission):
+    question_list = mission.father_mission.all()
+    history_list = mission.ans_history.all()
+
     if mission.question_form.startswith('chosen'):
-
-        question_list = mission.father_mission.all()
-        history_list = mission.ans_history.all()
-        if len(history_list) == 0:
-            return gen_response(400, 'No Answer History Yet')
-
         for i in range(len(question_list)):
             weight_list = []
             ans, tot_weight = 0, 0
@@ -216,45 +212,73 @@ def integrate_mission(mission):
             for j in range(c_num):
                 if weight_list[j] > weight_list[ans]:
                     ans = j
-            q.ans = int_to_abc(ans)
-            q.ans_weight = weight_list[ans] / tot_weight
+            if tot_weight != 0:
+                q.ans = int_to_abc(ans)
+                q.ans_weight = weight_list[ans] / tot_weight
+            q.now_num = mission.now_num
+            q.save()
+    elif mission.question_form.startswith('fill'):
+        for i in range(len(mission.father_mission.all())):
+            q = mission.father_mission.all()[i]
+            ans_lst = []
+            for his in mission.ans_history.all():
+                a_lst = get_lst(his.ans)
+                ans_lst.append(a_lst[i])
+            spl_str = '||'
+            q.ans = spl_str.join(ans_lst)
+            q.now_num = mission.now_num
             q.save()
 
-        return gen_response(201, {
-            'mission_name': mission.name,
-            'question_form': mission.question_form,
-            'question_num': mission.question_num,
-            'total': mission.total,
-            'now_num': mission.now_num,
-            'is_banned': mission.is_banned,
-            'question_list':
-                [
-                    {
-                        'word': ret.word,
-                        'pre_ans': ret.pre_ans,
-                        'ans': ret.ans,
-                        'ans_weight': ret.ans_weight,
-                    }
-                    for ret in mission.father_mission.all()
-                ]
-        })
-    return gen_response(400, "My Mission Error")
+
+def integrate_mission(mission):
+
+    if len(mission.sub_mission.all()) == 0:
+        cal_sub(mission)
+    else:
+        question_list = mission.father_mission.all().order_by('id')
+        for s in mission.sub_mission.all():
+            cal_sub(s)
+            q_list = s.father_mission.all().order_by('id')
+            for i in range(0, len(s.father_mission.all().order_by('id'))):
+                ques = Question.objects.get(id=question_list[(s.is_sub-1)*mission.sub_mission_scale+i].id)
+                ques.ans = q_list[i].ans
+                ques.ans_weight = q_list[i].ans_weight
+                ques.save()
+
+    return gen_response(201, {
+        'mission_name': mission.name,
+        'question_form': mission.question_form,
+        'question_num': mission.question_num,
+        'total': mission.total,
+        'is_banned': mission.is_banned,
+        'question_list':
+            [
+                {
+                    'word': ret.word,
+                    'pre_ans': ret.pre_ans if mission.question_form.startswith('fill') else get_lst(
+                        ret.choices)[abc_to_int(ret.pre_ans)],
+                    'ans': ret.ans if mission.question_form.startswith('fill') else get_lst(
+                        ret.choices)[abc_to_int(ret.ans)],
+                    'ans_weight': ret.ans_weight,
+                    'now_num': ret.now_num
+                }
+                for ret in mission.father_mission.all()
+            ]
+    })
 
 
-def get_answer_dict(mission: Mission) -> dict:
+def get_csv_rows(mission: Mission) -> dict:
     """获取指定任务的导出答案列表"""
-    res = {'name': mission.name, 'form': mission.question_form, 'question_num': mission.question_num,
-           'total': mission.total, 'now_num': mission.now_num,
-           'word': [], 'pre_ans': [], 'ans': [], 'weight': []}
-    response = integrate_mission(mission)
-    if response.status_code == 400:
-        return json.loads(response.content)
-    for question in mission.father_mission.all():
-        res['word'].append(question.word)
-        res['pre_ans'].append(question.pre_ans)
-        res['ans'].append(question.ans)
-        res['weight'].append(question.ans_weight)
-    return res
+    rows = [('任务名', '题型', '编号', '总题数', '题干', '已标注次数', '需标注次数', '预埋答案', '标注答案', '置信权重')]
+    response = json.loads(integrate_mission(mission).content)
+    if response['code'] == 400:
+        return response
+    response = eval(response['data'])
+    for i, question in enumerate(response['question_list']):
+        rows.append((response['mission_name'], response['question_form'], i, response['question_num'],
+                     question['word'], question['now_num'], response['total'], question['pre_ans'],
+                     question['ans'], question['ans_weight']))
+    return {'code': 201, 'rows': rows}
 
 
 def invalidate_mission(mission: Mission):
