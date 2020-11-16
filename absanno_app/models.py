@@ -83,7 +83,7 @@ class Question(models.Model):
     # 若其父任务是拆分出的子任务，则此键为祖父任务，否则与父任务一致
     grand_mission = models.ForeignKey(Mission, on_delete=models.DO_NOTHING, related_name='grand_mission')
     word = models.CharField(default="", max_length=200, blank=True)  # 文字描述，最多200字
-    pre_ans = models.CharField(default="", max_length=10, blank=True)  # 预埋答案，使用 ABCD 表示
+    pre_ans = models.CharField(default="NULL", max_length=10, blank=True)  # 预埋答案，使用 ABCD 表示
     choices = models.CharField(default="", max_length=500, blank=True)  # 存储选项，不同选项间使用||分隔
     ans = models.CharField(default="NULL", max_length=10, blank=True)  # 统合答案，读取答案利用history读取
     ans_weight = models.FloatField(default=0.0, blank=True)  # 答案的权重

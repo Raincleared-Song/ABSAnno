@@ -255,10 +255,10 @@ def integrate_mission(mission):
             [
                 {
                     'word': ret.word,
-                    'pre_ans': ret.pre_ans if mission.question_form.startswith('fill') else get_lst(
-                        ret.choices)[abc_to_int(ret.pre_ans)],
-                    'ans': ret.ans if mission.question_form.startswith('fill') else get_lst(
-                        ret.choices)[abc_to_int(ret.ans)],
+                    'pre_ans': ret.pre_ans if (mission.question_form.startswith('fill') or ret.pre_ans == "NULL")
+                    else get_lst(ret.choices)[abc_to_int(ret.pre_ans)],
+                    'ans': ret.ans if (mission.question_form.startswith('fill') or ret.ans == "NULL")
+                    else get_lst(ret.choices)[abc_to_int(ret.ans)],
                     'ans_weight': ret.ans_weight,
                     'now_num': ret.now_num
                 }
