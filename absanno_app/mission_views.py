@@ -141,13 +141,14 @@ def interest_show(request):
             mission_list_base = []
             for mission in mission_list_temp:
                 if user.history.filter(mission__id=mission.id).first() is None \
-                        and mission.reception_num < mission.total:
+                        and mission.reception_num < mission.total and mission.deadline > timezone.now():
                     mission_list_base.append(mission)
             rec_list = user.user_reception.all()
             receive_set = set([r.mission.id for r in rec_list])
         else:
             mission_list_base = Mission.objects.filter(Q(is_banned=0) & Q(to_ans=1) &
-                                                       ((Q(is_sub=0) & Q(sub_mission_num=1)) | ~Q(is_sub=0))
+                                                       ((Q(is_sub=0) & Q(sub_mission_num=1)) | ~Q(is_sub=0)) &
+                                                       (Q(deadline__gt=timezone.now()))
                                                        ).order_by('-id')
 
         def get_mission_rec_status(m):
