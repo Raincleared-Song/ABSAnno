@@ -32,6 +32,7 @@ class UnitTest(TestCase):
                                 pre_ans='A', choices='A||B||C||D')
         Question.objects.create(mission=self.mission, grand_mission=self.mission, word='title2',
                                 pre_ans='C', choices='D||E||F||G')
+        
         History.objects.create(user=self.song, mission=self.mission, ans='A||B', pub_time=datetime.date(2021, 6, 30))
         self.mission2 = Mission.objects.create(name='task_test2', question_form='chosen',
                                                question_num=3, user=self.wang, total=5, tags="Animal||Plant||Space".lower())
