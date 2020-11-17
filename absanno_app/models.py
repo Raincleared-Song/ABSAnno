@@ -105,6 +105,7 @@ class History(models.Model):
     ans_time = models.IntegerField(default=0)  # 用户答题所花时间
     ans_weight = models.IntegerField(default=50)  # 答题时用户权重
     ans = models.CharField(default="", max_length=1000)  # 存储用户答案，不同题目间使用||分隔
+    valid = models.BooleanField(default=True)  # 历史记录合法性
 
 
 class Apply(models.Model):

@@ -80,8 +80,8 @@ class UnitTest(TestCase):
         self.mission_my_pos_case = str(
             {'mission_name': 'task_test', 'question_form': 'chosen', 'question_num': 2, 'total': 5,
              'is_banned': 0, 'question_list': [
-                {'word': 'title1', 'pre_ans': 'A', 'ans': 'A', 'ans_weight': 1.0, 'now_num': 0},
-                {'word': 'title2', 'pre_ans': 'F', 'ans': 'E', 'ans_weight': 1.0, 'now_num': 0}]})
+                {'word': 'title1', 'pre_ans': 'A', 'ans': 'NULL', 'ans_weight': 0.0, 'now_num': 0},
+                {'word': 'title2', 'pre_ans': 'F', 'ans': 'NULL', 'ans_weight': 0.0, 'now_num': 0}]})
         self.power_user_show = str({'num': 3, 'total': 3, 'user_list': [
             {'id': 2, 'name': 'test_wang', 'power': 1, 'is_banned': 0, 'coin': 1000, 'weight': 50, 'fin_num': 0, 'tags': [], 'avatar': ''},
             {'id': 3, 'name': 'test3', 'power': 0, 'is_banned': 1, 'coin': 1000, 'weight': 50, 'fin_num': 0, 'tags': [], 'avatar': ''},

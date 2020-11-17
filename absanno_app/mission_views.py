@@ -1,9 +1,10 @@
 import datetime
 from django.db.models import Q
 from django.utils import timezone
-from .models import History, Mission, Users, Reception
+from .models import History, Mission, Users, Reception, Question
 from .utils import check_token, get_lst, gen_response, sort_mission_list_by_interest, check_is_banned, \
-    find_user_by_token, parse_json, JSON_ERROR, illegal_mission_id, json_default, illegal_user_id, not_digit
+    find_user_by_token, parse_json, JSON_ERROR, illegal_mission_id, json_default, illegal_user_id, not_digit, \
+    equals, check_history
 
 
 def square_show(request):
@@ -260,9 +261,9 @@ def mission_show(request):
         if js is None:
             return gen_response(400, JSON_ERROR)
 
-        dic = {'mission_id': '-1', 'ans': ''}
+        dic = {'mission_id': '-1', 'ans': '', 'method': 'submit'}
 
-        mission_id_, ans = json_default(js, dic)
+        mission_id_, ans, method = json_default(js, dic)
         if not_digit([mission_id_]):
             return gen_response(400, "Not Digit Or Not List Error")
 
@@ -282,15 +283,19 @@ def mission_show(request):
         flag = 1
         tot, g = 0, 0
 
-        if mission.question_form.startswith('chosen'):
-            ans_list = get_lst(ans)
-            q_list = mission.father_mission.all()
-            if len(ans_list) != len(q_list):
-                return gen_response(400, 'Answer List Length Error')
+        ans_list = get_lst(ans)
+        q_list = mission.father_mission.all()
+        if len(ans_list) != len(q_list):
+            return gen_response(400, 'Answer List Length Error')
+
+        if method == 'submit':
+            rec.can_do = False  # 接单不可做
+            rec.save()
+            history = History(user=user, mission=mission, ans=ans, ans_weight=user.weight)
             for i in range(len(ans_list)):
                 if q_list[i].pre_ans != '':
                     tot += 1
-                    if q_list[i].pre_ans == ans_list[i]:
+                    if equals(ans_list[i], q_list[i].pre_ans, mission.question_form):
                         g += 1
             if tot != 0 and (g * 100 / tot < 60):
                 flag = 0
@@ -308,9 +313,7 @@ def mission_show(request):
                 if mission.now_num == mission.total:
                     mission.to_ans = 0
                 mission.save()
-                rec.can_do = False  # 接单不可做
-                rec.save()
-                history = History(user=user, mission=mission, ans=ans, ans_weight=user.weight)
+                history.valid = True
                 history.save()
                 return gen_response(201, "Answer Pushed")
             else:
@@ -319,7 +322,17 @@ def mission_show(request):
                     user.weight = 0
                     user.is_banned = 1
                 user.save()
+                history.valid = False
+                history.save()
                 return gen_response(201, "Did Not Pass The Test")
+        elif method == 'renew':
+            for i in range(len(ans_list)):
+                qs_obj = Question.objects.get(id=q_list[i].id)
+                if ans_list[i] == ' ':
+                    qs_obj.pre_ans = ''
+                else:
+                    qs_obj.pre_ans = ans_list[i]
+                qs_obj.save()
 
     return gen_response(400, 'Mission Show Error')
 

@@ -3,7 +3,7 @@ from django.http import JsonResponse, HttpResponse
 from django.middleware.csrf import get_token
 from django.core.exceptions import ValidationError
 from django.utils import timezone
-from absanno_app.models import Mission, Message, Users, Reception, Question
+from absanno_app.models import Mission, Message, Users, Reception, Question, History
 from apscheduler.schedulers.background import BackgroundScheduler
 from django_apscheduler.jobstores import DjangoJobStore, register_job
 
@@ -194,7 +194,12 @@ def print_msg_error(m, r):
 
 def cal_sub(mission):
     question_list = mission.father_mission.all()
-    history_list = mission.ans_history.all()
+    history_list_base = mission.ans_history.all()
+    history_list = []
+
+    for i in history_list_base:
+        if check_history(i):
+            history_list.append(i)
 
     if mission.question_form.startswith('chosen'):
         for i in range(len(question_list)):
@@ -231,7 +236,6 @@ def cal_sub(mission):
 
 
 def integrate_mission(mission):
-
     if len(mission.sub_mission.all()) == 0:
         cal_sub(mission)
     else:
@@ -240,7 +244,7 @@ def integrate_mission(mission):
             cal_sub(s)
             q_list = s.father_mission.all().order_by('id')
             for i in range(0, len(s.father_mission.all().order_by('id'))):
-                ques = Question.objects.get(id=question_list[(s.is_sub-1)*mission.sub_mission_scale+i].id)
+                ques = Question.objects.get(id=question_list[(s.is_sub - 1) * mission.sub_mission_scale + i].id)
                 ques.ans = q_list[i].ans
                 ques.ans_weight = q_list[i].ans_weight
                 ques.save()
@@ -303,3 +307,39 @@ def sort_mission_list_by_interest(mission_list, user):
         user_tag = [s.lower() for s in user_tag]
         mission_list.sort(key=lambda x: len(set(user_tag) & set(x.tags.split('||'))), reverse=True)
         return mission_list
+
+
+def equals(ans, pre_ans, form):
+    ret = False
+    if pre_ans == '':
+        return ret
+    if form.startswith('chosen'):
+        ret = ans == pre_ans
+    elif form.startswith('fill'):
+        ret = ans.contains(pre_ans)
+    return ret
+
+
+def check_history(history: History):
+    ret = True
+    flag, tot, g = 1, 0, 0
+    ans_list = get_lst(history.ans)
+    q_list = history.mission.father_mission.all()
+
+    for i in range(len(ans_list)):
+        if q_list[i].pre_ans != '':
+            tot += 1
+            if equals(ans_list[i], q_list[i].pre_ans, history.mission.question_form):
+                g += 1
+    if tot != 0 and (g * 100 / tot < 60):
+        flag = 0
+
+    if flag == 0:
+        ret = False
+        history.valid = False
+    else:
+        ret = True
+        history.valid = True
+    history.save()
+
+    return ret
