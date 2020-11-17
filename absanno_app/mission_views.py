@@ -4,7 +4,7 @@ from django.utils import timezone
 from .models import History, Mission, Users, Reception, Question
 from .utils import check_token, get_lst, gen_response, sort_mission_list_by_interest, check_is_banned, \
     find_user_by_token, parse_json, JSON_ERROR, illegal_mission_id, json_default, illegal_user_id, not_digit, \
-    equals, check_history
+    equals, integrate_mission
 
 
 def square_show(request):
@@ -333,6 +333,7 @@ def mission_show(request):
                 else:
                     qs_obj.pre_ans = ans_list[i]
                 qs_obj.save()
+            return integrate_mission(mission)
 
     return gen_response(400, 'Mission Show Error')
 
