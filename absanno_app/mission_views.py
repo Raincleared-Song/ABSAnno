@@ -67,7 +67,7 @@ def square_show(request):
             tag_flag, kw_flag, sub_flag = 0, 0, 1
             if (mis.sub_mission_num > 1) and (mis.is_sub == 0):
                 sub_flag = 0
-            if sub_flag == 1 and (('total' in type_) or (type_ == []) or (mis.question_form in type_)):
+            if (sub_flag == 1) and (('total' in type_) or (type_ == []) or (mis.question_form in type_)):
                 if ('total' in theme_) or (theme_ == []):
                     tag_flag = 1
                 else:
