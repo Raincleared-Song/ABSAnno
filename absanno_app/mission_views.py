@@ -65,7 +65,7 @@ def square_show(request):
         mission_list = []
         for mis in mission_list_base:
             tag_flag, kw_flag, sub_flag = 0, 0, 1
-            if (len(mis.sub_mission.all()) > 1) and (mis.is_sub == 0):
+            if (mis.sub_mission_num > 1) and (mis.is_sub == 0):
                 sub_flag = 0
             if sub_flag == 1 and (('total' in type_) or (type_ == []) or (mis.question_form in type_)):
                 if ('total' in theme_) or (theme_ == []):

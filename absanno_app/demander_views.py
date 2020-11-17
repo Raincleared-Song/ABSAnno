@@ -240,15 +240,13 @@ def upload_mission(request):
                     return gen_response(400, "Sub Mission Upload Form Error")
                 if i < sub_mission_num:
                     for j in range((i-1)*sub_mission_scale, i*sub_mission_scale):
-                        sub_q = q_list[j]
-                        sub_q.pk = None
+                        sub_q = Question.objects.get(id=q_list[j].id)
                         sub_q.mission = sub_mis
                         sub_q.grand_mission = mission
                         sub_q.save()
                 else:
                     for j in range((i-1)*sub_mission_scale, len(q_list)):
-                        sub_q = q_list[j]
-                        sub_q.pk = None
+                        sub_q = Question.objects.get(id=q_list[j].id)
                         sub_q.mission = sub_mis
                         sub_q.grand_mission = mission
                         sub_q.save()
