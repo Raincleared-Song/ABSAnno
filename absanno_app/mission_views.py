@@ -4,7 +4,7 @@ from django.utils import timezone
 from .models import History, Mission, Users, Reception, Question
 from .utils import check_token, get_lst, gen_response, sort_mission_list_by_interest, check_is_banned, \
     find_user_by_token, parse_json, JSON_ERROR, illegal_mission_id, json_default, illegal_user_id, not_digit, \
-    equals, integrate_mission
+    equals, integrate_mission, abc_to_int
 
 
 def square_show(request):
@@ -287,6 +287,18 @@ def mission_show(request):
         q_list = mission.father_mission.all()
         if len(ans_list) != len(q_list):
             return gen_response(400, 'Answer List Length Error')
+
+        err_flag = 0
+        for a in ans_list:
+            if (a == ' ') and (method == 'submit'):
+                err_flag = 1
+            elif mission.question_form.startswith('chosen'):
+                if len(a) > 1:
+                    err_flag = 1
+                elif (abc_to_int(a) < 0) or (abc_to_int(a) > 8):
+                    err_flag = 1
+        if err_flag == 1:
+            gen_response(400, "Ans Form Error")
 
         if method == 'submit':
             rec.can_do = False  # 接单不可做
