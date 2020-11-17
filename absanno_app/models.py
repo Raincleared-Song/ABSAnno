@@ -70,8 +70,9 @@ class Mission(models.Model):
     sub_mission_scale = models.IntegerField(default=0)  # 被拆分任务规模
 
     def mission_image_url(self):
-        default_path = '/'.join(('', 'backend', 'media', '_mission_bg', self.name + '.png'))
-        return default_path if os.path.exists(default_path) else '/backend/media/logo/app.png'
+        mission_url = '/'.join(('', 'backend', 'media', '_mission_bg', self.name + '.png'))
+        default_local_path = os.path.join('image', '_mission_bg', self.name + '.png')
+        return mission_url if os.path.exists(default_local_path) else '/backend/media/logo/app.png'
 
 
 def question_image_path(instance, filename):
