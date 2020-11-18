@@ -15,6 +15,24 @@ from .utils import check_token, gen_response, find_user_by_token, get_lst, get_c
     CACHE_DIR, json_default, not_digit, is_blank, is_demander, illegal_mission_id
 
 
+# 静态类，负责图片的打乱操作
+class PicRandom:
+    # 静态成员
+    pic_index = 0
+    pic_queue = list(range(1, 8))
+    random.shuffle(pic_queue)
+
+    @staticmethod
+    def next_pic():
+        res = PicRandom.pic_queue[PicRandom.pic_index]
+        if PicRandom.pic_index == 6:
+            PicRandom.pic_index = 0
+            random.shuffle(PicRandom.pic_queue)
+        else:
+            PicRandom.pic_index += 1
+        return res
+
+
 def upload_mission(request):
     if request.method == 'POST':
 
@@ -160,7 +178,7 @@ def upload_mission(request):
             return gen_response(400, 'Mission Name Already Used')
 
         path_base = 'image/_mission_bg' if has_bg else 'pics'
-        image_base = f'{name}_bg.png' if has_bg else f'{random.randint(1, 7)}.jpg'
+        image_base = f'{name}_bg.png' if has_bg else f'{PicRandom.next_pic()}.jpg'
         generate_pic(path_base, image_base, name, question_num, reward, deadline.strftime('%Y-%m-%d'))
 
         def clean_image_when_fail():
@@ -250,7 +268,7 @@ def upload_mission(request):
                 sub_mis.save()
 
                 path_base = 'image/_mission_bg' if has_bg else 'pics'
-                image_base = f'{name}_bg.png' if has_bg else f'{random.randint(1, 7)}.jpg'
+                image_base = f'{name}_bg.png' if has_bg else f'{PicRandom.next_pic()}.jpg'
                 generate_pic(path_base, image_base, sub_mis.name, sub_mis.question_num,
                              sub_mis.reward, sub_mis.deadline.strftime('%Y-%m-%d'))
 
