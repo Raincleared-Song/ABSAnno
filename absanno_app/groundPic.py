@@ -5,13 +5,16 @@ import os
 def generate_pic(base_pic_dir, base_pic_name, title, num, coin, ddl):
 	title_font = ImageFont.truetype(os.path.join('pics', 'Deng.ttf'), size=55)
 	info_font = ImageFont.truetype(os.path.join('pics', 'simfang.ttf'), size=30)
-	img = Image.open(os.path.join(base_pic_dir, base_pic_name))
-	bg_size = img.size
+	img_ = Image.open(os.path.join(base_pic_dir, base_pic_name))
+
 	img2 = Image.open(os.path.join('pics', 'bg.png'))
+	bg_size = img2.size
+
+	img = img_.resize(bg_size)
 
 	img.paste(img2, (0, 0), img2)
 	image = img
-	img = Image.open(os.path.join(base_pic_dir, base_pic_name))
+	img = Image.open(os.path.join(base_pic_dir, base_pic_name)).resize(bg_size)
 	image = Image.blend(img, image, 0.7)
 	draw = ImageDraw.Draw(image)
 
