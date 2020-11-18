@@ -66,6 +66,7 @@ def upload_mission(request):
             name = js['name'] if 'name' in js else ''
             question_form = js['question_form'] if 'question_form' in js else ''
             question_num_ = js['question_num'] if 'question_num' in js else ''
+            check_way = js['check_way'] if 'check_way' in js else 'auto'
             if not question_num_.isdigit() or question_form == '' or name == '':
                 return gen_response(400, UPLOAD_ERROR)
             question_num = int(question_num_)
@@ -130,8 +131,9 @@ def upload_mission(request):
 
         dic = {'name': '', 'question_form': '', 'question_num': '', 'total': '', 'reward': '100',
                'deadline': '2022-6-30', 'retrieve_time': '', 'check_way': 'auto', 'info': '', 'mission_tags': []}
-        name, question_form, question_num_, total_, reward_, deadline_, retrieve_time_, check_way, info, tags_ = \
-            json_default(js, dic)
+        name, question_form, question_num_, total_, reward_, deadline_, retrieve_time_, check_way, info, tags_\
+            = json_default(js, dic)
+        to_be_check = 0 if check_way == 'auto' else 1
 
         if isinstance(tags_, str):
             tags_ = get_lst(tags_)
@@ -155,6 +157,13 @@ def upload_mission(request):
             return gen_response(400, "Question_list Is Not A List")
         if len(question_list) != question_num:
             return gen_response(400, "Question_list Length Error")
+        pre_ans_flag = 0
+        for q in question_list:
+            if 'ans' in q:
+                if q['ans'] != '':
+                    pre_ans_flag = 1
+        if (pre_ans_flag == 0) and (check_way == 'auto'):
+            return gen_response(400, "Auto Without Any Pre Ans")
 
         if len(Mission.objects.filter(name=name)) > 0:
             return gen_response(400, 'Mission Name Already Used')
@@ -185,8 +194,8 @@ def upload_mission(request):
         try:
             mission = Mission(name=name, question_form=question_form, question_num=question_num, total=total,
                               user=user, tags=tags, reward=reward, check_way=check_way, info=info,
-                              deadline=deadline, retrieve_time=retrieve_time,
-                              sub_mission_num=sub_mission_num, sub_mission_scale=sub_mission_scale)
+                              deadline=deadline, retrieve_time=retrieve_time, sub_mission_num=sub_mission_num,
+                              sub_mission_scale=sub_mission_scale, to_be_check=to_be_check)
             mission.full_clean()
             mission.save()
         except ValidationError:
@@ -239,13 +248,13 @@ def upload_mission(request):
                     clean_image_when_fail()
                     return gen_response(400, "Sub Mission Upload Form Error")
                 if i < sub_mission_num:
-                    for j in range((i-1)*sub_mission_scale, i*sub_mission_scale):
+                    for j in range((i - 1) * sub_mission_scale, i * sub_mission_scale):
                         sub_q = Question.objects.get(id=q_list[j].id)
                         sub_q.mission = sub_mis
                         sub_q.grand_mission = mission
                         sub_q.save()
                 else:
-                    for j in range((i-1)*sub_mission_scale, len(q_list)):
+                    for j in range((i - 1) * sub_mission_scale, len(q_list)):
                         sub_q = Question.objects.get(id=q_list[j].id)
                         sub_q.mission = sub_mis
                         sub_q.grand_mission = mission

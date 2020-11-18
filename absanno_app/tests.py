@@ -43,19 +43,16 @@ class UnitTest(TestCase):
         self.upload_pos_case = {"name": "task", "question_form": "chosen", "question_num": "2", "total": "5",
                                 "retrieve_time": "1",
                                 "question_list": [{"contains": "title3", "ans": "", "choices": "yes||no"},
-                                                  {"contains": "title4", "ans": "", "choices": "A||B||C||D"}]}
+                                                  {"contains": "title4", "ans": "B", "choices": "A||B||C||D"}]}
         self.upload_pos_case2 = {"name": "task", "question_form": "chosen", "question_num": "2", "total": "5",
                                  "retrieve_time": "1",
                                  "question_list": [{"contains": "title3", "ans": "T", "choices": "yes||no"},
                                                    {"contains": "title4", "ans": "F", "choices": "yes||no"}]}
         self.upload_pos_case3 = '{"name": "test_image", "question_form": "chosen-image", "question_num": "2", ' \
                                 '"total": "5", "retrieve_time": "1", "question_list": [{"contains": "title3", ' \
-                                '"choices": "A||B||C||D", "ans": ""}, {"contains": "title4", "choices": "E||F||G||H",' \
+                                '"choices": "A||B||C||D", "ans": "D"}, {"contains": "title4", "choices": "E||F||G||H",' \
                                 ' "ans": ""}]}'
-        self.square_pos_case1 = str({'ret': 2, 'total': 2, 'question_list': [
-            {'id': 2, 'name': 'task_test2', 'user': 'test_wang', 'questionNum': 3, 'questionForm': 'chosen', 'is_banned': 0,
-             'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': 1624982400000, 'cash': 5, 'info': '',
-             'tags': ['animal', 'plant', 'space'], 'received': 'F', 'image_url': '/backend/media/logo/app.png'},
+        self.square_pos_case1 = str({'ret': 1, 'total': 1, 'question_list': [
             {'id': 1, 'name': 'task_test', 'user': 'test', 'questionNum': 2, 'questionForm': 'chosen', 'is_banned': 0,
              'full': 1, 'total_ans': 5, 'ans_num': 0, 'deadline': 1624982400000, 'cash': 5, 'info': '',
              'tags': ['sports', 'game', 'lifestyle'], 'received': 'T', 'image_url': '/backend/media/logo/app.png'}]})
@@ -448,7 +445,7 @@ class UnitTest(TestCase):
     def test_upload_neg_name_long(self):
         self.mock_login()
         body = {"name": "task" * 8, "question_form": "chosen", "question_num": "2", "total": "5", "retrieve_time": "1",
-                "question_list": [{"contains": "title3", "ans": ""}, {"contains": "title4", "ans": ""}]}
+                "question_list": [{"contains": "title3", "ans": "jiang"}, {"contains": "title4", "ans": ""}]}
         res = self.client.post('/absanno/upload', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 400)
         self.assertEqual(res.json()['data'], UPLOAD_ERROR)
@@ -472,7 +469,7 @@ class UnitTest(TestCase):
     def test_upload_neg_que_null(self):
         self.mock_login()
         body = {"name": "task", "question_form": "chosen", "question_num": "2", "total": "5", "retrieve_time": "1",
-                "question_list": [{"contains": "title3", "ans": "", "choices": "T||F"},
+                "question_list": [{"contains": "title3", "ans": "A", "choices": "T||F"},
                                   {"contains": "", "ans": "", "choices": "T||F"}]}
         res = self.client.post('/absanno/upload', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 400)
@@ -490,7 +487,7 @@ class UnitTest(TestCase):
     def test_upload_neg_que_word_long(self):
         self.mock_login()
         body = {"name": "task", "question_form": "chosen", "question_num": "2", "total": "5", "retrieve_time": "1",
-                "question_list": [{"contains": "title3" * 40, "ans": "", "choices": "T||F"},
+                "question_list": [{"contains": "title3" * 40, "ans": "A", "choices": "T||F"},
                                   {"contains": "title4", "ans": "", "choices": "yes||no"}]}
         res = self.client.post('/absanno/upload', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 400)
@@ -750,7 +747,7 @@ class UnitTest(TestCase):
                                                'question_num': 2, 'question_form': 'chosen',
                                                'to_ans': 1, 'reward': 5,
                                                'deadline': self.default_timestamp,
-                                               'info': '', 'check_way': 'auto', 'is_banned': 0}]}))
+                                               'info': '', 'check_way': 'auto', 'is_banned': 0, 'to_be_check': 0}]}))
 
     def test_about_pos_history(self):
         self.mock_login()

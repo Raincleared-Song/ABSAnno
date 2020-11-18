@@ -68,6 +68,7 @@ class Mission(models.Model):
     reception_num = models.IntegerField(default=0)  # 目前接单数
     sub_mission_num = models.IntegerField(default=1)  # 被拆分子任务数
     sub_mission_scale = models.IntegerField(default=0)  # 被拆分任务规模
+    to_be_check = models.IntegerField(default=0)  # 需要继续被验收的次数
 
     def mission_image_url(self):
         mission_url = '/'.join(('', 'backend', 'media', '_mission_bg', self.name + '.png'))

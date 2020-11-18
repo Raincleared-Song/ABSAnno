@@ -319,6 +319,9 @@ def check_history(history: History):
     ans_list = get_lst(history.ans)
     q_list = history.mission.father_mission.all()
 
+    if history.user.id == history.mission.user.id:
+        flag = 0
+
     for i in range(len(ans_list)):
         if q_list[i].pre_ans != '':
             tot += 1
