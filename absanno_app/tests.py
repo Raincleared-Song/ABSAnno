@@ -1,6 +1,5 @@
 import datetime
 from django.test import TestCase
-from django.utils import timezone
 from .models import Users, Mission, Question, Reception, History
 from django.http import HttpResponse
 import time
