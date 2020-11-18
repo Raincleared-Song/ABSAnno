@@ -226,11 +226,6 @@ def upload_mission(request):
                     sub_mis = Mission(name=name, question_form=question_form, total=total, user=user, tags=tags,
                                       reward=reward, check_way=check_way, info=info, deadline=deadline,
                                       retrieve_time=retrieve_time, sub_mission_num=1)
-
-                    path_base = 'image/_mission_bg' if has_bg else 'pics'
-                    image_base = f'{name}_bg.png' if has_bg else f'{random.randint(1, 7)}.jpg'
-                    generate_pic(path_base, image_base, name, question_num, reward, deadline.strftime('%Y-%m-%d'))
-
                     sub_mis.is_sub = i
                     sub_mis.f_mission = mission
                     sub_mis.full_clean()
@@ -253,6 +248,11 @@ def upload_mission(request):
                 sub_mis.question_num = len(sub_mis.father_mission.all())
                 sub_mis.sub_mission_scale = len(sub_mis.father_mission.all())
                 sub_mis.save()
+
+                path_base = 'image/_mission_bg' if has_bg else 'pics'
+                image_base = f'{name}_bg.png' if has_bg else f'{random.randint(1, 7)}.jpg'
+                generate_pic(path_base, image_base, sub_mis.name, sub_mis.question_num,
+                             sub_mis.reward, sub_mis.deadline.strftime('%Y-%m-%d'))
 
         if file is not None:
             file.close()

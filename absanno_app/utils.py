@@ -242,6 +242,12 @@ def integrate_mission(mission):
         for s in mission.sub_mission.all():
             cal_sub(s)
 
+    for ret in mission.grand_mission.all():
+        if ret.ans == '' or ret.pre_ans == '':
+            ret.ans = 'NULL'
+            ret.pre_ans = 'NULL'
+        ret.save()
+
     return gen_response(201, {
         'mission_name': mission.name,
         'question_form': mission.question_form,
