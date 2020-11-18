@@ -20,7 +20,7 @@ class UnitTest(TestCase):
     """class for backend unit test"""
 
     def setUp(self):
-        self.song = Users.objects.create(name='test', password='test_pw', power=2)
+        self.song = Users.objects.create(name='test', password='test_pw', power=2, coin=100000)
         self.wang = Users.objects.create(name='test_wang', password='test_pw_wang', power=1)
         self.banned_user = Users.objects.create(name='test3', password='test_pw3', is_banned=1)
         self.normal_user = Users.objects.create(name='test4', password='test_pw4', tags='Sports||Plant||Animal')  # user with no power
@@ -737,7 +737,7 @@ class UnitTest(TestCase):
         param = "?method=user"
         res = self.client.get('/absanno/user' + param)
         self.assertEqual(res.status_code, 201)
-        self.assertEqual(res.json()['data'], str({'name': 'test', 'coin': 1000, 'weight': 50, 'num': 0, 'tags': [],
+        self.assertEqual(res.json()['data'], str({'name': 'test', 'coin': 100000, 'weight': 50, 'num': 0, 'tags': [],
                                                   'power': 2, 'avatar': ''}))
 
     def test_about_pos_mission(self):
@@ -1235,7 +1235,7 @@ class UnitTest(TestCase):
         param = "?method=user"
         res = self.client.get('/absanno/user' + param)
         self.assertEqual(res.status_code, 201)
-        self.assertEqual(res.json()['data'], str({'name': 'test', 'coin': 1000, 'weight': 50, 'num': 0,
+        self.assertEqual(res.json()['data'], str({'name': 'test', 'coin': 100000, 'weight': 50, 'num': 0,
                                                   'tags': [], 'power': 2,
                                                   'avatar': '/backend/media/Users/1/avatar.jpg'}))
 
