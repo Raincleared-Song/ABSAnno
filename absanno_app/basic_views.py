@@ -145,7 +145,8 @@ def about_me(request):
                             'deadline': int(mission_ret.deadline.timestamp() * 1000),
                             'info': mission_ret.info,
                             'check_way': mission_ret.check_way,
-                            'is_banned': mission_ret.is_banned
+                            'is_banned': mission_ret.is_banned,
+                            'to_be_check': mission_ret.to_be_check
                         }
                         for mission_ret in ret.promulgator.filter(is_sub=0).order_by('-id')
                     ]

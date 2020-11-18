@@ -44,7 +44,7 @@ def square_show(request):
 
         receive_set = None
         if user:
-            mission_list_temp = Mission.objects.filter(Q(to_ans=1) & Q(is_banned=0)).order_by('-id')
+            mission_list_temp = Mission.objects.filter(Q(to_ans=1) & Q(is_banned=0) & (~Q(user=user))).order_by('-id')
             mission_list_base = []
             for mission in mission_list_temp:
                 # 做过的和已经接完的单不显示
@@ -338,6 +338,11 @@ def mission_show(request):
                 history.save()
                 return gen_response(201, "Did Not Pass The Test")
         elif method == 'renew':
+            if mission.to_be_check == 1:
+                mission.to_be_check = 0
+                mission.save()
+            else:
+                return gen_response(400, "Have Already Check")
             for i in range(len(ans_list)):
                 qs_obj = Question.objects.get(id=q_list[i].id)
                 if ans_list[i] == ' ':
