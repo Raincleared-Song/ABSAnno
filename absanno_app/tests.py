@@ -1305,3 +1305,11 @@ class UnitTest(TestCase):
         self.assertEqual(res.status_code, 201)
         res = self.client.post('/absanno/applyshow')
         self.assertEqual(res.status_code, 400)
+
+    # def test_upload_pos_large_zip(self):
+    #     self.mock_login()
+    #     file = open('test_data/zip/large_zip.zip', 'rb')
+    #     res = self.client.post('/absanno/upload', data={'zip': file})
+    #     file.close()
+    #     self.assertEqual(res.status_code, 201)
+    #     self.assertEqual(res.json()['data'], 'Upload Success')
