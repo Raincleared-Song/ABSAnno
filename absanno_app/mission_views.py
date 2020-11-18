@@ -4,7 +4,7 @@ from django.utils import timezone
 from .models import History, Mission, Users, Reception, Question
 from .utils import check_token, get_lst, gen_response, sort_mission_list_by_interest, check_is_banned, \
     find_user_by_token, parse_json, JSON_ERROR, illegal_mission_id, json_default, illegal_user_id, not_digit, \
-    equals, check_history
+    equals, integrate_mission, abc_to_int
 
 
 def square_show(request):
@@ -65,9 +65,9 @@ def square_show(request):
         mission_list = []
         for mis in mission_list_base:
             tag_flag, kw_flag, sub_flag = 0, 0, 1
-            if (len(mis.sub_mission.all()) != 0) and (mis.is_sub == 0):
+            if (mis.sub_mission_num > 1) and (mis.is_sub == 0):
                 sub_flag = 0
-            if sub_flag == 1 and (('total' in type_) or (type_ == []) or (mis.question_form in type_)):
+            if (sub_flag == 1) and (('total' in type_) or (type_ == []) or (mis.question_form in type_)):
                 if ('total' in theme_) or (theme_ == []):
                     tag_flag = 1
                 else:
@@ -288,6 +288,18 @@ def mission_show(request):
         if len(ans_list) != len(q_list):
             return gen_response(400, 'Answer List Length Error')
 
+        err_flag = 0
+        for a in ans_list:
+            if (a == ' ') and (method == 'submit'):
+                err_flag = 1
+            elif mission.question_form.startswith('chosen'):
+                if len(a) > 1:
+                    err_flag = 1
+                elif (abc_to_int(a) < 0) or (abc_to_int(a) > 8):
+                    err_flag = 1
+        if err_flag == 1:
+            gen_response(400, "Ans Form Error")
+
         if method == 'submit':
             rec.can_do = False  # 接单不可做
             rec.save()
@@ -333,6 +345,7 @@ def mission_show(request):
                 else:
                     qs_obj.pre_ans = ans_list[i]
                 qs_obj.save()
+            return integrate_mission(mission)
 
     return gen_response(400, 'Mission Show Error')
 

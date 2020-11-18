@@ -99,7 +99,7 @@ def upgrade_examine(request):
 
 
 # 封禁用户
-def ban_user(request):
+def ban_page(request):
     if request.method == 'POST':
 
         code, data = check_token(request)

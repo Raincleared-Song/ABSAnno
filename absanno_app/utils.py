@@ -239,15 +239,8 @@ def integrate_mission(mission):
     if len(mission.sub_mission.all()) == 0:
         cal_sub(mission)
     else:
-        question_list = mission.father_mission.all().order_by('id')
         for s in mission.sub_mission.all():
             cal_sub(s)
-            q_list = s.father_mission.all().order_by('id')
-            for i in range(0, len(s.father_mission.all().order_by('id'))):
-                ques = Question.objects.get(id=question_list[(s.is_sub - 1) * mission.sub_mission_scale + i].id)
-                ques.ans = q_list[i].ans
-                ques.ans_weight = q_list[i].ans_weight
-                ques.save()
 
     return gen_response(201, {
         'mission_name': mission.name,
@@ -266,7 +259,7 @@ def integrate_mission(mission):
                     'ans_weight': ret.ans_weight,
                     'now_num': ret.now_num
                 }
-                for ret in mission.father_mission.all()
+                for ret in mission.grand_mission.all()
             ]
     })
 
