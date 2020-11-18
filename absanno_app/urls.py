@@ -33,7 +33,7 @@ urlpatterns = [
     path('endmission', demander_views.end_mission, name='end_mission'),
 
     path('alluser', admin_views.show_all_user, name='show_users'),
-    path('usepower', admin_views.ban_user, name='power_use'),
+    path('usepower', admin_views.ban_page, name='power_use'),
     path('powerup', admin_views.upgrade_examine, name='power_up'),
     path('applyshow', admin_views.apply_show, name='apply_show'),
     path('message', admin_views.message_page, name='message_page'),
