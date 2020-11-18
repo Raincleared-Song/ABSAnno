@@ -1237,7 +1237,7 @@ class UnitTest(TestCase):
         self.assertEqual(res.status_code, 201)
         self.assertEqual(res.json()['data'], str({'name': 'test', 'coin': 100000, 'weight': 50, 'num': 0,
                                                   'tags': [], 'power': 2,
-                                                  'avatar': '/backend/media/Users/1/avatar.jpg'}))
+                                                  'avatar': '/backend/media/_users/1/avatar.jpg'}))
 
     def test_admin_post_msg_to_all_pos(self):
         self.mock_login()

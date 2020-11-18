@@ -40,7 +40,7 @@ class Users(models.Model):
 
     def user_avatar_url(self):
         if self.avatar:
-            return '/'.join(('', 'backend', 'media', 'Users', str(self.id), self.avatar.name.split('/').pop()))
+            return '/'.join(('', 'backend', 'media', '_users', str(self.id), self.avatar.name.split('/').pop()))
         else:
             return ''
 
