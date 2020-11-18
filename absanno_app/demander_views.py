@@ -222,7 +222,7 @@ def upload_mission(request):
             father_name = name
             for i in range(1, sub_mission_num + 1 * (len(q_list) // len(q_list))):
                 try:
-                    name = f'{father_name}#{i}'
+                    name = f'{father_name}_{i}'
                     sub_mis = Mission(name=name, question_form=question_form, total=total, user=user, tags=tags,
                                       reward=reward, check_way=check_way, info=info, deadline=deadline,
                                       retrieve_time=retrieve_time, sub_mission_num=1)
