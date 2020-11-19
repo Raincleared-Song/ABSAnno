@@ -236,18 +236,17 @@ def cal_sub(mission):
 
 
 def integrate_mission(mission):
+    for ret in mission.grand_mission.all():
+        ret.ans = 'NULL'
+        if ret.pre_ans == '':
+            ret.pre_ans = 'NULL'
+        ret.save()
+
     if len(mission.sub_mission.all()) == 0:
         cal_sub(mission)
     else:
         for s in mission.sub_mission.all():
             cal_sub(s)
-
-    for ret in mission.grand_mission.all():
-        if ret.ans == '':
-            ret.ans = 'NULL'
-        if ret.pre_ans == '':
-            ret.pre_ans = 'NULL'
-        ret.save()
 
     return gen_response(201, {
         'mission_name': mission.name,
