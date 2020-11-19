@@ -79,9 +79,9 @@ class UnitTest(TestCase):
                 {'word': 'title1', 'pre_ans': 'A', 'ans': 'NULL', 'ans_weight': 0.0, 'now_num': 0},
                 {'word': 'title2', 'pre_ans': 'F', 'ans': 'NULL', 'ans_weight': 0.0, 'now_num': 0}]})
         self.power_user_show = str({'num': 3, 'total': 3, 'user_list': [
-            {'id': 2, 'name': 'test_wang', 'power': 1, 'is_banned': 0, 'coin': 1000, 'weight': 50, 'fin_num': 0, 'tags': [], 'avatar': ''},
-            {'id': 3, 'name': 'test3', 'power': 0, 'is_banned': 1, 'coin': 1000, 'weight': 50, 'fin_num': 0, 'tags': [], 'avatar': ''},
-            {'id': 4, 'name': 'test4', 'power': 0, 'is_banned': 0, 'coin': 1000, 'weight': 50, 'fin_num': 0, 'tags': ['Sports', 'Plant', 'Animal'], 'avatar': ''}]})
+            {'id': 2, 'name': 'test_wang', 'power': 1, 'is_banned': 0, 'coin': 100000, 'weight': 50, 'fin_num': 0, 'tags': [], 'avatar': ''},
+            {'id': 3, 'name': 'test3', 'power': 0, 'is_banned': 1, 'coin': 100000, 'weight': 50, 'fin_num': 0, 'tags': [], 'avatar': ''},
+            {'id': 4, 'name': 'test4', 'power': 0, 'is_banned': 0, 'coin': 100000, 'weight': 50, 'fin_num': 0, 'tags': ['Sports', 'Plant', 'Animal'], 'avatar': ''}]})
         self.about_pos_case = str({'total_num': 1, 'mission_list':
             [{'id': 1, 'name': 'task_test', 'user': 'test', 'question_num': 2, 'question_form': 'chosen',
               'reward': 5, 'info': '', 'ret_time': self.default_timestamp}]})

@@ -205,6 +205,7 @@ def mission_show(request):
         id_ = request.GET.get('id')
         num_ = request.GET.get('num')
         step_ = request.GET.get('step')
+        method = request.GET.get('method') if 'method' in request.GET else 'submit'
 
         if not id_.isdigit() or not num_.isdigit() or not step_.isdigit():
             return gen_response(400, "Not Digit Error")
@@ -222,11 +223,13 @@ def mission_show(request):
             return gen_response(400, "This Mission Is Banned")
 
         user = find_user_by_token(request)
-        rec = Reception.objects.filter(user__id=user.id, mission__id=mission_id).first()
-        if rec is None:
-            return gen_response(400, 'Have Not Received Yet')
-        if not rec.can_do:
-            return gen_response(400, 'Cannot Do Reception')
+
+        if method == 'submit':
+            rec = Reception.objects.filter(user__id=user.id, mission__id=mission_id).first()
+            if rec is None:
+                return gen_response(400, 'Have Not Received Yet')
+            if not rec.can_do:
+                return gen_response(400, 'Cannot Do Reception')
 
         get_num = num + step
         if get_num < 0 or get_num >= len(mission.father_mission.all()):
@@ -290,13 +293,9 @@ def mission_show(request):
 
         err_flag = 0
         for a in ans_list:
-            if (a == ' ') and (method == 'submit'):
+            if ((a == ' ') and (method == 'submit')) or (mission.question_form.startswith('chosen') and
+                                                         (len(a) > 1 or (abc_to_int(a) < 0) or (abc_to_int(a) > 8))):
                 err_flag = 1
-            elif mission.question_form.startswith('chosen'):
-                if len(a) > 1:
-                    err_flag = 1
-                elif (abc_to_int(a) < 0) or (abc_to_int(a) > 8):
-                    err_flag = 1
         if err_flag == 1:
             gen_response(400, "Ans Form Error")
 
@@ -380,7 +379,7 @@ def rep_show(request):
                         'deadline': int(ret.deadline.timestamp() * 1000),
                         'mission_id': ret.mission.id,
                         'mission_name': ret.mission.name if ret.mission.is_sub == 0 else
-                        ret.mission + '-' + str(ret.mission.is_sub),
+                        ret.mission.name + '-' + str(ret.mission.is_sub),
                         'mission_info': ret.mission.info,
                         'mission_deadline': int(ret.mission.deadline.timestamp() * 1000),
                         'mission_reward': ret.mission.reward,
