@@ -19,7 +19,7 @@ from .utils import check_token, gen_response, find_user_by_token, get_lst, get_c
 class PicRandom:
     # 静态成员
     pic_index = 0
-    pic_queue = list(range(1, 8))
+    pic_queue = list(range(1, 18))
     random.shuffle(pic_queue)
 
     @staticmethod
