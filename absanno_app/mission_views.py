@@ -49,7 +49,7 @@ def square_show(request):
             for mission in mission_list_temp:
                 # 做过的和已经接完的单不显示
                 if user.history.filter(mission__id=mission.id).first() is None \
-                        and mission.reception_num < mission.total:
+                        and mission.reception_num < mission.total and mission.user.id != user.id:
                     mission_list_base.append(mission)
             rec_list = user.user_reception.all()
             receive_set = set([r.mission.id for r in rec_list])
@@ -142,15 +142,15 @@ def interest_show(request):
             mission_list_base = []
             for mission in mission_list_temp:
                 if user.history.filter(mission__id=mission.id).first() is None \
-                        and mission.reception_num < mission.total and mission.deadline > timezone.now():
+                        and mission.reception_num < mission.total and mission.deadline > timezone.now()\
+                        and mission.user.id != user.id:
                     mission_list_base.append(mission)
             rec_list = user.user_reception.all()
             receive_set = set([r.mission.id for r in rec_list])
         else:
             mission_list_base = Mission.objects.filter(Q(is_banned=0) & Q(to_ans=1) &
                                                        ((Q(is_sub=0) & Q(sub_mission_num=1)) | ~Q(is_sub=0)) &
-                                                       (Q(deadline__gt=timezone.now())) & (~Q(user=user))
-                                                       ).order_by('-id')
+                                                       (Q(deadline__gt=timezone.now()))).order_by('-id')
 
         def get_mission_rec_status(m):
             if receive_set is None:
