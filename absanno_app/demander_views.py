@@ -238,7 +238,8 @@ def upload_mission(request):
         if sub_mission_num > 1:
             q_list = mission.father_mission.all().order_by('id')
             father_name = name
-            for i in range(1, sub_mission_num + 1 * (len(q_list) // len(q_list))):
+            assert len(q_list) > -1
+            for i in range(1, sub_mission_num + 1):
                 try:
                     name = f'{father_name}_{i}'
                     sub_mis = Mission(name=name, question_form=question_form, total=total, user=user, tags=tags,

@@ -290,13 +290,9 @@ def mission_show(request):
 
         err_flag = 0
         for a in ans_list:
-            if (a == ' ') and (method == 'submit'):
+            if ((a == ' ') and (method == 'submit')) or (mission.question_form.startswith('chosen') and
+                                                         (len(a) > 1 or (abc_to_int(a) < 0) or (abc_to_int(a) > 8))):
                 err_flag = 1
-            elif mission.question_form.startswith('chosen'):
-                if len(a) > 1:
-                    err_flag = 1
-                elif (abc_to_int(a) < 0) or (abc_to_int(a) > 8):
-                    err_flag = 1
         if err_flag == 1:
             gen_response(400, "Ans Form Error")
 
