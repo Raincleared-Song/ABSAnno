@@ -243,8 +243,9 @@ def integrate_mission(mission):
             cal_sub(s)
 
     for ret in mission.grand_mission.all():
-        if ret.ans == '' or ret.pre_ans == '':
+        if ret.ans == '':
             ret.ans = 'NULL'
+        if ret.pre_ans == '':
             ret.pre_ans = 'NULL'
         ret.save()
 
@@ -311,6 +312,7 @@ def sort_mission_list_by_interest(mission_list, user):
 def equals(ans, pre_ans, form):
     ret = False
     if pre_ans == '':
+        ret = True
         return ret
     if form.startswith('chosen'):
         ret = ans == pre_ans

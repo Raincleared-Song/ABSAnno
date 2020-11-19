@@ -149,7 +149,7 @@ def interest_show(request):
         else:
             mission_list_base = Mission.objects.filter(Q(is_banned=0) & Q(to_ans=1) &
                                                        ((Q(is_sub=0) & Q(sub_mission_num=1)) | ~Q(is_sub=0)) &
-                                                       (Q(deadline__gt=timezone.now()))
+                                                       (Q(deadline__gt=timezone.now())) & (~Q(user=user))
                                                        ).order_by('-id')
 
         def get_mission_rec_status(m):
