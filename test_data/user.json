@@ -5,6 +5,7 @@
     "name": "songchenyang",
     "password": "woshisongchenyang",
     "power": 2,
+    "coin": 10000000,
 	"tags": "中年||学生"}
   },
   {"model": "absanno_app.users",
@@ -13,6 +14,7 @@
     "name": "wangjunwei",
     "password": "woshiwangjunwei",
     "power": 0,
+    "coin": 10000000,
     "tags": "中年||学生"}
   },
   {"model": "absanno_app.users",
@@ -21,6 +23,7 @@
     "name": "zhangyizhuo",
     "password": "woshizhangyizhuo",
     "power": 1,
+    "coin": 10000000,
     "tags": "青年||学生"}
   },
   {"model": "absanno_app.users",
@@ -29,6 +32,7 @@
     "name": "xieyuqing",
     "password": "woshixieyuqing",
     "power": 2,
+    "coin": 10000000,
     "tags": "中年||学生"}
   },
   {"model": "absanno_app.users",
@@ -37,6 +41,7 @@
     "name": "luojingjia",
     "password": "woshiluojingjia",
     "power": 1,
+    "coin": 10000000,
     "tags": "青年||学生"}
   },
   {"model": "absanno_app.users",
@@ -45,6 +50,7 @@
     "name": "admin",
     "password": "123456",
     "power": 2,
+    "coin": 10000000,
     "tags": "青年||学生"}
   }
 ]
