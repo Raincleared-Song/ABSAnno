@@ -177,9 +177,8 @@ def upload_mission(request):
             return gen_response(400, "Question_list Length Error")
         pre_ans_flag = 0
         for q in question_list:
-            if 'ans' in q:
-                if q['ans'] != '':
-                    pre_ans_flag = 1
+            if 'ans' in q and q['ans'] != '':
+                pre_ans_flag = 1
         if (pre_ans_flag == 0) and (check_way == 'auto'):
             return gen_response(400, "Auto Without Any Pre Ans")
 
@@ -247,7 +246,8 @@ def upload_mission(request):
         if sub_mission_num > 1:
             q_list = mission.father_mission.all().order_by('id')
             father_name = name
-            for i in range(1, sub_mission_num + 1 * (len(q_list) // len(q_list))):
+            assert len(q_list) > -1
+            for i in range(1, sub_mission_num + 1):
                 try:
                     name = f'{father_name}_{i}'
                     sub_mis = Mission(name=name, question_form=question_form, total=total, user=user, tags=tags,
