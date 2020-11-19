@@ -177,9 +177,8 @@ def upload_mission(request):
             return gen_response(400, "Question_list Length Error")
         pre_ans_flag = 0
         for q in question_list:
-            if 'ans' in q:
-                if q['ans'] != '':
-                    pre_ans_flag = 1
+            if 'ans' in q and q['ans'] != '':
+                pre_ans_flag = 1
         if (pre_ans_flag == 0) and (check_way == 'auto'):
             return gen_response(400, "Auto Without Any Pre Ans")
 
