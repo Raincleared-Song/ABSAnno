@@ -245,22 +245,32 @@ def book_cancel_mission(request):
         reception = Reception.objects.filter(user__id=user_id, mission__id=mission_id).first()
         if reception is None:
             # 接单
-            mission.reception_num += 1
-            mission.save()
+            if mission.to_ans == 1:
 
-            try:
-                rep = Reception(user=user, mission=mission)
-                rep.deadline = timezone.now() + datetime.timedelta(hours=mission.retrieve_time)
-                rep.full_clean()
-                rep.save()
-            except ValidationError:
-                return gen_response(400, "Form Error")
-            return gen_response(201, "Book Success")
+                if mission.reception_num + mission.now_num + 1 == mission.total:
+                    mission.to_ans = 0
+                mission.reception_num += 1
+                mission.save()
+
+                try:
+                    rep = Reception(user=user, mission=mission)
+                    rep.deadline = timezone.now() + datetime.timedelta(hours=mission.retrieve_time)
+                    rep.full_clean()
+                    rep.save()
+                except ValidationError:
+                    return gen_response(400, "Form Error")
+                return gen_response(201, "Book Success")
+
+            else:
+                return gen_response(400, "Rec Conflict!")
+
         else:
             # 取消接单
             if mission.reception_num == 0:
                 return gen_response(400, 'No Reception Yet')
             mission.reception_num -= 1
+            if mission.to_ans == 0:
+                mission.to_ans = 1
             mission.save()
             reception.delete()
             return gen_response(201, "Cancel Book Success")

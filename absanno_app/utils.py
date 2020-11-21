@@ -3,7 +3,7 @@ from django.http import JsonResponse, HttpResponse
 from django.middleware.csrf import get_token
 from django.core.exceptions import ValidationError
 from django.utils import timezone
-from absanno_app.models import Mission, Message, Users, Reception, Question, History
+from absanno_app.models import Mission, Message, Users, Reception, History
 from apscheduler.schedulers.background import BackgroundScheduler
 from django_apscheduler.jobstores import DjangoJobStore, register_job
 

@@ -225,11 +225,9 @@ def mission_show(request):
         user = find_user_by_token(request)
 
         if method == 'submit':
-            rec = Reception.objects.filter(user__id=user.id, mission__id=mission_id).first()
+            rec = Reception.objects.filter(Q(user__id=user.id) & Q(mission__id=mission_id) & Q(can_do=True)).first()
             if rec is None:
                 return gen_response(400, 'Have Not Received Yet')
-            if not rec.can_do:
-                return gen_response(400, 'Cannot Do Reception')
 
         get_num = num + step
         if get_num < 0 or get_num >= len(mission.father_mission.all()):
@@ -277,12 +275,6 @@ def mission_show(request):
         user = find_user_by_token(request)
         mission = Mission.objects.get(id=mission_id)
 
-        rec = Reception.objects.filter(user__id=user.id, mission__id=mission_id).first()
-        if rec is None:
-            return gen_response(400, 'Have Not Received Yet')
-        if not rec.can_do:
-            return gen_response(400, 'Cannot Do Reception')
-
         flag = 1
         tot, g = 0, 0
 
@@ -300,6 +292,9 @@ def mission_show(request):
             gen_response(400, "Ans Form Error")
 
         if method == 'submit':
+            rec = Reception.objects.filter(Q(user__id=user.id) & Q(mission__id=mission_id) & Q(can_do=True)).first()
+            if rec is None:
+                return gen_response(400, 'Have Not Received Yet')
             rec.can_do = False  # 接单不可做
             rec.save()
             history = History(user=user, mission=mission, ans=ans, ans_weight=user.weight)
