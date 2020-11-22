@@ -5,7 +5,8 @@
     "name": "songchenyang",
     "password": "woshisongchenyang",
     "power": 2,
-	"tags": "Science||Art"}
+    "coin": 10000000,
+	"tags": "中年||学生"}
   },
   {"model": "absanno_app.users",
   "pk": 2,
@@ -13,7 +14,8 @@
     "name": "wangjunwei",
     "password": "woshiwangjunwei",
     "power": 0,
-    "tags": "Science||Music"}
+    "coin": 10000000,
+    "tags": "中年||学生"}
   },
   {"model": "absanno_app.users",
   "pk": 3,
@@ -21,7 +23,8 @@
     "name": "zhangyizhuo",
     "password": "woshizhangyizhuo",
     "power": 1,
-    "tags": "Game||Daily"}
+    "coin": 10000000,
+    "tags": "青年||学生"}
   },
   {"model": "absanno_app.users",
   "pk": 4,
@@ -29,7 +32,8 @@
     "name": "xieyuqing",
     "password": "woshixieyuqing",
     "power": 2,
-    "tags": "Math||Others"}
+    "coin": 10000000,
+    "tags": "中年||学生"}
   },
   {"model": "absanno_app.users",
   "pk": 5,
@@ -37,6 +41,16 @@
     "name": "luojingjia",
     "password": "woshiluojingjia",
     "power": 1,
-    "tags": "Game||Daily"}
+    "coin": 10000000,
+    "tags": "青年||学生"}
+  },
+  {"model": "absanno_app.users",
+  "pk": 6,
+  "fields": {
+    "name": "admin",
+    "password": "123456",
+    "power": 2,
+    "coin": 10000000,
+    "tags": "青年||学生"}
   }
 ]
