@@ -578,8 +578,8 @@ class UnitTest(TestCase):
         param = "?id=1&num=0&step=1"
         res = self.client.get('/absanno/mission' + param)
         self.assertEqual(res.status_code, 201)
-        self.assertEqual(res.json()['data'], str({'total': 2, 'type': 'chosen', 'ret': 1,
-                                                  'word': 'title2', 'choices': 'D||E||F||G', 'image_url': ''}))
+        self.assertEqual(res.json()['data'], str({'total': 2, 'type': 'chosen', 'ret': 1, 'word': 'title2',
+                                                  'choices': 'D||E||F||G', 'template': 0, 'image_url': ''}))
 
     def test_mission_neg_no_token(self):
         param = "?id=1&num=0&step=1"
