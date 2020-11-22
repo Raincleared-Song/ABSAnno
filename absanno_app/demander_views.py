@@ -84,7 +84,6 @@ def upload_mission(request):
             name = js['name'] if 'name' in js else ''
             question_form = js['question_form'] if 'question_form' in js else ''
             question_num_ = js['question_num'] if 'question_num' in js else ''
-            check_way = js['check_way'] if 'check_way' in js else 'auto'
             if not question_num_.isdigit() or question_form == '' or name == '':
                 return gen_response(400, UPLOAD_ERROR)
             question_num = int(question_num_)
@@ -148,9 +147,10 @@ def upload_mission(request):
                 return gen_response(400, JSON_ERROR)
 
         dic = {'name': '', 'question_form': '', 'question_num': '', 'total': '', 'reward': '100',
-               'deadline': '2022-6-30', 'retrieve_time': '', 'check_way': 'auto', 'info': '', 'mission_tags': []}
-        name, question_form, question_num_, total_, reward_, deadline_, retrieve_time_, check_way, info, tags_\
-            = json_default(js, dic)
+               'deadline': '2022-6-30', 'retrieve_time': '', 'check_way': 'auto', 'info': '',
+               'mission_tags': [], 'template': '0'}
+        name, question_form, question_num_, total_, reward_, deadline_, retrieve_time_, check_way, info, tags_, \
+            template_ = json_default(js, dic)
         to_be_check = 0 if check_way == 'auto' else 1
 
         if isinstance(tags_, str):
@@ -159,7 +159,7 @@ def upload_mission(request):
         spl_str = '||'
         tags = spl_str.join(tags_)
         tags = tags.lower()
-        if not_digit([question_num_, total_, reward_, retrieve_time_]) or is_blank([name, question_form]):
+        if not_digit([question_num_, total_, reward_, retrieve_time_, template_]) or is_blank([name, question_form]):
             return gen_response(400, UPLOAD_ERROR)
         question_num = int(question_num_)
         total = int(total_)
@@ -168,6 +168,7 @@ def upload_mission(request):
         y, m, d = int(d_list[0]), int(d_list[1]), int(d_list[2])
         deadline = datetime.date(y, m, d)
         retrieve_time = int(retrieve_time_)
+        template = int(template_)
 
         if file is None and 'question_list' in js:
             question_list = js['question_list']
@@ -212,7 +213,7 @@ def upload_mission(request):
             mission = Mission(name=name, question_form=question_form, question_num=question_num, total=total,
                               user=user, tags=tags, reward=reward, check_way=check_way, info=info,
                               deadline=deadline, retrieve_time=retrieve_time, sub_mission_num=sub_mission_num,
-                              sub_mission_scale=sub_mission_scale, to_be_check=to_be_check)
+                              sub_mission_scale=sub_mission_scale, to_be_check=to_be_check, template=template)
             mission.full_clean()
             mission.save()
         except ValidationError:
@@ -252,7 +253,7 @@ def upload_mission(request):
                     name = f'{father_name}_{i}'
                     sub_mis = Mission(name=name, question_form=question_form, total=total, user=user, tags=tags,
                                       reward=reward, check_way=check_way, info=info, deadline=deadline,
-                                      retrieve_time=retrieve_time, sub_mission_num=1)
+                                      retrieve_time=retrieve_time, sub_mission_num=1, template=template)
                     sub_mis.is_sub = i
                     sub_mis.f_mission = mission
                     sub_mis.full_clean()
