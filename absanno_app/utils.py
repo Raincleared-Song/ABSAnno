@@ -321,7 +321,6 @@ def equals(ans, pre_ans, form):
 
 
 def check_history(history: History):
-    ret = True
     flag, tot, g = 1, 0, 0
     ans_list = get_lst(history.ans)
     q_list = history.mission.father_mission.all()
