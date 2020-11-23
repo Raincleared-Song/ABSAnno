@@ -362,40 +362,8 @@ def check_result(request):
         if mission.user.id != user_id:
             return gen_response(400, "Mission Not Published by You")
 
-        if mission.question_form.endswith("chosen"):
+        return integrate_mission(mission)
 
-            for i in range(len(mission.father_mission.all())):
-                weight_list = []
-                ans, tot_weight = 0, 0
-                q = mission.father_mission.all()[i]
-                c_lst = get_lst(q.choices)
-                c_num = len(c_lst)
-                for j in range(c_num):
-                    weight_list.append(0)
-                for his in mission.ans_history.all():
-                    a_lst = get_lst(his.ans)
-                    weight_list[abc_to_int(a_lst[i])] += his.ans_weight
-                    tot_weight += his.ans_weight
-                for j in range(c_num):
-                    if weight_list[j] > weight_list[ans]:
-                        ans = j
-                q.ans = int_to_abc(ans)
-                q.ans_weight = weight_list[ans] / tot_weight
-                q.save()
-
-            return gen_response(201, {
-                'question_list':
-                    [
-                        {
-                            'word': ret.word,
-                            'pre_ans': ret.pre_ans,
-                            'ans': ret.ans,
-                            'ans_weight': ret.ans_weight,
-                        }
-                        for ret in mission.father_mission.all()
-                    ]
-            })
-        return gen_response(400, "Check Mission Error, Chosen Expected")
     return gen_response(400, "Check Mission Error, Use GET Instead")
 
 

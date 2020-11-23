@@ -32,7 +32,7 @@ class UnitTest(TestCase):
         Question.objects.create(mission=self.mission, grand_mission=self.mission, word='title2',
                                 pre_ans='C', choices='D||E||F||G')
         
-        History.objects.create(user=self.song, mission=self.mission, ans='A||B', pub_time=datetime.date(2021, 6, 30))
+        History.objects.create(user=self.wang, mission=self.mission, ans='A||B', pub_time=datetime.date(2021, 6, 30))
         self.mission2 = Mission.objects.create(name='task_test2', question_form='chosen', question_num=3,
                                                user=self.wang, total=5, tags="Animal||Plant||Space".lower())
 
@@ -97,9 +97,11 @@ class UnitTest(TestCase):
             {'id': 2, 'name': 'test_wang', 'power': 1, 'is_banned': 0, 'coin': 100000, 'weight': 50, 'fin_num': 0, 'tags': [], 'avatar': ''},
             {'id': 3, 'name': 'test3', 'power': 0, 'is_banned': 1, 'coin': 100000, 'weight': 50, 'fin_num': 0, 'tags': [], 'avatar': ''},
             {'id': 4, 'name': 'test4', 'power': 0, 'is_banned': 0, 'coin': 100000, 'weight': 50, 'fin_num': 0, 'tags': ['Sports', 'Plant', 'Animal'], 'avatar': ''}]})
-        self.about_pos_case = str({'total_num': 1, 'mission_list':
+        self.about_pos_case = str({'total_num': 2, 'mission_list':
             [{'id': 1, 'name': 'task_test', 'user': 'test', 'question_num': 2, 'question_form': 'chosen',
-              'reward': 5, 'info': '', 'ret_time': self.default_timestamp}]})
+              'reward': 5, 'info': '', 'ret_time': self.default_timestamp},
+             {'id': 3, 'name': 'task_test3', 'user': 'test', 'question_num': 2, 'question_form': 'fill', 'reward': 5,
+              'info': '', 'ret_time': self.default_timestamp}]})
 
         if not os.path.exists('image'):
             os.mkdir('image')
@@ -527,7 +529,7 @@ class UnitTest(TestCase):
         param = "?num=0"
         res = self.client.get('/absanno/square' + param)
         self.assertEqual(res.status_code, 201)
-        self.assertEqual(res.json()['data'], self.square_pos_case1)
+        self.assertEqual(res.json()['data'], str({'ret': 0, 'total': 0, 'question_list': []}))
 
     def test_square_pos3(self):
         self.mock_login()
@@ -806,7 +808,7 @@ class UnitTest(TestCase):
                                                'info': '', 'check_way': 'auto', 'is_banned': 0, 'to_be_check': 0}]}))
 
     def test_about_pos_history(self):
-        self.mock_login()
+        self.mock_login2()
         param = "?method=history"
         res = self.client.get('/absanno/user' + param)
         self.assertEqual(res.status_code, 201)
@@ -1256,9 +1258,7 @@ class UnitTest(TestCase):
         body = {'mission_id': '1'}
         res = self.client.get('/absanno/check', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 201)
-        self.assertEqual(res.json()['data'], str({'question_list': [
-            {'word': 'title1', 'pre_ans': 'A', 'ans': 'A', 'ans_weight': 1.0},
-            {'word': 'title2', 'pre_ans': 'C', 'ans': 'B', 'ans_weight': 1.0}]}))
+        self.assertEqual(res.json()['data'], self.mission_my_pos_case)
 
     def test_end_mission_pos(self):
         self.mock_login()
