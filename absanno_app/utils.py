@@ -316,7 +316,7 @@ def equals(ans, pre_ans, form):
     if form.startswith('chosen'):
         ret = ans == pre_ans
     elif form.startswith('fill'):
-        ret = ans.contains(pre_ans)
+        ret = pre_ans in ans
     return ret
 
 
