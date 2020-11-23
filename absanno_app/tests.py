@@ -588,6 +588,24 @@ class UnitTest(TestCase):
         self.assertEqual(res.status_code, 201)
         self.assertEqual(res.json()['data'], self.square_pos_case_all)
 
+    def test_interest_neg_not_digit(self):
+        self.mock_no_power_login()
+        res = self.client.get('/absanno/interest?page=a')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'Num Is Not Digit')
+
+    def test_interest_neg_num_err(self):
+        self.mock_no_power_login()
+        res = self.client.get('/absanno/interest?page=%d' % (self.mission_num + 1))
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'Num Error in Interest')
+
+    def test_interest_neg_method_err(self):
+        self.mock_no_power_login()
+        res = self.client.post('/absanno/interest')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'User Show Error')
+
     def test_mission_pos(self):
         self.mock_login2()
         param = "?id=1&num=0&step=1"
@@ -686,6 +704,13 @@ class UnitTest(TestCase):
         body = {'mission_id': '3', 'ans': 'ABC||BCC', 'method': 'renew'}
         res = self.client.post('/absanno/mission', data=body, content_type='application/json')
         self.assertEqual(res.status_code, 201)
+
+    def test_mission_p_pos_method_err(self):
+        self.mock_login()
+        body = {'mission_id': '3', 'ans': 'ABC||BCC', 'method': 'renew_'}
+        res = self.client.post('/absanno/mission', data=body, content_type='application/json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'Mission Show Error')
 
     def test_mission_p_neg_already_check(self):
         self.mock_login2()
@@ -1193,6 +1218,17 @@ class UnitTest(TestCase):
         res = self.client.get('/absanno/repshow')
         self.assertEqual(res.status_code, 201)
         self.assertTrue(res.json()['data'].find('[{') >= 0)
+
+    def test_rep_show_neg_no_token(self):
+        res = self.client.get('/absanno/repshow')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'No Token Found in Cookie')
+
+    def test_rep_show_neg_method_err(self):
+        self.mock_login2()
+        res = self.client.post('/absanno/repshow')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['data'], 'Rep Show Failed')
 
     def test_check_result_neg_no_power(self):
         self.mock_no_power_login()
