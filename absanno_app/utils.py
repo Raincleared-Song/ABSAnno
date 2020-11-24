@@ -3,7 +3,7 @@ from django.http import JsonResponse, HttpResponse
 from django.middleware.csrf import get_token
 from django.core.exceptions import ValidationError
 from django.utils import timezone
-from absanno_app.models import Mission, Message, Users, Reception, Question, History
+from absanno_app.models import Mission, Message, Users, Reception, History
 from apscheduler.schedulers.background import BackgroundScheduler
 from django_apscheduler.jobstores import DjangoJobStore, register_job
 
@@ -316,12 +316,11 @@ def equals(ans, pre_ans, form):
     if form.startswith('chosen'):
         ret = ans == pre_ans
     elif form.startswith('fill'):
-        ret = ans.contains(pre_ans)
+        ret = pre_ans in ans
     return ret
 
 
 def check_history(history: History):
-    ret = True
     flag, tot, g = 1, 0, 0
     ans_list = get_lst(history.ans)
     q_list = history.mission.father_mission.all()

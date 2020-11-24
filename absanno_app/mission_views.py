@@ -10,9 +10,6 @@ from .utils import check_token, get_lst, gen_response, sort_mission_list_by_inte
 def square_show(request):
     if request.method == 'GET':
 
-        # 安全性验证
-        # TODO
-
         user_id = request.session['user_id'] if check_token(request)[0] == 201 else 0
 
         num_ = request.GET.get('num')
@@ -36,9 +33,6 @@ def square_show(request):
         num = int(num_)
         if num < 0 or num >= len(Mission.objects.filter(to_ans=1)):
             return gen_response(400, "Num Error in Square")
-
-        # 参考id获取用户画像，进而实现分发算法，目前使用id来进行排序
-        # TODO
 
         user = Users.objects.filter(id=user_id).first()
 
@@ -120,8 +114,6 @@ def square_show(request):
 def interest_show(request):
     if request.method == 'GET':
 
-        # 安全性验证
-        # TODO
         user_id = request.session['user_id'] if check_token(request)[0] == 201 else 0
 
         num_ = request.GET.get('page')
@@ -225,11 +217,9 @@ def mission_show(request):
         user = find_user_by_token(request)
 
         if method == 'submit':
-            rec = Reception.objects.filter(user__id=user.id, mission__id=mission_id).first()
+            rec = Reception.objects.filter(Q(user__id=user.id) & Q(mission__id=mission_id) & Q(can_do=True)).first()
             if rec is None:
                 return gen_response(400, 'Have Not Received Yet')
-            if not rec.can_do:
-                return gen_response(400, 'Cannot Do Reception')
 
         get_num = num + step
         if get_num < 0 or get_num >= len(mission.father_mission.all()):
@@ -245,13 +235,11 @@ def mission_show(request):
             'ret': get_num,
             'word': ret.word,
             'choices': ret.choices,
+            'template': ret.mission.template,
             'image_url': ret.picture_url() if mission.question_form.endswith('-image') else ""
         })
 
     elif request.method == 'POST':
-
-        # 安全性验证
-        # TODO
 
         code, data = check_token(request)
         if code == 400:
@@ -277,12 +265,6 @@ def mission_show(request):
         user = find_user_by_token(request)
         mission = Mission.objects.get(id=mission_id)
 
-        rec = Reception.objects.filter(user__id=user.id, mission__id=mission_id).first()
-        if rec is None:
-            return gen_response(400, 'Have Not Received Yet')
-        if not rec.can_do:
-            return gen_response(400, 'Cannot Do Reception')
-
         flag = 1
         tot, g = 0, 0
 
@@ -300,6 +282,9 @@ def mission_show(request):
             gen_response(400, "Ans Form Error")
 
         if method == 'submit':
+            rec = Reception.objects.filter(Q(user__id=user.id) & Q(mission__id=mission_id) & Q(can_do=True)).first()
+            if rec is None:
+                return gen_response(400, 'Have Not Received Yet')
             rec.can_do = False  # 接单不可做
             rec.save()
             history = History(user=user, mission=mission, ans=ans, ans_weight=user.weight)
