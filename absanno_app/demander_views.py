@@ -425,8 +425,16 @@ def end_mission(request):
         if mission.user.id != user_id:
             return gen_response(400, "Mission Not Published by You")
 
-        if mission.to_ans == 1:
-            invalidate_mission(mission)
+        integrate_mission(mission)
+
+        if mission.sub_mission_num == 1:
+            if mission.to_be_check == 1:
+                invalidate_mission(mission)
+        else:
+            for mis in mission.sub_mission.all():
+                if mis.to_be_check == 1:
+                    invalidate_mission(mis)
+
         return gen_response(201, 'Mission End Success')
 
     return gen_response(400, 'End Mission Error')
