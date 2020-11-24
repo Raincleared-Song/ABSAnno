@@ -324,10 +324,10 @@ def check_history(history: History):
     flag, tot, g = 1, 0, 0
     ans_list = get_lst(history.ans)
     q_list = history.mission.father_mission.all()
+    feature = history.valid
 
     if history.user.id == history.mission.user.id:
         flag = 0
-
     for i in range(len(ans_list)):
         if q_list[i].pre_ans != '':
             tot += 1
@@ -335,13 +335,52 @@ def check_history(history: History):
                 g += 1
     if tot != 0 and (g * 100 / tot < 60):
         flag = 0
-
     if flag == 0:
         ret = False
         history.valid = False
     else:
         ret = True
         history.valid = True
+    if feature and (not History.valid):
+        mission = history.mission
+        mission.now_num -= 1
+        if mission.now_num != mission.total:
+            mission.to_ans = 1
+        mission.save()
+        if mission.f_mission is not None:
+            upgrade_f_m_num(mission)
+
     history.save()
 
     return ret
+
+
+def upgrade_f_m_num(mission: Mission):
+    f_m = mission.f_mission
+    f_m.now_num = mission.now_num
+    for mis in f_m.sub_mission.all():
+        f_m.now_num = min(f_m.now_num, mis.now_num)
+    if f_m.now_num == f_m.total:
+        f_m.to_ans = 0
+    else:
+        f_m.to_ans = 1
+    f_m.save()
+
+
+def set_reward(history: History):
+    mission = history.mission
+    user = history.user
+    flag = history.valid
+    if flag:
+        user.weight += 2
+        if user.weight > 100:
+            user.weight = 100
+        user.coin += mission.reward
+        user.fin_num += 1
+    else:
+        user.weight -= 5
+        if user.weight < 0:
+            user.weight = 0
+            user.is_banned = 1
+    user.save()
+
