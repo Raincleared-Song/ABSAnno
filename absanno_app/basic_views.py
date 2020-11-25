@@ -158,8 +158,7 @@ def about_me(request):
                     [
                         {
                             'id': mission_ret.mission.id,
-                            'name': mission_ret.mission.name if mission_ret.mission.is_sub == 0
-                            else mission_ret.mission.name + '-' + str(mission_ret.mission.is_sub),
+                            'name': mission_ret.mission.name,
                             'user': mission_ret.mission.user.name,
                             'question_num': mission_ret.mission.question_num,
                             'question_form': mission_ret.mission.question_form,

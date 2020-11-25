@@ -89,7 +89,7 @@ def square_show(request):
                                       [
                                           {
                                               'id': ret.id,
-                                              'name': ret.name if ret.is_sub == 0 else ret.name + '-' + str(ret.is_sub),
+                                              'name': ret.name,
                                               'user': ret.user.name,
                                               'questionNum': ret.question_num,
                                               'questionForm': ret.question_form,
@@ -164,8 +164,7 @@ def interest_show(request):
                                       [
                                           {
                                               'id': mission.id,
-                                              'name': mission.name if mission.is_sub == 0 else
-                                              mission.name + '-' + str(mission.is_sub),
+                                              'name': mission.name,
                                               'user': mission.user.name,
                                               'questionNum': mission.question_num,
                                               'questionForm': mission.question_form,
@@ -399,8 +398,7 @@ def rep_show(request):
                         'pub_time': int(ret.pub_time.timestamp() * 1000),
                         'deadline': int(ret.deadline.timestamp() * 1000),
                         'mission_id': ret.mission.id,
-                        'mission_name': ret.mission.name if ret.mission.is_sub == 0 else
-                        ret.mission.name + '-' + str(ret.mission.is_sub),
+                        'mission_name': ret.mission.name,
                         'mission_info': ret.mission.info,
                         'mission_deadline': int(ret.mission.deadline.timestamp() * 1000),
                         'mission_reward': ret.mission.reward,
