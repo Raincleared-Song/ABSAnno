@@ -269,6 +269,9 @@ def mission_show(request):
         tot, g = 0, 0
 
         ans_list = get_lst(ans)
+        for a in ans_list:
+            if a == '':
+                return gen_response(400, 'Empty Ans')
         q_list = mission.father_mission.all()
         if len(ans_list) != len(q_list):
             return gen_response(400, 'Answer List Length Error')
