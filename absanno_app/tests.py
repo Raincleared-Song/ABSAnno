@@ -2,6 +2,7 @@ import datetime
 from django.test import TestCase
 from .models import Users, Mission, Question, Reception, History
 from django.http import HttpResponse
+from .utils import invalidate_mission, upgrade_f_m_num, check_deadline
 import time
 import os
 import shutil
@@ -26,13 +27,15 @@ class UnitTest(TestCase):
         self.user_num = 4
 
         self.mission = Mission.objects.create(name='task_test', question_form='chosen', question_num=2,
-                                              user=self.song, total=5, reception_num=1, tags="Sports||Game||Lifestyle".lower())
+                                              user=self.song, total=5, reception_num=1,
+                                              tags="Sports||Game||Lifestyle".lower())
         Question.objects.create(mission=self.mission, grand_mission=self.mission, word='title1',
                                 pre_ans='A', choices='A||B||C||D')
         Question.objects.create(mission=self.mission, grand_mission=self.mission, word='title2',
                                 pre_ans='C', choices='D||E||F||G')
         
-        History.objects.create(user=self.wang, mission=self.mission, ans='A||B', pub_time=datetime.date(2021, 6, 30), valid=False)
+        History.objects.create(user=self.wang, mission=self.mission, ans=' ||B',
+                               pub_time=datetime.date(2021, 6, 30), valid=False)
         self.mission2 = Mission.objects.create(name='task_test2', question_form='chosen', question_num=3,
                                                user=self.wang, total=5, tags="Animal||Plant||Space".lower())
 
@@ -44,8 +47,9 @@ class UnitTest(TestCase):
         History.objects.create(user=self.wang, mission=self.mission3, ans='ABC||BCD',
                                pub_time=datetime.date(2021, 6, 30))
 
-        Reception.objects.create(user=self.wang, mission=self.mission)
-        self.mission_num = 3
+        Reception.objects.create(user=self.wang, mission=self.mission,
+                                 deadline=datetime.datetime(2020, 6, 30, 0, 0))
+        self.mission_num = 4
         self.maxDiff = None
         self.default_timestamp = int(datetime.datetime(2021, 6, 30, 0, 0).timestamp() * 1000)
         self.upload_pos_case = {"name": "task", "question_form": "chosen", "question_num": "2", "total": "5",
@@ -93,6 +97,11 @@ class UnitTest(TestCase):
              'is_banned': 0, 'question_list': [
                 {'word': 'title1', 'pre_ans': 'A', 'ans': 'NULL', 'ans_weight': 0.0, 'now_num': 0},
                 {'word': 'title2', 'pre_ans': 'F', 'ans': 'NULL', 'ans_weight': 0.0, 'now_num': 0}]})
+        self.mission_my_pos_case2 = str(
+            {'mission_name': 'task_test', 'question_form': 'chosen', 'question_num': 2, 'total': 5,
+             'is_banned': 0, 'question_list': [
+                {'word': 'title1', 'pre_ans': 'A', 'ans': 'A', 'ans_weight': 1.0, 'now_num': 0},
+                {'word': 'title2', 'pre_ans': 'F', 'ans': 'F', 'ans_weight': 1.0, 'now_num': 0}]})
         self.power_user_show = str({'num': 3, 'total': 3, 'user_list': [
             {'id': 2, 'name': 'test_wang', 'power': 1, 'is_banned': 0, 'coin': 100000, 'weight': 50, 'fin_num': 0, 'tags': [], 'avatar': ''},
             {'id': 3, 'name': 'test3', 'power': 0, 'is_banned': 1, 'coin': 100000, 'weight': 50, 'fin_num': 0, 'tags': [], 'avatar': ''},
@@ -1144,11 +1153,26 @@ class UnitTest(TestCase):
         self.assertEqual(res.status_code, 400)
         self.assertEqual(res.json()['data'], "Free Mission ID Error")
 
-    def test_result_pos(self):
+    def test_invalidate_mission(self):
+        invalidate_mission(self.mission)
+        self.assertEqual(self.mission.to_ans, 0)
+
+    def test_result_pos_chosen(self):
         self.mock_login()
         param = '?mission_id=1'
         res = self.client.get('/absanno/result' + param)
         self.assertEqual(res.status_code, 201)
+
+    def test_result_pos_fill(self):
+        self.mock_login()
+        param = '?mission_id=3'
+        res = self.client.get('/absanno/result' + param)
+        self.assertEqual(res.status_code, 201)
+
+    def test_update_f_num(self):
+        upgrade_f_m_num(self.mission)
+        check_deadline()
+        self.assertEqual(self.mission.to_ans, 1)
 
     def test_result_neg_no_power(self):
         self.mock_no_power_login()
@@ -1254,11 +1278,16 @@ class UnitTest(TestCase):
         self.assertEqual(res.json()['data'], 'Mission Not Published by You')
 
     def test_check_result_pos(self):
+        his = History.objects.filter(user=self.wang, mission=self.mission).first()
+        his.ans = ' ||C'
+        his.save()
         self.mock_login()
         body = {'mission_id': '1'}
         res = self.client.get('/absanno/check', data=body, content_type='application/json')
+        his.ans = ' ||B'
+        his.save()
         self.assertEqual(res.status_code, 201)
-        self.assertEqual(res.json()['data'], self.mission_my_pos_case)
+        self.assertEqual(res.json()['data'], self.mission_my_pos_case2)
 
     def test_end_mission_pos(self):
         self.mock_login()
