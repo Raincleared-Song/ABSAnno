@@ -310,9 +310,8 @@ def sort_mission_list_by_interest(mission_list, user):
 
 def equals(ans, pre_ans, form):
     ret = False
-    if pre_ans == '':
-        ret = True
-        return ret
+    if pre_ans == '' or pre_ans == 'NULL':
+        return False
     if form.startswith('chosen'):
         ret = ans == pre_ans
     elif form.startswith('fill'):
@@ -329,7 +328,7 @@ def check_history(history: History):
         flag = 0
 
     for i in range(len(ans_list)):
-        if q_list[i].pre_ans != '':
+        if q_list[i].pre_ans != '' and q_list[i].pre_ans != 'NULL':
             tot += 1
             if equals(ans_list[i], q_list[i].pre_ans, history.mission.question_form):
                 g += 1

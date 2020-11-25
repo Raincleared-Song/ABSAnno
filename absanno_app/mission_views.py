@@ -289,7 +289,7 @@ def mission_show(request):
             rec.save()
             history = History(user=user, mission=mission, ans=ans, ans_weight=user.weight)
             for i in range(len(ans_list)):
-                if q_list[i].pre_ans != '':
+                if q_list[i].pre_ans != '' and q_list[i].pre_ans != 'NULL':
                     tot += 1
                     if equals(ans_list[i], q_list[i].pre_ans, mission.question_form):
                         g += 1
@@ -330,7 +330,7 @@ def mission_show(request):
             for i in range(len(ans_list)):
                 qs_obj = Question.objects.get(id=q_list[i].id)
                 if ans_list[i] == ' ':
-                    qs_obj.pre_ans = ''
+                    qs_obj.pre_ans = 'NULL'
                 else:
                     qs_obj.pre_ans = ans_list[i]
                 qs_obj.save()
