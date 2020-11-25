@@ -165,7 +165,9 @@ def about_me(request):
                             'question_form': mission_ret.mission.question_form,
                             'reward': mission_ret.mission.reward,
                             'info': mission_ret.mission.info,
-                            'ret_time': int(mission_ret.pub_time.timestamp() * 1000)
+                            'ret_time': int(mission_ret.pub_time.timestamp() * 1000),
+                            'state': 2 if mission_ret.mission.to_be_check == 1
+                            else (1 if mission_ret.valid else 0)
                         }
                         for mission_ret in ret.history.all().order_by('-pub_time')
                     ]
