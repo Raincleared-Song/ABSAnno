@@ -286,6 +286,8 @@ def mission_show(request):
             gen_response(400, "Ans Form Error")
 
         if method == 'submit':
+            if mission.user.id == user.id:
+                return gen_response(400, "Method Error")
             rec = Reception.objects.filter(Q(user__id=user.id) & Q(mission__id=mission_id) & Q(can_do=True)).first()
             if rec is None:
                 return gen_response(400, 'Have Not Received Yet')
@@ -308,11 +310,8 @@ def mission_show(request):
                 flag = 0
             if flag == 1:
                 if mission.to_be_check == 1:
-                    if mission.user.id != user.id:
-                        history.valid = True
-                        mission.now_num += 1
-                    else:
-                        history.valid = False
+                    history.valid = True
+                    mission.now_num += 1
                 else:
                     history.valid = False
                     history.save()
