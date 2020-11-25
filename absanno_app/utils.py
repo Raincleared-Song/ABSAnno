@@ -345,6 +345,8 @@ def check_history(history: History):
     if history.user.id == history.mission.user.id:
         flag = 0
     for i in range(len(ans_list)):
+        if ans_list[i] == ' ' or ans_list[i] == '':
+            ans_list[i] = 'A'
         if q_list[i].pre_ans != '' and q_list[i].pre_ans != 'NULL':
             tot += 1
             if equals(ans_list[i], q_list[i].pre_ans, history.mission.question_form):
@@ -373,6 +375,8 @@ def check_history(history: History):
 
 def upgrade_f_m_num(mission: Mission):
     f_m = mission.f_mission
+    if f_m is None:
+        return
     f_m.now_num = mission.now_num
     for mis in f_m.sub_mission.all():
         f_m.now_num = min(f_m.now_num, mis.now_num)
