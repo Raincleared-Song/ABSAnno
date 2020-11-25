@@ -153,6 +153,9 @@ def upload_mission(request):
             template_ = json_default(js, dic)
         to_be_check = 0 if check_way == 'auto' else 1
 
+        if Mission.objects.filter(name=name) is not None:
+            return gen_response(400, "Mission Name Has Been Used")
+
         if isinstance(tags_, str):
             tags_ = get_lst(tags_)
 
@@ -182,6 +185,8 @@ def upload_mission(request):
                 pre_ans_flag = 1
         if (pre_ans_flag == 0) and (check_way == 'auto'):
             return gen_response(400, "Auto Without Any Pre Ans")
+        if (pre_ans_flag == 1) and (check_way != 'auto'):
+            return gen_response(400, "You Dont Need To Set Pre_Ans Now")
 
         if len(Mission.objects.filter(name=name)) > 0:
             return gen_response(400, 'Mission Name Already Used')
