@@ -208,11 +208,16 @@ def mission_show(request):
         step = int(step_)
         if mission_id <= 0 or mission_id > len(Mission.objects.all()):
             return gen_response(400, "ID Error")
-        if num < 0 or num >= len(Mission.objects.get(id=mission_id).father_mission.all()):
+        mission = Mission.objects.get(id=mission_id)
+        question_list = []
+        if method == 'submit':
+            question_list = mission.father_mission.all()
+        elif method == 'renew':
+            question_list = mission.grand_mission.all()
+        if num < 0 or num >= len(question_list):
             return gen_response(400, "Num Error in Mission Show")
         if step != -1 and step != 1 and step != 0:
             return gen_response(400, "Step Error")
-        mission = Mission.objects.get(id=mission_id)
         if mission.is_banned == 1:
             return gen_response(400, "This Mission Is Banned")
 
@@ -224,15 +229,15 @@ def mission_show(request):
                 return gen_response(400, 'Have Not Received Yet')
 
         get_num = num + step
-        if get_num < 0 or get_num >= len(mission.father_mission.all()):
+        if get_num < 0 or get_num >= len(question_list):
             return gen_response(400, "Runtime Error")
         if mission.deadline <= timezone.now():
             return gen_response(400, "After The Deadline")
 
-        ret = mission.father_mission.all().order_by('id')[get_num]
+        ret = question_list.order_by('id')[get_num]
 
         return gen_response(201, {
-            'total': len(mission.father_mission.all()),
+            'total': len(question_list),
             'type': mission.question_form,
             'ret': get_num,
             'word': ret.word,
@@ -275,7 +280,12 @@ def mission_show(request):
             for a in ans_list:
                 if a == '':
                     return gen_response(400, 'Empty Ans')
-        q_list = mission.father_mission.all()
+
+        if method == 'submit':
+            q_list = mission.father_mission.all()
+        else:
+            q_list = mission.grand_mission.all()
+
         if len(ans_list) != len(q_list):
             return gen_response(400, 'Answer List Length Error')
 

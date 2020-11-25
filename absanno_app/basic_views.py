@@ -207,6 +207,9 @@ def send_apply(request):
         if type_ == '':
             return gen_response(400, "No Type Send")
 
+        if len(Apply.objects.filter(user=user, type=type_)) > 0:
+            return gen_response(400, "Apply Has Been Sent")
+
         try:
             apply = Apply(user=user, type=type_)
             apply.full_clean()
