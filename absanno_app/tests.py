@@ -99,9 +99,9 @@ class UnitTest(TestCase):
             {'id': 4, 'name': 'test4', 'power': 0, 'is_banned': 0, 'coin': 100000, 'weight': 50, 'fin_num': 0, 'tags': ['Sports', 'Plant', 'Animal'], 'avatar': ''}]})
         self.about_pos_case = str({'total_num': 2, 'mission_list':
             [{'id': 1, 'name': 'task_test', 'user': 'test', 'question_num': 2, 'question_form': 'chosen',
-              'reward': 5, 'info': '', 'ret_time': self.default_timestamp},
+              'reward': 5, 'info': '', 'ret_time': self.default_timestamp, 'state': 1},
              {'id': 3, 'name': 'task_test3', 'user': 'test', 'question_num': 2, 'question_form': 'fill', 'reward': 5,
-              'info': '', 'ret_time': self.default_timestamp}]})
+              'info': '', 'ret_time': self.default_timestamp, 'state': 2}]})
 
         if not os.path.exists('image'):
             os.mkdir('image')
