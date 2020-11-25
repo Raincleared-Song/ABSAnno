@@ -212,14 +212,16 @@ def cal_sub(mission):
                 weight_list.append(0)
             for his in history_list:
                 a_lst = get_lst(his.ans)
+                if a_lst[i] == '' or a_lst[i] == ' ':
+                    a_lst[i] = 'A'
                 weight_list[abc_to_int(a_lst[i])] += his.ans_weight
                 tot_weight += his.ans_weight
             for j in range(c_num):
                 if weight_list[j] > weight_list[ans]:
                     ans = j
             if tot_weight != 0:
-                q.ans = int_to_abc(ans)
-                q.ans_weight = weight_list[ans] / tot_weight
+                q.ans = int_to_abc(ans) if q.pre_ans in ['', 'NULL'] else q.pre_ans
+                q.ans_weight = weight_list[ans] / tot_weight if q.pre_ans in ['', 'NULL'] else 1.0
             q.now_num = mission.now_num
             q.save()
     elif mission.question_form.startswith('fill'):

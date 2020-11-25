@@ -288,6 +288,10 @@ def mission_show(request):
             rec.can_do = False  # 接单不可做
             rec.save()
             history = History(user=user, mission=mission, ans=ans, ans_weight=user.weight)
+            if mission.question_form.startswith('chosen'):
+                for item in ans_list:
+                    if item == '' or item == ' ':
+                        return gen_response(400, 'Empty Ans')
             for i in range(len(ans_list)):
                 if q_list[i].pre_ans != '' and q_list[i].pre_ans != 'NULL':
                     tot += 1
