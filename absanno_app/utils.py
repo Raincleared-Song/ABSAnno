@@ -220,6 +220,9 @@ def cal_sub(mission):
             if tot_weight != 0:
                 q.ans = int_to_abc(ans)
                 q.ans_weight = weight_list[ans] / tot_weight
+            else:
+                q.ans = 'NULL'
+                q.ans_weight = 0
             q.now_num = mission.now_num
             q.save()
     elif mission.question_form.startswith('fill'):
@@ -340,7 +343,7 @@ def check_history(history: History):
     else:
         ret = True
         history.valid = True
-    if feature and (not History.valid):
+    if feature and (not history.valid):
         mission = history.mission
         mission.now_num -= 1
         if mission.now_num != mission.total:
