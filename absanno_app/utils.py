@@ -222,13 +222,16 @@ def cal_sub(mission):
             if tot_weight != 0:
                 q.ans = int_to_abc(ans) if q.pre_ans in ['', 'NULL'] else q.pre_ans
                 q.ans_weight = weight_list[ans] / tot_weight if q.pre_ans in ['', 'NULL'] else 1.0
+            else:
+                q.ans = 'NULL'
+                q.ans_weight = 0
             q.now_num = mission.now_num
             q.save()
     elif mission.question_form.startswith('fill'):
         for i in range(len(mission.father_mission.all())):
             q = mission.father_mission.all()[i]
             ans_lst = []
-            for his in mission.ans_history.all():
+            for his in history_list:
                 a_lst = get_lst(his.ans)
                 ans_lst.append(a_lst[i])
             spl_str = '||'
@@ -274,16 +277,28 @@ def integrate_mission(mission):
 
 def get_csv_rows(mission: Mission) -> dict:
     """获取指定任务的导出答案列表"""
-    rows = [('任务名', '题型', '编号', '总题数', '题干', '已标注次数', '需标注次数', '预埋答案', '标注答案', '置信权重')]
-    response = json.loads(integrate_mission(mission).content)
-    if response['code'] == 400:
-        return response
-    response = eval(response['data'])
-    for i, question in enumerate(response['question_list']):
-        rows.append((response['mission_name'], response['question_form'], i, response['question_num'],
-                     question['word'], question['now_num'], response['total'], question['pre_ans'],
-                     question['ans'], question['ans_weight']))
-    return {'code': 201, 'rows': rows}
+    if mission.question_form.startswith('chosen'):
+        rows = [('任务名', '题型', '编号', '总题数', '题干', '已标注次数', '需标注次数', '预埋答案', '标注答案', '置信权重')]
+        response = json.loads(integrate_mission(mission).content)
+        if response['code'] == 400:
+            return response
+        response = eval(response['data'])
+        for i, question in enumerate(response['question_list']):
+            rows.append((response['mission_name'], response['question_form'], i, response['question_num'],
+                         question['word'], question['now_num'], response['total'], question['pre_ans'],
+                         question['ans'], question['ans_weight']))
+        return {'code': 201, 'rows': rows}
+    elif mission.question_form.startswith('fill'):
+        rows = [('任务名', '题型', '编号', '总题数', '题干', '已标注次数', '需标注次数', '预埋答案', '标注答案')]
+        response = json.loads(integrate_mission(mission).content)
+        if response['code'] == 400:
+            return response
+        response = eval(response['data'])
+        for i, question in enumerate(response['question_list']):
+            rows.append((response['mission_name'], response['question_form'], i, response['question_num'],
+                         question['word'], question['now_num'], response['total'], question['pre_ans'],
+                         question['ans']))
+        return {'code': 201, 'rows': rows}
 
 
 def invalidate_mission(mission: Mission):
@@ -342,7 +357,7 @@ def check_history(history: History):
     else:
         ret = True
         history.valid = True
-    if feature and (not History.valid):
+    if feature and (not history.valid):
         mission = history.mission
         mission.now_num -= 1
         if mission.now_num != mission.total:

@@ -32,7 +32,7 @@ class UnitTest(TestCase):
         Question.objects.create(mission=self.mission, grand_mission=self.mission, word='title2',
                                 pre_ans='C', choices='D||E||F||G')
         
-        History.objects.create(user=self.wang, mission=self.mission, ans='A||B', pub_time=datetime.date(2021, 6, 30))
+        History.objects.create(user=self.wang, mission=self.mission, ans='A||B', pub_time=datetime.date(2021, 6, 30), valid=False)
         self.mission2 = Mission.objects.create(name='task_test2', question_form='chosen', question_num=3,
                                                user=self.wang, total=5, tags="Animal||Plant||Space".lower())
 
@@ -99,7 +99,7 @@ class UnitTest(TestCase):
             {'id': 4, 'name': 'test4', 'power': 0, 'is_banned': 0, 'coin': 100000, 'weight': 50, 'fin_num': 0, 'tags': ['Sports', 'Plant', 'Animal'], 'avatar': ''}]})
         self.about_pos_case = str({'total_num': 2, 'mission_list':
             [{'id': 1, 'name': 'task_test', 'user': 'test', 'question_num': 2, 'question_form': 'chosen',
-              'reward': 5, 'info': '', 'ret_time': self.default_timestamp, 'state': 1},
+              'reward': 5, 'info': '', 'ret_time': self.default_timestamp, 'state': 0},
              {'id': 3, 'name': 'task_test3', 'user': 'test', 'question_num': 2, 'question_form': 'fill', 'reward': 5,
               'info': '', 'ret_time': self.default_timestamp, 'state': 2}]})
 
