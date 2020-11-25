@@ -153,7 +153,7 @@ def upload_mission(request):
             template_ = json_default(js, dic)
         to_be_check = 0 if check_way == 'auto' else 1
 
-        if Mission.objects.filter(name=name) is not None:
+        if len(Mission.objects.filter(name=name)) > 0:
             return gen_response(400, "Mission Name Has Been Used")
 
         if isinstance(tags_, str):
