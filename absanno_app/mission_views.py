@@ -4,7 +4,7 @@ from django.utils import timezone
 from .models import History, Mission, Users, Reception, Question
 from .utils import check_token, get_lst, gen_response, sort_mission_list_by_interest, check_is_banned, \
     find_user_by_token, parse_json, JSON_ERROR, illegal_mission_id, json_default, illegal_user_id, not_digit, \
-    equals, integrate_mission, abc_to_int
+    equals, integrate_mission, abc_to_int, check_history, upgrade_f_m_num, set_reward
 
 
 def square_show(request):
@@ -299,17 +299,23 @@ def mission_show(request):
             if timezone.now() - rec.pub_time < datetime.timedelta(seconds=mission.question_num):
                 flag = 0
             if flag == 1:
-                user.weight += 5
-                if user.weight > 100:
-                    user.weight = 100
-                user.coin += mission.reward
-                user.fin_num += 1
-                user.save()
-                mission.now_num += 1
+                if mission.to_be_check == 1:
+                    if mission.user.id != user.id:
+                        history.valid = True
+                        mission.now_num += 1
+                    else:
+                        history.valid = False
+                else:
+                    history.valid = False
+                    history.save()
+                    if check_history(history):
+                        mission.now_num += 1
+                    set_reward(history)
                 if mission.now_num == mission.total:
                     mission.to_ans = 0
                 mission.save()
-                history.valid = True
+                if mission.f_mission is not None:
+                    upgrade_f_m_num(mission)
                 history.save()
                 return gen_response(201, "Answer Pushed")
             else:
@@ -325,6 +331,11 @@ def mission_show(request):
             if mission.to_be_check == 1:
                 mission.to_be_check = 0
                 mission.save()
+                if mission.sub_mission_num > 1:
+                    for mis in mission.sub_mission.all():
+                        obj = mis
+                        obj.to_be_check = 0
+                        obj.save()
             else:
                 return gen_response(400, "Have Already Check")
             for i in range(len(ans_list)):
@@ -334,7 +345,22 @@ def mission_show(request):
                 else:
                     qs_obj.pre_ans = ans_list[i]
                 qs_obj.save()
-            return integrate_mission(mission)
+                integrate_mission(mission)
+                if mission.sub_mission_num == 1:
+                    for his in mission.ans_history.all():
+                        obj = his
+                        check_history(obj)
+                        set_reward(obj)
+                        obj.save()
+                else:
+                    for mis in mission.sub_mission.all():
+                        for his in mis.ans_history.all():
+                            obj = his
+                            check_history(obj)
+                            set_reward(obj)
+                            obj.save()
+
+            return gen_response(201, 'Manual Receive Set Done')
 
     return gen_response(400, 'Mission Show Error')
 
