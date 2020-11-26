@@ -323,7 +323,7 @@ def invalidate_mission(mission: Mission):
 def sort_mission_list_by_interest(mission_list, user):
     if not user or user.tags == '':
         # not login, sort by tag numbers
-        mission_list.sort(key=lambda x: len(x.tags.split('||')))
+        mission_list.sort(key=lambda x: len(x.tags.split('||')), reverse=True)
         return mission_list
     else:
         user_tag = user.tags.split('||')
