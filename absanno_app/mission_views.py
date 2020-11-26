@@ -321,6 +321,7 @@ def mission_show(request):
             if timezone.now() - rec.pub_time < datetime.timedelta(seconds=mission.question_num):
                 flag = 0
             if flag == 1:
+                user.fin_num += 1
                 if mission.to_be_check == 1:
                     history.valid = True
                     mission.now_num += 1
@@ -330,8 +331,7 @@ def mission_show(request):
                     if check_history(history):
                         mission.now_num += 1
                     set_reward(history)
-                    user.fin_num += 1
-                    user.save()
+                user.save()
                 if mission.now_num == mission.total:
                     mission.to_ans = 0
                 mission.save()
@@ -340,11 +340,12 @@ def mission_show(request):
                 history.save()
                 return gen_response(201, "Answer Pushed")
             else:
-                user.weight -= 5
                 user.fin_num += 1
-                if user.weight < 0:
-                    user.weight = 0
-                    user.is_banned = 1
+                if user.power < 2:
+                    user.weight -= 5
+                    if user.weight < 0:
+                        user.weight = 0
+                        user.is_banned = 1
                 user.save()
                 history.valid = False
                 history.save()
