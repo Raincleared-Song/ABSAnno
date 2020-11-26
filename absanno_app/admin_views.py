@@ -184,7 +184,8 @@ def show_all_user(request):
         if now_num < 0 or now_num >= total:
             return gen_response(400, "Now_Num Error")
 
-        num = min(len(Users.objects.filter(Q(power=0) | Q(power=1))), now_num + 20)
+        # num = min(len(Users.objects.filter(Q(power=0) | Q(power=1))), now_num + 20)
+        num = len(Users.objects.filter(Q(power=0) | Q(power=1)))
 
         return gen_response(201, {'num': num - now_num,
                                   'total': total,

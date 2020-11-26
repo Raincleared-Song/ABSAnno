@@ -26,7 +26,7 @@ class Users(models.Model):
     # 之后需要考虑在用户名中禁止特定字符，如" ",","等
     password = models.CharField(max_length=20)  # 密码，最大长度20位
     # 之后需要增加最短长度6位，同时保证密码不能仅含数字，以及不能和用户名匹配度过高
-    coin = models.IntegerField(default=100000)  # 用户积分，参与答题即可获得积分(金币)，作为答题奖励
+    coin = models.IntegerField(default=1000)  # 用户积分，参与答题即可获得积分(金币)，作为答题奖励
     weight = models.IntegerField(default=50)  # 用户权重，有关用户答题质量的评定
     # 用户答题被判断乱答题时会扣除weight， weight被扣到0时用户可能被自动封禁
     avatar = models.ImageField(upload_to=user_avatar_path, storage=OverWriteStorage(), default="", blank=True)

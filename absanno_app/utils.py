@@ -241,6 +241,13 @@ def cal_sub(mission):
 
 
 def integrate_mission(mission):
+    if mission.is_banned == 1:
+        return gen_response(400, "Mission Is Banned")
+    if mission.sub_mission_num > 1:
+        for m in mission.sub_mission.all():
+            if m.is_banned == 1:
+                return gen_response(400, "Banned Sub Mission Existed")
+
     for ret in mission.grand_mission.all():
         ret.ans = 'NULL'
         if ret.pre_ans == '':
@@ -396,12 +403,12 @@ def set_reward(history: History):
         if user.weight > 100:
             user.weight = 100
         user.coin += mission.reward
-        user.fin_num += 1
     else:
-        user.weight -= 5
-        if user.weight < 0:
-            user.weight = 0
-            user.is_banned = 1
+        if user.power < 2:
+            user.weight -= 5
+            if user.weight < 0:
+                user.weight = 0
+                user.is_banned = 1
     user.save()
 
 
