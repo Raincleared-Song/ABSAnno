@@ -2,7 +2,7 @@ import datetime
 from django.test import TestCase
 from .models import Users, Mission, Question, Reception, History
 from django.http import HttpResponse
-from .utils import invalidate_mission, upgrade_f_m_num, check_deadline
+from .utils import invalidate_mission, upgrade_f_m_num, check_deadline, reset_fin_weight
 import time
 import os
 import shutil
@@ -1172,6 +1172,7 @@ class UnitTest(TestCase):
     def test_update_f_num(self):
         upgrade_f_m_num(self.mission)
         check_deadline()
+        reset_fin_weight()
         self.assertEqual(self.mission.to_ans, 1)
 
     def test_result_neg_no_power(self):

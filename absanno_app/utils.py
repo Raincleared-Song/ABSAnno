@@ -404,3 +404,12 @@ def set_reward(history: History):
             user.is_banned = 1
     user.save()
 
+
+def reset_fin_weight():
+    for user in Users.objects.all():
+        user.fin_num = 0
+        user.weight = 50
+        user.coin = 10000000 if user.name in ['songchenyang', 'wangjunwei',
+                                              'zhangyizhuo', 'xieyuqing', 'luojingjia', 'admin'] else 100000
+        for his in user.history.all():
+            set_reward(his)
