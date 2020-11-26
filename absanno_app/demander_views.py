@@ -433,10 +433,12 @@ def end_mission(request):
         integrate_mission(mission)
 
         if mission.sub_mission_num == 1:
-            invalidate_mission(mission)
+            if mission.to_ans == 1:
+                invalidate_mission(mission)
         else:
             for mis in mission.sub_mission.all():
-                invalidate_mission(mis)
+                if mis.to_ans == 1:
+                    invalidate_mission(mis)
 
         return gen_response(201, 'Mission End Success')
 
