@@ -330,6 +330,8 @@ def mission_show(request):
                     if check_history(history):
                         mission.now_num += 1
                     set_reward(history)
+                    user.fin_num += 1
+                    user.save()
                 if mission.now_num == mission.total:
                     mission.to_ans = 0
                 mission.save()
@@ -339,6 +341,7 @@ def mission_show(request):
                 return gen_response(201, "Answer Pushed")
             else:
                 user.weight -= 5
+                user.fin_num += 1
                 if user.weight < 0:
                     user.weight = 0
                     user.is_banned = 1
